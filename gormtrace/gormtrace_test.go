@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -27,7 +28,7 @@ func TestPluginNamesAndSanitizesEveryOperation(t *testing.T) {
 		t.Fatal(err)
 	}
 	namer := sqltrace.Namer{Prefix: "example.storage"}
-	if err := db.Use(New(Config{Scope: "example/storage", Namer: namer, System: "sqlite", Namespace: "test"})); err != nil {
+	if err := db.Use(New(Config{Scope: "example/storage", Namer: namer, System: "sqlite", Namespace: "test", SpanKind: trace.SpanKindInternal})); err != nil {
 		t.Fatal(err)
 	}
 	ctx := namer.WithName(context.Background(), "FindSecret")
@@ -57,6 +58,9 @@ func TestPluginNamesAndSanitizesEveryOperation(t *testing.T) {
 		}
 		if attrs["db.query.parameter.count"] != int64(1) {
 			t.Fatalf("parameter count = %#v", attrs["db.query.parameter.count"])
+		}
+		if span.SpanKind() != trace.SpanKindInternal {
+			t.Fatalf("span kind = %v", span.SpanKind())
 		}
 		return
 	}

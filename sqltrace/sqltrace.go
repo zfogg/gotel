@@ -7,9 +7,13 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"sync"
+	"time"
 	"unicode"
 
+	"github.com/zfogg/gotel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -18,7 +22,14 @@ const (
 	// QuerySummaryKey contains the stable application-owned operation name.
 	QuerySummaryKey = attribute.Key("db.query.summary")
 	// ArgumentCountKey contains the number of bind arguments supplied at runtime.
+	// Deprecated: use BindCountKey. This key is emitted during the v0.2
+	// transition for dashboards built against earlier gotel releases.
 	ArgumentCountKey = attribute.Key("db.query.parameter.count")
+	// BindCountKey contains the number of bind arguments without colliding with
+	// db.query.parameter.<key>, which is reserved for actual parameter values.
+	BindCountKey = attribute.Key("gotel.db.query.bind_count")
+	// QueryTextTruncatedKey reports that db.query.text was capped by policy.
+	QueryTextTruncatedKey = attribute.Key("gotel.db.query.truncated")
 	// SystemKey identifies the database system, such as postgresql or duckdb.
 	SystemKey = attribute.Key("db.system.name")
 	// LegacySystemKey preserves db.system for collectors and dashboards built
@@ -39,18 +50,61 @@ type Namer struct {
 	Prefix string
 }
 
+// NewNamer validates prefix and returns a Namer. Prefix segments use the same
+// identifier grammar as query names.
+func NewNamer(prefix string) (Namer, error) {
+	prefix = strings.Trim(strings.TrimSpace(prefix), ".")
+	if prefix == "" {
+		return Namer{}, nil
+	}
+	for _, segment := range strings.Split(prefix, ".") {
+		if !validSimpleName(segment) {
+			return Namer{}, fmt.Errorf("SQL query prefix segment must match [A-Za-z][A-Za-z0-9_]*: %q", segment)
+		}
+	}
+	return Namer{Prefix: prefix}, nil
+}
+
+// MustNamer is NewNamer for static application configuration. It panics when
+// prefix is invalid.
+func MustNamer(prefix string) Namer {
+	namer, err := NewNamer(prefix)
+	if err != nil {
+		panic(err)
+	}
+	return namer
+}
+
+// Parse validates a simple or already-qualified name and returns its canonical
+// name under this Namer's prefix.
+func (n Namer) Parse(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	prefix := strings.Trim(strings.TrimSpace(n.Prefix), ".")
+	if prefix != "" && strings.HasPrefix(name, prefix+".") {
+		name = strings.TrimPrefix(name, prefix+".")
+	}
+	if !validSimpleName(name) {
+		return "", fmt.Errorf("SQL query name must match [A-Za-z][A-Za-z0-9_]*: %q", name)
+	}
+	if prefix == "" {
+		return name, nil
+	}
+	return prefix + "." + name, nil
+}
+
+// MustName is Parse for static query names. It panics when name is invalid.
+func (n Namer) MustName(name string) string {
+	qualified, err := n.Parse(name)
+	if err != nil {
+		panic(err)
+	}
+	return qualified
+}
+
 // Name returns <prefix>.<simple>. A simple name begins with an ASCII letter and
 // otherwise contains only ASCII letters, digits, and underscores.
 func (n Namer) Name(simple string) string {
-	simple = strings.TrimSpace(simple)
-	if !validSimpleName(simple) {
-		panic(fmt.Sprintf("SQL query name must match [A-Za-z][A-Za-z0-9_]*: %q", simple))
-	}
-	prefix := strings.Trim(strings.TrimSpace(n.Prefix), ".")
-	if prefix == "" {
-		return simple
-	}
-	return prefix + "." + simple
+	return n.MustName(simple)
 }
 
 // WithName carries one qualified, stable database operation name through ctx.
@@ -99,6 +153,14 @@ func isASCIILetter(c byte) bool { return c >= 'a' && c <= 'z' || c >= 'A' && c <
 // CallerNamer returns the first application function name found above a
 // database adapter. matchPrefix should be a fully qualified Go package or
 // receiver prefix. The returned name is suitable for Namer.Name.
+
+var callerNames sync.Map
+
+// CallerNamer returns a cached caller resolver. matchPrefix may identify a Go
+// package or a more specific receiver prefix. It skips compiler-generated
+// wrappers and strips receiver and generic type syntax. An empty string is
+// returned when no matching stable function exists; callers must use a
+// deterministic fallback.
 func CallerNamer(matchPrefix string) func() string {
 	return func() string {
 		pcs := make([]uintptr, 96)
@@ -108,8 +170,12 @@ func CallerNamer(matchPrefix string) func() string {
 			if fn == nil || !strings.HasPrefix(fn.Name(), matchPrefix) {
 				continue
 			}
+			if cached, ok := callerNames.Load(pc); ok {
+				return cached.(string)
+			}
 			name := strings.TrimPrefix(fn.Name(), matchPrefix)
 			name = strings.TrimPrefix(name, ".")
+			name = stripGenericSyntax(name)
 			parts := strings.Split(name, ".")
 			for i := len(parts) - 1; i >= 0; i-- {
 				candidate := strings.TrimSuffix(parts[i], "-fm")
@@ -117,12 +183,33 @@ func CallerNamer(matchPrefix string) func() string {
 					continue
 				}
 				if validSimpleName(candidate) {
+					callerNames.Store(pc, candidate)
 					return candidate
 				}
 			}
 		}
 		return ""
 	}
+}
+
+func stripGenericSyntax(name string) string {
+	var out strings.Builder
+	depth := 0
+	for _, r := range name {
+		switch r {
+		case '[':
+			depth++
+		case ']':
+			if depth > 0 {
+				depth--
+			}
+		default:
+			if depth == 0 {
+				out.WriteRune(r)
+			}
+		}
+	}
+	return out.String()
 }
 
 func isCompilerFrame(name string) bool {
@@ -152,6 +239,8 @@ type Metadata struct {
 	Operation string
 	// SanitizedSQL is the safe query template, or empty when sanitization fails.
 	SanitizedSQL string
+	// QueryTextTruncated reports that SanitizedSQL was shortened by policy.
+	QueryTextTruncated bool
 	// ArgumentCount is the number of bind values passed separately from SQL.
 	ArgumentCount int
 }
@@ -159,6 +248,16 @@ type Metadata struct {
 // Inspect extracts sqlc names, SQL operation, a sanitized template, and the
 // actual bind argument count. explicitName wins when non-empty.
 func Inspect(namer Namer, explicitName, statement string, args []any) Metadata {
+	return InspectDialect(namer, explicitName, statement, args, DialectGeneric)
+}
+
+// InspectDialect extracts safe metadata using dialect's recommended policy.
+func InspectDialect(namer Namer, explicitName, statement string, args []any, dialect Dialect) Metadata {
+	return InspectWithOptions(namer, explicitName, statement, args, DefaultSanitizeOptions(dialect))
+}
+
+// InspectWithOptions extracts safe metadata using an application policy.
+func InspectWithOptions(namer Namer, explicitName, statement string, args []any, options SanitizeOptions) Metadata {
 	operation := Operation(statement)
 	simple := strings.TrimSpace(explicitName)
 	if simple == "" {
@@ -171,13 +270,16 @@ func Inspect(namer Namer, explicitName, statement string, args []any) Metadata {
 		simple = "Unknown"
 	}
 	name := namer.Name(normalizeSimpleName(simple))
-	sanitized, _ := Sanitize(statement)
-	return Metadata{Name: name, Operation: strings.ToUpper(operation), SanitizedSQL: sanitized, ArgumentCount: len(args)}
+	sanitized, safe := SanitizeWithOptions(statement, options)
+	if !safe {
+		sanitized = SanitizedQuery{}
+	}
+	return Metadata{Name: name, Operation: strings.ToUpper(operation), SanitizedSQL: sanitized.Text, QueryTextTruncated: sanitized.Truncated, ArgumentCount: len(args)}
 }
 
 // Attributes returns standard database attributes plus safe query metadata.
 func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
-	attrs := []attribute.KeyValue{QuerySummaryKey.String(m.Name), ArgumentCountKey.Int(m.ArgumentCount)}
+	attrs := []attribute.KeyValue{QuerySummaryKey.String(m.Name), BindCountKey.Int(m.ArgumentCount), ArgumentCountKey.Int(m.ArgumentCount)}
 	if system != "" {
 		attrs = append(attrs, SystemKey.String(system), LegacySystemKey.String(system))
 	}
@@ -190,7 +292,71 @@ func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
 	if m.SanitizedSQL != "" {
 		attrs = append(attrs, QueryTextKey.String(m.SanitizedSQL))
 	}
+	if m.QueryTextTruncated {
+		attrs = append(attrs, QueryTextTruncatedKey.Bool(true))
+	}
 	return attrs
+}
+
+// Observer receives low-cardinality operation/result labels and elapsed time.
+type Observer func(context.Context, string, string, time.Duration)
+
+// SpanConfig configures a manually instrumented database/sql-style operation.
+type SpanConfig struct {
+	Tracer    trace.Tracer
+	Namer     Namer
+	Name      string
+	Statement string
+	Args      []any
+	Dialect   Dialect
+	System    string
+	Namespace string
+	Kind      trace.SpanKind
+	Observe   Observer
+}
+
+// DBSpan is a manually instrumented database operation. End must be called
+// exactly once after the database call finishes.
+type DBSpan struct {
+	span      trace.Span
+	started   time.Time
+	operation string
+	observe   Observer
+}
+
+// StartSpan starts a database operation span with the same naming and safe SQL
+// attributes used by the pgx and GORM adapters.
+func StartSpan(ctx context.Context, config SpanConfig) (context.Context, *DBSpan) {
+	if TracingDisabled(ctx) || config.Tracer == nil {
+		return ctx, &DBSpan{}
+	}
+	meta := InspectDialect(config.Namer, config.Name, config.Statement, config.Args, config.Dialect)
+	kind := config.Kind
+	if kind == trace.SpanKindUnspecified {
+		kind = trace.SpanKindClient
+	}
+	ctx, span := config.Tracer.Start(ctx, meta.Name, trace.WithSpanKind(kind), trace.WithAttributes(meta.Attributes(config.System, config.Namespace)...))
+	return ctx, &DBSpan{span: span, started: time.Now(), operation: meta.Operation, observe: config.Observe}
+}
+
+// End records rows affected, error classification, metrics, and ends the span.
+// Pass a negative row count when it is unavailable.
+func (s *DBSpan) End(ctx context.Context, err error, rows int64) {
+	if s == nil || s.span == nil {
+		return
+	}
+	if rows >= 0 {
+		s.span.SetAttributes(attribute.Int64("db.response.returned_rows", rows))
+	}
+	result := "ok"
+	if err != nil {
+		result = "error"
+		s.span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
+	}
+	gotel.End(s.span, err)
+	if s.observe != nil {
+		s.observe(ctx, s.operation, result, time.Since(s.started))
+	}
 }
 
 // SQLCName extracts a sqlc -- name: QueryName directive.

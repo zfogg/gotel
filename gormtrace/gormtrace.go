@@ -4,12 +4,14 @@ package gormtrace
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/zfogg/gotel"
 	"github.com/zfogg/gotel/sqltrace"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
@@ -30,9 +32,18 @@ type Config struct {
 	// Caller may return a stable simple operation name when the context does not
 	// carry one. sqltrace.CallerNamer constructs the common implementation.
 	Caller func() string
+	// Dialect selects SQL sanitization rules. It is inferred from System when
+	// empty and otherwise falls back to generic SQL.
+	Dialect sqltrace.Dialect
+	// Sanitize customizes the safe SQL template policy. Dialect is filled from
+	// the Dialect field when omitted.
+	Sanitize sqltrace.SanitizeOptions
+	// SpanKind defaults to client. INTERNAL is useful for embedded databases
+	// such as DuckDB that execute in the application process.
+	SpanKind trace.SpanKind
 	// Observe receives bounded operation/result values and elapsed time after
 	// each operation. It is suitable for application-owned metrics.
-	Observe func(context.Context, string, string, time.Duration)
+	Observe sqltrace.Observer
 }
 
 type plugin struct {
@@ -47,6 +58,15 @@ func New(config Config) gorm.Plugin {
 	}
 	if config.Scope == "" {
 		config.Scope = strings.ReplaceAll(strings.Trim(config.Namer.Prefix, "."), ".", "/")
+	}
+	if config.Dialect == "" {
+		config.Dialect = sqltrace.Dialect(strings.ToLower(config.System))
+	}
+	if config.Sanitize.Dialect == "" {
+		config.Sanitize = sqltrace.DefaultSanitizeOptions(config.Dialect)
+	}
+	if config.SpanKind == trace.SpanKindUnspecified {
+		config.SpanKind = trace.SpanKindClient
 	}
 	return &plugin{config: config, tracer: otel.Tracer(config.Scope)}
 }
@@ -102,9 +122,9 @@ func (p *plugin) before(op string) func(*gorm.DB) {
 			}
 		}
 		if name == "" {
-			name = p.config.Namer.Name(strings.Title(op)) //nolint:staticcheck // stable compatibility fallback
+			name = p.config.Namer.MustName(fallbackName(op))
 		}
-		ctx, span := p.tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient))
+		ctx, span := p.tracer.Start(ctx, name, trace.WithSpanKind(p.config.SpanKind))
 		db.Statement.Context = ctx
 		db.InstanceSet(p.config.Name+":state", state{span: span, started: time.Now(), op: op, name: name})
 	}
@@ -120,12 +140,17 @@ func (p *plugin) after(op string) func(*gorm.DB) {
 		if !ok {
 			return
 		}
-		metadata := sqltrace.Inspect(p.config.Namer, "", db.Statement.SQL.String(), db.Statement.Vars)
+		metadata := sqltrace.InspectWithOptions(p.config.Namer, "", db.Statement.SQL.String(), db.Statement.Vars, p.config.Sanitize)
 		// Preserve the name selected before GORM built SQL, but attach the final
 		// sanitized template and actual bind count.
 		attrs := metadata.Attributes(p.system(db), p.config.Namespace)
 		attrs = append(attrs, sqltrace.QuerySummaryKey.String(st.name))
-		st.span.SetAttributes(attrs...)
+		if db.Statement.Table != "" {
+			attrs = append(attrs, attribute.String("db.collection.name", db.Statement.Table))
+		}
+		if db.RowsAffected >= 0 {
+			attrs = append(attrs, attribute.Int64("db.response.returned_rows", db.RowsAffected))
+		}
 		result := "ok"
 		err := db.Error
 		if err == gorm.ErrRecordNotFound {
@@ -133,11 +158,32 @@ func (p *plugin) after(op string) func(*gorm.DB) {
 			result = "not_found"
 		} else if err != nil {
 			result = "error"
+			attrs = append(attrs, attribute.String("error.type", fmt.Sprintf("%T", err)))
 		}
+		st.span.SetAttributes(attrs...)
 		gotel.End(st.span, err)
 		if p.config.Observe != nil {
 			p.config.Observe(db.Statement.Context, op, result, time.Since(st.started))
 		}
+	}
+}
+
+func fallbackName(op string) string {
+	switch op {
+	case "query":
+		return "Query"
+	case "create":
+		return "Create"
+	case "update":
+		return "Update"
+	case "delete":
+		return "Delete"
+	case "row":
+		return "Row"
+	case "raw":
+		return "Raw"
+	default:
+		return "Unknown"
 	}
 }
 

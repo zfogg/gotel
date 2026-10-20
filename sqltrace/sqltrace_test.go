@@ -36,13 +36,45 @@ func TestSanitizeDialects(t *testing.T) {
 }
 
 func TestNamerContextAndSuppression(t *testing.T) {
-	n := Namer{Prefix: "spaniel.storage"}
+	n := MustNamer("spaniel.storage")
 	ctx := n.WithName(context.Background(), "DashboardLatency")
 	if got := NameFromContext(ctx); got != "spaniel.storage.DashboardLatency" {
 		t.Fatalf("name = %q", got)
 	}
 	if !TracingDisabled(WithoutTracing(ctx)) {
 		t.Fatal("tracing not disabled")
+	}
+}
+
+func TestNamerConstructionAndQualifiedParsing(t *testing.T) {
+	n, err := NewNamer("example.storage")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, input := range []string{"FindWidget", "example.storage.FindWidget"} {
+		if got, err := n.Parse(input); err != nil || got != "example.storage.FindWidget" {
+			t.Fatalf("Parse(%q) = %q, %v", input, got, err)
+		}
+	}
+	if _, err := NewNamer("bad-prefix.storage"); err == nil {
+		t.Fatal("invalid prefix accepted")
+	}
+}
+
+func TestInspectDialectReportsTruncationAndDualBindCount(t *testing.T) {
+	meta := InspectWithOptions(MustNamer("example.storage"), "Find", "SELECT résumé FROM accounts WHERE id = $1", []any{1}, SanitizeOptions{Dialect: DialectPostgreSQL, MaxQueryTextBytes: 10})
+	if !meta.QueryTextTruncated {
+		t.Fatal("truncation not reported")
+	}
+	attrs := meta.Attributes("postgresql", "example")
+	got := map[string]int64{}
+	for _, attr := range attrs {
+		if attr.Key == BindCountKey || attr.Key == ArgumentCountKey {
+			got[string(attr.Key)] = attr.Value.AsInt64()
+		}
+	}
+	if got[string(BindCountKey)] != 1 || got[string(ArgumentCountKey)] != 1 {
+		t.Fatalf("bind count attrs = %#v", got)
 	}
 }
 
