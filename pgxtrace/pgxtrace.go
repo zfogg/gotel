@@ -58,7 +58,9 @@ func (t *Tracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.Trac
 	if name == "" {
 		name = meta.Name
 	}
-	ctx, span := t.tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(meta.Attributes(t.config.System, t.config.Namespace)...))
+	attrs := meta.Attributes(t.config.System, t.config.Namespace)
+	attrs = append(attrs, sqltrace.QuerySummaryKey.String(name))
+	ctx, span := t.tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(attrs...))
 	return context.WithValue(ctx, spanKey{}, span)
 }
 
@@ -72,7 +74,7 @@ type copySpanKey struct{}
 func (t *Tracer) TraceCopyFromStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceCopyFromStartData) context.Context {
 	name := t.config.Namer.Name("CopyFrom")
 	ctx, span := t.tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(
-		sqltrace.SystemKey.String(t.config.System), sqltrace.NamespaceKey.String(t.config.Namespace),
+		sqltrace.SystemKey.String(t.config.System), sqltrace.LegacySystemKey.String(t.config.System), sqltrace.NamespaceKey.String(t.config.Namespace),
 		sqltrace.OperationKey.String("COPY"), sqltrace.QuerySummaryKey.String(name),
 		attribute.Int("db.query.column.count", len(data.ColumnNames)),
 	))

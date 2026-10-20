@@ -21,6 +21,9 @@ const (
 	ArgumentCountKey = attribute.Key("db.query.parameter.count")
 	// SystemKey identifies the database system, such as postgresql or duckdb.
 	SystemKey = attribute.Key("db.system.name")
+	// LegacySystemKey preserves db.system for collectors and dashboards built
+	// before the semantic-convention key moved to db.system.name.
+	LegacySystemKey = attribute.Key("db.system")
 	// NamespaceKey identifies the logical database name.
 	NamespaceKey = attribute.Key("db.namespace")
 	// OperationKey contains the SQL operation, such as SELECT or INSERT.
@@ -160,7 +163,7 @@ func Inspect(namer Namer, explicitName, statement string, args []any) Metadata {
 func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
 	attrs := []attribute.KeyValue{QuerySummaryKey.String(m.Name), ArgumentCountKey.Int(m.ArgumentCount)}
 	if system != "" {
-		attrs = append(attrs, SystemKey.String(system))
+		attrs = append(attrs, SystemKey.String(system), LegacySystemKey.String(system))
 	}
 	if namespace != "" {
 		attrs = append(attrs, NamespaceKey.String(namespace))
