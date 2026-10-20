@@ -117,11 +117,12 @@ func appendUnique(dst []string, values ...string) []string {
 }
 
 func (s *querySummary) absorb(child querySummary) {
-	if child.op != "SELECT" && child.op != "" && child.op != "SQL" {
+	if child.op != "SELECT" && child.op != "VALUES" && child.op != "" && child.op != "SQL" {
 		s.writes = appendUnique(s.writes, child.op+summaryTargets(child.targets))
 	}
 	s.reads = appendUnique(s.reads, child.reads...)
 	s.writes = appendUnique(s.writes, child.writes...)
+	s.functions = appendUnique(s.functions, child.functions...)
 }
 
 func summaryTargets(names []string) string {
@@ -223,7 +224,9 @@ func summarize(tokens []summaryToken, inherited map[string]querySummary, depth i
 	i := 0
 	if tokens[i].is("WITH") {
 		i++
+		recursive := false
 		if i < len(tokens) && tokens[i].is("RECURSIVE") {
+			recursive = true
 			i++
 		}
 		for i < len(tokens) {
@@ -250,7 +253,9 @@ func summarize(tokens []summaryToken, inherited map[string]querySummary, depth i
 			}
 			end := closingParen(tokens, i)
 			key := identifierKey(name)
-			ctes[key] = querySummary{} // recursive self-reference is not a physical table
+			if recursive {
+				ctes[key] = querySummary{} // recursive self-reference is not a physical table
+			}
 			def := summarize(tokens[i+1:end], ctes, depth+1)
 			ctes[key] = def
 			definitions = append(definitions, def)
@@ -301,6 +306,7 @@ func summarize(tokens []summaryToken, inherited map[string]querySummary, depth i
 	}
 	for i = start + 1; i < len(tokens); {
 		t := tokens[i]
+		relationGroup := expectRelation && t.text == "("
 		if t.text == ";" {
 			break
 		}
@@ -341,6 +347,12 @@ func summarize(tokens []summaryToken, inherited map[string]querySummary, depth i
 		if t.text == "(" {
 			end := closingParen(tokens, i)
 			child := summarize(tokens[i+1:end], ctes, depth+1)
+			if child.op == "" && relationGroup {
+				// A parenthesized join tree is a relation, not an expression.
+				group := []summaryToken{{text: "SELECT", word: true}, {text: "FROM", word: true}}
+				group = append(group, tokens[i+1:end]...)
+				child = summarize(group, ctes, depth+1)
+			}
 			if child.op != "" {
 				s.absorb(child)
 			} else {
@@ -375,7 +387,7 @@ func summarize(tokens []summaryToken, inherited map[string]querySummary, depth i
 	}
 	for _, def := range definitions {
 		// Even an unreferenced data-modifying CTE executes.
-		if def.op != "SELECT" {
+		if def.op != "SELECT" && def.op != "VALUES" {
 			s.absorb(def)
 		}
 	}

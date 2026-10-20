@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.2
+
+- Respect non-recursive CTE definition scope, summarize parenthesized join
+  groups, and retain functions reached through CTEs and scalar subqueries.
+- Accept platform line endings in the SQL corpus snapshot.
+
 ## v0.4.1
 
 - Preserve Unknown span naming for empty SQL and operation-name fallbacks for
