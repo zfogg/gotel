@@ -47,7 +47,7 @@ func TestQueryTracerUsesSQLCNameAndSafeAttributes(t *testing.T) {
 	if attrs["gotel.db.query.bind_count"] != int64(1) {
 		t.Fatalf("parameter count = %#v", attrs["gotel.db.query.bind_count"])
 	}
-	if attrs["db.query.summary"] != "SELECT widgets" {
+	if attrs["db.query.summary"] != "SELECT … FROM widgets WHERE …" {
 		t.Fatalf("summary = %#v", attrs["db.query.summary"])
 	}
 }
@@ -66,7 +66,7 @@ func TestHookSummariesAreIndependentOfNames(t *testing.T) {
 	tracer.TraceCopyFromEnd(ctx, nil, pgx.TraceCopyFromEndData{})
 	ctx = tracer.TracePrepareStart(context.Background(), nil, pgx.TracePrepareStartData{SQL: "SELECT * FROM bars", Name: "prepared"})
 	tracer.TracePrepareEnd(ctx, nil, pgx.TracePrepareEndData{})
-	for i, want := range []string{"SELECT accounts", "COPY \"public\".\"bars\"", "SELECT bars"} {
+	for i, want := range []string{"SELECT … FROM accounts", "COPY \"public\".\"bars\"", "SELECT … FROM bars"} {
 		got := ""
 		for _, attr := range recorder.Ended()[i].Attributes() {
 			if attr.Key == sqltrace.QuerySummaryKey {

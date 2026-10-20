@@ -50,20 +50,35 @@ current semantic-convention attributes only: migrate `db.system` to
 `db.system.name` and `db.query.parameter.count` to
 `gotel.db.query.bind_count` before upgrading.
 
-Since v0.4, `db.query.summary` describes the SQL instead of repeating the span
-name. For example, a span named `stonkpile.storage.ListOutcomesForStrategyByHorizon`
-has summary `SELECT signal_outcomes, signals`. CTEs (including recursive and
-materialized CTEs), joins, lateral/scalar subqueries, set operations, windowed
-queries and INSERT/UPDATE/DELETE/MERGE source queries resolve to physical tables.
-Data-modifying CTEs retain their writes: `SELECT signals; INSERT signals`.
+Since v0.5, `db.query.summary` is a structural SQL skeleton, independent of span
+names. For example: `SELECT … FROM signals LEFT JOIN LATERAL (SELECT … FROM
+bars WHERE … LIMIT 1) WHERE … ORDER BY … LIMIT ?`. Recursive/materialized CTE
+definitions and references stay scoped instead of being flattened into tables.
+JOIN kinds, scalar/EXISTS subqueries, UNION/INTERSECT/EXCEPT (including ALL),
+grouping, ordering, window modifiers, writes, conflicts and locking stay visible.
 Function-only calls become `SELECT prepare_signal_grading`.
 
-Summaries omit predicates, values, projection lists, aliases and sqlc names.
-They preserve quoted/schema-qualified identifiers, show at most five targets
-per operation, and cap the entire summary at 256 UTF-8 bytes. They are computed
+`…` means omitted expressions (including projection lists, predicates and join
+conditions); `?` means a dynamic row bound. Standalone integer LIMIT/OFFSET/FETCH
+counts, including nested `LIMIT 1`, are retained. Parameter values are never
+interpolated, and computed bounds become `?`. This policy is deliberately
+different from `db.query.text`, which still sanitizes **all** numeric literals.
+Identifiers remain visible, so do not embed sensitive data in identifier names.
+
+Summaries omit aliases and sqlc names, preserve quoted/schema-qualified
+identifiers and repeated joins, and cap the result at 4096 UTF-8 bytes. They are computed
 from the complete sanitized statement before query-text truncation, cached with
 the other metadata, and remain available when `OmitQueryText` is enabled.
 They describe SQL structure, not execution plans or tables accessed inside a
 stored function. Unknown syntax falls back to a recognized operation or `SQL`.
 Connection and batch container spans do not emit a fictitious query summary;
 batch query events and prepared statements carry their actual SQL summaries.
+
+Inspect the largest *runtime* sqlc statements without executing the application:
+
+```sh
+go run ./cmd/sqlsummary -dir ../stonkpile/internal/db -largest 10
+```
+
+Use `-json` for structured output and `-out report.txt` to save the report. Ranking
+is by generated SQL byte size, not source file size or estimated query cost.

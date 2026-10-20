@@ -14,32 +14,32 @@ var updateSummaries = flag.Bool("update-summaries", false, "regenerate the revie
 
 func TestSummary(t *testing.T) {
 	cases := []struct{ query, want string }{
-		{"-- name: FindAccount :one\nSELECT id FROM accounts WHERE token='secret'", "SELECT accounts"},
-		{"SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)", "SELECT accounts, holdings, orders"},
-		{"WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id>$1), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id", "DELETE signals SELECT signals"},
-		{"WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree", "SELECT nodes"},
-		{"WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts", "SELECT accounts"},
-		{"WITH requested(id) AS (VALUES (1),(2)) SELECT * FROM requested JOIN accounts USING(id)", "SELECT accounts"},
-		{"SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)", "SELECT accounts, holdings"},
-		{"WITH lock_result AS (SELECT pg_advisory_lock($1)) SELECT * FROM lock_result", "SELECT pg_advisory_lock"},
-		{"WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON true", "SELECT holdings, public.accounts"},
-		{"INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id", "INSERT results SELECT signals"},
-		{"INSERT INTO results(id) VALUES($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id", "INSERT results"},
-		{"WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone", "INSERT archive; DELETE events"},
-		{"WITH changed AS (UPDATE accounts SET active=true RETURNING *) SELECT * FROM changed", "SELECT; UPDATE accounts"},
-		{"SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts", "SELECT accounts, archived_accounts, blocked_accounts"},
-		{"SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price>0) FROM bars", "SELECT bars"},
+		{"-- name: FindAccount :one\nSELECT id FROM accounts WHERE token='secret'", "SELECT … FROM accounts WHERE …"},
+		{"SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)", "SELECT … FROM accounts JOIN holdings WHERE … EXISTS (SELECT … FROM orders WHERE …)"},
+		{"WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id>$1), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id", "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), picked AS (SELECT … FROM candidates) DELETE FROM signals USING picked WHERE …"},
+		{"WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree", "WITH RECURSIVE tree AS (SELECT … FROM nodes UNION ALL SELECT … FROM nodes JOIN tree) SELECT … FROM tree"},
+		{"WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts", "WITH accounts AS (SELECT … FROM accounts) SELECT … FROM accounts"},
+		{"WITH requested(id) AS (VALUES (1),(2)) SELECT * FROM requested JOIN accounts USING(id)", "WITH requested AS (VALUES …) SELECT … FROM requested JOIN accounts"},
+		{"SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)", "SELECT … FROM (accounts JOIN holdings)"},
+		{"WITH lock_result AS (SELECT pg_advisory_lock($1)) SELECT * FROM lock_result", "WITH lock_result AS (SELECT pg_advisory_lock) SELECT … FROM lock_result"},
+		{"WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON true", "WITH x AS (SELECT … FROM public.accounts) SELECT … FROM (WITH x AS (SELECT … FROM holdings) SELECT … FROM x) JOIN x"},
+		{"INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id", "INSERT INTO results SELECT … FROM signals ON CONFLICT DO UPDATE SET … RETURNING …"},
+		{"INSERT INTO results(id) VALUES($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id", "INSERT INTO results VALUES … ON CONFLICT DO UPDATE SET … WHERE …"},
+		{"WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone", "WITH gone AS (DELETE FROM events RETURNING …) INSERT INTO archive SELECT … FROM gone"},
+		{"WITH changed AS (UPDATE accounts SET active=true RETURNING *) SELECT * FROM changed", "WITH changed AS (UPDATE accounts SET … RETURNING …) SELECT … FROM changed"},
+		{"SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts", "SELECT … FROM accounts UNION SELECT … FROM archived_accounts EXCEPT SELECT … FROM blocked_accounts"},
+		{"SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price>0) FROM bars", "SELECT … OVER (…) FILTER (…) FROM bars"},
 		{"SELECT prepare_signal_grading($1, $2, $3, $4)", "SELECT prepare_signal_grading"},
 		{"SELECT public.prepare_signal_grading($1, $2)", "SELECT public.prepare_signal_grading"},
 		{"SELECT pg_try_advisory_lock(hashtextextended($1,0))::bool", "SELECT pg_try_advisory_lock"},
-		{"SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT 1) b ON true", "SELECT signals, bars"},
-		{"UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id", "UPDATE accounts SELECT ledger, users"},
-		{"MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity", "MERGE inventory SELECT changes"},
-		{"EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars", "EXPLAIN SELECT bars"},
-		{"SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true", "SELECT \"Reporting\".\"Order History\", \"JOIN\""},
-		{"SELECT * FROM a, b, c WHERE a.id=b.id", "SELECT a, b, c"},
-		{"SELECT * FROM read_parquet('secret/path')", "SELECT read_parquet"},
-		{"SELECT 'secret FROM passwords' AS value", "SELECT"},
+		{"SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT 1) b ON true", "SELECT … FROM signals JOIN LATERAL (SELECT … FROM bars WHERE … LIMIT 1)"},
+		{"UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id", "UPDATE accounts SET … (SELECT … FROM ledger) FROM users WHERE …"},
+		{"MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity", "MERGE INTO inventory USING changes WHEN MATCHED THEN UPDATE SET …"},
+		{"EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars", "EXPLAIN ANALYZE SELECT … FROM bars"},
+		{"SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true", "SELECT … FROM \"Reporting\".\"Order History\" JOIN \"JOIN\""},
+		{"SELECT * FROM a, b, c WHERE a.id=b.id", "SELECT … FROM a, b, c WHERE …"},
+		{"SELECT * FROM read_parquet('secret/path')", "SELECT … FROM read_parquet(…)"},
+		{"SELECT 'secret FROM passwords' AS value", "SELECT …"},
 		{"SELECT 'unterminated", "SQL"},
 		{"EXPLAIN (", "EXPLAIN"},
 		{"COPY \"public\".\"bars\" FROM STDIN", "COPY \"public\".\"bars\""},
@@ -66,7 +66,7 @@ func TestSummaryPoliciesAndBounds(t *testing.T) {
 	options := DefaultSanitizeOptions(DialectPostgreSQL)
 	options.OmitQueryText = true
 	meta := InspectWithOptions(MustNamer("example.storage"), "", query, []any{"secret"}, options)
-	if meta.Summary != "SELECT bars" || meta.Operation != "SELECT" || meta.SanitizedSQL != "" || meta.Name != "example.storage.FindBars" {
+	if meta.Summary != "WITH recent AS (SELECT … FROM bars WHERE …) SELECT … FROM recent" || meta.Operation != "SELECT" || meta.SanitizedSQL != "" || meta.Name != "example.storage.FindBars" {
 		t.Fatalf("%+v", meta)
 	}
 	options.OmitQueryText = false
@@ -74,11 +74,11 @@ func TestSummaryPoliciesAndBounds(t *testing.T) {
 	if m := InspectWithOptions(MustNamer("example.storage"), "", query, nil, options); m.Summary != meta.Summary {
 		t.Fatalf("summary depends on query text truncation: %+v", m)
 	}
-	summary := Summary(DialectPostgreSQL, "SELECT * FROM "+strings.Repeat("表", 150))
-	if len(summary) > 256 || !utf8.ValidString(summary) {
+	summary := Summary(DialectPostgreSQL, "SELECT * FROM "+strings.Repeat("表", 2000))
+	if len(summary) > DefaultMaxSummaryBytes || !utf8.ValidString(summary) || !strings.HasSuffix(summary, "…") {
 		t.Fatalf("unbounded/invalid summary: %q", summary)
 	}
-	if got := Summary(DialectGeneric, "SELECT * FROM a,b,c,d,e,f,g"); got != "SELECT a, b, c, d, e, …" {
+	if got := Summary(DialectGeneric, "SELECT * FROM a,b,c,d,e,f,g"); got != "SELECT … FROM a, b, c, d, e, f, g" {
 		t.Fatal(got)
 	}
 }
@@ -108,8 +108,27 @@ func TestStonkpileQuerySummaries(t *testing.T) {
 			query := string(data[match[0]:end])
 			name := string(data[match[2]:match[3]])
 			summary := Summary(DialectPostgreSQL, query)
-			if summary == "SQL" || summary == "SELECT" || strings.HasPrefix(summary, "WITH") {
+			if summary == "SQL" || summary == "SELECT" {
 				t.Errorf("%s: unhelpful summary %q", name, summary)
+			}
+			// Independently check structural coverage before accepting any snapshot.
+			safe, ok := SanitizeWithOptions(query, SanitizeOptions{Dialect: DialectPostgreSQL, MaxQueryTextBytes: -1})
+			if !ok {
+				t.Fatalf("%s: invalid corpus SQL", name)
+			}
+			for _, keyword := range []string{"JOIN", "LATERAL", "LIMIT", "OFFSET", "UNION", "INTERSECT", "EXCEPT"} {
+				countKeyword := func(sql string) int {
+					n := 0
+					for _, token := range summaryTokens(sql) {
+						if token.is(keyword) {
+							n++
+						}
+					}
+					return n
+				}
+				if got, want := countKeyword(summary), countKeyword(safe.Text); got != want {
+					t.Errorf("%s: lost %s structure: got %d, want %d: %s", name, keyword, got, want, summary)
+				}
 			}
 			output.WriteString(filepath.Base(file) + " / " + name + " => " + summary + "\n")
 			count++
@@ -140,7 +159,7 @@ func FuzzSummary(f *testing.F) {
 		}
 		for _, d := range []Dialect{DialectGeneric, DialectPostgreSQL, DialectDuckDB, DialectSQLite, DialectMySQL} {
 			got := Summary(d, query)
-			if got == "" || len(got) > 256 || (utf8.ValidString(query) && !utf8.ValidString(got)) {
+			if got == "" || len(got) > DefaultMaxSummaryBytes || (utf8.ValidString(query) && !utf8.ValidString(got)) {
 				t.Fatalf("%s: invalid summary %q", d, got)
 			}
 		}

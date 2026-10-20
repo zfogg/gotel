@@ -52,6 +52,13 @@ func SanitizeDialect(dialect Dialect, statement string) (SanitizedQuery, bool) {
 // placeholders with ?. It recognizes PostgreSQL, DuckDB, SQLite, and MySQL
 // quoting forms and fails closed on malformed or ambiguous quoted content.
 func SanitizeWithOptions(statement string, options SanitizeOptions) (SanitizedQuery, bool) {
+	return sanitizeWithOptions(statement, options, false)
+}
+
+// sanitizeWithOptions can retain numeric tokens for the structural summarizer.
+// That private mode is never used for db.query.text; the summarizer emits only
+// standalone integer row bounds and discards all other numeric expressions.
+func sanitizeWithOptions(statement string, options SanitizeOptions, summaryNumbers bool) (SanitizedQuery, bool) {
 	if options.OmitQueryText {
 		return SanitizedQuery{}, true
 	}
@@ -141,8 +148,13 @@ func SanitizeWithOptions(statement string, options SanitizeOptions) (SanitizedQu
 			continue
 		}
 		if numericStart(statement, i) {
-			out.WriteByte('?')
-			i = numericEnd(statement, i)
+			end := numericEnd(statement, i)
+			if summaryNumbers {
+				out.WriteString(statement[i:end])
+			} else {
+				out.WriteByte('?')
+			}
+			i = end
 			continue
 		}
 		if isIdentStart(statement[i]) {

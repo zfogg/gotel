@@ -361,12 +361,7 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	cached, ok := inspections.get(key)
 	if !ok {
 		cached.summary = Summary(options.Dialect, statement)
-		cached.operation = strings.Fields(cached.summary)[0]
-		if cached.operation == "SQL" {
-			// Preserve Unknown naming for empty input and the historical verb
-			// fallback for statements outside the structural summary grammar.
-			cached.operation = Operation(statement)
-		}
+		cached.operation = statementOperation(options.Dialect, statement)
 		cached.simple = SQLCName(statement)
 		sanitized, safe := SanitizeWithOptions(statement, options)
 		if safe {
@@ -499,18 +494,39 @@ func SQLCName(statement string) string {
 	return ""
 }
 
-// Operation returns the first SQL keyword after leading comments.
+// Operation returns the outer SQL operation, looking past CTE definitions.
 func Operation(statement string) string {
-	clean, _ := stripLeadingComments(statement)
-	fields := strings.Fields(clean)
-	if len(fields) == 0 {
+	return statementOperation(DialectGeneric, statement)
+}
+
+// statementOperation classifies CTE statements independently of rendered summaries.
+func statementOperation(dialect Dialect, statement string) string {
+	safe, ok := SanitizeWithOptions(statement, SanitizeOptions{Dialect: dialect, MaxQueryTextBytes: -1})
+	if !ok {
 		return ""
 	}
-	verb := strings.TrimFunc(fields[0], func(r rune) bool { return !unicode.IsLetter(r) })
-	if verb == "" {
+	tokens := summaryTokens(safe.Text)
+	for len(tokens) > 0 && tokens[0].text == "(" {
+		tokens = tokens[1:]
+	}
+	if len(tokens) == 0 || !tokens[0].word {
 		return ""
 	}
-	return strings.ToUpper(verb)
+	if !tokens[0].is("WITH") {
+		return strings.ToUpper(tokens[0].text)
+	}
+	for i := 1; i < len(tokens); i++ {
+		if tokens[i].text == "(" {
+			i = closingParen(tokens, i)
+			continue
+		}
+		for _, op := range []string{"SELECT", "INSERT", "UPDATE", "DELETE", "MERGE", "VALUES"} {
+			if tokens[i].is(op) {
+				return op
+			}
+		}
+	}
+	return "WITH"
 }
 
 func normalizeSimpleName(value string) string {

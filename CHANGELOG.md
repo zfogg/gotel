@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.5.0
+
+- Render scoped CTE definitions, nested queries, typed/LATERAL joins and set
+  operations instead of flattening them into a list of physical tables.
+- Retain LIMIT/OFFSET/FETCH bounds at their original scope: fixed integer counts
+  remain visible; placeholders and expressions become `?`, without interpolation.
+- Include grouping, ordering, window modifiers, conflicts, writes and locking;
+  raise the structural summary budget to 4096 UTF-8 bytes.
+- Keep query-text sanitization unchanged and classify outer operations separately.
+- Add a sqlsummary CLI for ranking and summarizing generated sqlc statements.
+
 ## v0.4.2
 
 - Respect non-recursive CTE definition scope, summarize parenthesized join
