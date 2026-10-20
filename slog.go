@@ -28,6 +28,7 @@ func NewFanoutHandler(handlers ...slog.Handler) *FanoutHandler {
 	return &FanoutHandler{handlers: filtered}
 }
 
+// Enabled reports whether any child handler accepts the requested level.
 func (h *FanoutHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	for _, handler := range h.handlers {
 		if handler.Enabled(ctx, level) {
@@ -37,6 +38,8 @@ func (h *FanoutHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return false
 }
 
+// Handle adds trace correlation and forwards a cloned record to each enabled
+// child handler, joining any errors they return.
 func (h *FanoutHandler) Handle(ctx context.Context, record slog.Record) error {
 	if sc := trace.SpanContextFromContext(ctx); sc.IsValid() {
 		record.AddAttrs(slog.String("trace_id", sc.TraceID().String()), slog.String("span_id", sc.SpanID().String()))
@@ -50,6 +53,7 @@ func (h *FanoutHandler) Handle(ctx context.Context, record slog.Record) error {
 	return errors.Join(errs...)
 }
 
+// WithAttrs returns a fanout whose child handlers carry attrs.
 func (h *FanoutHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	handlers := make([]slog.Handler, len(h.handlers))
 	for i, handler := range h.handlers {
@@ -58,6 +62,7 @@ func (h *FanoutHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &FanoutHandler{handlers: handlers}
 }
 
+// WithGroup returns a fanout whose child handlers use name as their group.
 func (h *FanoutHandler) WithGroup(name string) slog.Handler {
 	handlers := make([]slog.Handler, len(h.handlers))
 	for i, handler := range h.handlers {

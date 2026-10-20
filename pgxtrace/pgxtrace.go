@@ -44,6 +44,8 @@ func New(config Config) *Tracer {
 
 type spanKey struct{}
 
+// TraceQueryStart starts a client span named from an explicit context name,
+// sqlc annotation, or bounded SQL operation and saves it in the returned context.
 func (t *Tracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	if sqltrace.TracingDisabled(ctx) {
 		return ctx
@@ -64,6 +66,8 @@ func (t *Tracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.Trac
 	return context.WithValue(ctx, spanKey{}, span)
 }
 
+// TraceQueryEnd records the query result and ends the span started by
+// TraceQueryStart.
 func (t *Tracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
 	span, _ := ctx.Value(spanKey{}).(trace.Span)
 	gotel.End(span, data.Err)
@@ -71,6 +75,7 @@ func (t *Tracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQ
 
 type copySpanKey struct{}
 
+// TraceCopyFromStart starts a client span for a PostgreSQL COPY operation.
 func (t *Tracer) TraceCopyFromStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceCopyFromStartData) context.Context {
 	name := t.config.Namer.Name("CopyFrom")
 	ctx, span := t.tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(
@@ -81,6 +86,7 @@ func (t *Tracer) TraceCopyFromStart(ctx context.Context, _ *pgx.Conn, data pgx.T
 	return context.WithValue(ctx, copySpanKey{}, span)
 }
 
+// TraceCopyFromEnd records the COPY result and ends its client span.
 func (t *Tracer) TraceCopyFromEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceCopyFromEndData) {
 	span, _ := ctx.Value(copySpanKey{}).(trace.Span)
 	gotel.End(span, data.Err)
