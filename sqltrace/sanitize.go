@@ -18,6 +18,9 @@ type SanitizeOptions struct {
 	MaxQueryTextBytes int
 	// CollapseInLists replaces lists containing only placeholders with IN (?).
 	CollapseInLists bool
+	// OmitQueryText disables db.query.text collection entirely. Naming,
+	// operation detection, and bind counts remain available.
+	OmitQueryText bool
 }
 
 // SanitizedQuery is safe SQL template metadata.
@@ -49,6 +52,9 @@ func SanitizeDialect(dialect Dialect, statement string) (SanitizedQuery, bool) {
 // placeholders with ?. It recognizes PostgreSQL, DuckDB, SQLite, and MySQL
 // quoting forms and fails closed on malformed or ambiguous quoted content.
 func SanitizeWithOptions(statement string, options SanitizeOptions) (SanitizedQuery, bool) {
+	if options.OmitQueryText {
+		return SanitizedQuery{}, true
+	}
 	if options.Dialect == "" {
 		options.Dialect = DialectGeneric
 	}

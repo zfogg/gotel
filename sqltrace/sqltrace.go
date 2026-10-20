@@ -3,6 +3,7 @@
 package sqltrace
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 	"runtime"
@@ -21,10 +22,6 @@ const (
 	QueryTextKey = attribute.Key("db.query.text")
 	// QuerySummaryKey contains the stable application-owned operation name.
 	QuerySummaryKey = attribute.Key("db.query.summary")
-	// ArgumentCountKey contains the number of bind arguments supplied at runtime.
-	// Deprecated: use BindCountKey. This key is emitted during the v0.2
-	// transition for dashboards built against earlier gotel releases.
-	ArgumentCountKey = attribute.Key("db.query.parameter.count")
 	// BindCountKey contains the number of bind arguments without colliding with
 	// db.query.parameter.<key>, which is reserved for actual parameter values.
 	BindCountKey = attribute.Key("gotel.db.query.bind_count")
@@ -32,9 +29,6 @@ const (
 	QueryTextTruncatedKey = attribute.Key("gotel.db.query.truncated")
 	// SystemKey identifies the database system, such as postgresql or duckdb.
 	SystemKey = attribute.Key("db.system.name")
-	// LegacySystemKey preserves db.system for collectors and dashboards built
-	// before the semantic-convention key moved to db.system.name.
-	LegacySystemKey = attribute.Key("db.system")
 	// NamespaceKey identifies the logical database name.
 	NamespaceKey = attribute.Key("db.namespace")
 	// OperationKey contains the SQL operation, such as SELECT or INSERT.
@@ -155,6 +149,69 @@ func isASCIILetter(c byte) bool { return c >= 'a' && c <= 'z' || c >= 'A' && c <
 // receiver prefix. The returned name is suitable for Namer.Name.
 
 var callerNames sync.Map
+
+const defaultInspectionCacheSize = 1024
+
+type inspectionCacheKey struct {
+	statement string
+	dialect   Dialect
+	maxBytes  int
+	collapse  bool
+	omit      bool
+}
+
+type inspectionCacheValue struct {
+	operation string
+	simple    string
+	sanitized SanitizedQuery
+}
+
+type inspectionCacheEntry struct {
+	key   inspectionCacheKey
+	value inspectionCacheValue
+}
+
+type inspectionCache struct {
+	mu       sync.Mutex
+	capacity int
+	entries  map[inspectionCacheKey]*list.Element
+	order    *list.List
+}
+
+var inspections = newInspectionCache(defaultInspectionCacheSize)
+
+func newInspectionCache(capacity int) *inspectionCache {
+	return &inspectionCache{capacity: capacity, entries: make(map[inspectionCacheKey]*list.Element), order: list.New()}
+}
+
+func (c *inspectionCache) get(key inspectionCacheKey) (inspectionCacheValue, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	element, ok := c.entries[key]
+	if !ok {
+		return inspectionCacheValue{}, false
+	}
+	c.order.MoveToFront(element)
+	return element.Value.(inspectionCacheEntry).value, true
+}
+
+func (c *inspectionCache) put(key inspectionCacheKey, value inspectionCacheValue) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if element, ok := c.entries[key]; ok {
+		element.Value = inspectionCacheEntry{key: key, value: value}
+		c.order.MoveToFront(element)
+		return
+	}
+	element := c.order.PushFront(inspectionCacheEntry{key: key, value: value})
+	c.entries[key] = element
+	if c.order.Len() <= c.capacity {
+		return
+	}
+	oldest := c.order.Back()
+	delete(c.entries, oldest.Value.(inspectionCacheEntry).key)
+	c.order.Remove(oldest)
+}
 
 // CallerConfig controls source-owned fallback query names.
 type CallerConfig struct {
@@ -291,14 +348,31 @@ func InspectDialect(namer Namer, explicitName, statement string, args []any, dia
 
 // InspectWithOptions extracts safe metadata using an application policy.
 func InspectWithOptions(namer Namer, explicitName, statement string, args []any, options SanitizeOptions) Metadata {
-	operation := Operation(statement)
+	if options.Dialect == "" {
+		options.Dialect = DialectGeneric
+	}
+	if options.MaxQueryTextBytes == 0 {
+		options.MaxQueryTextBytes = DefaultMaxQueryTextBytes
+	}
+	key := inspectionCacheKey{statement: statement, dialect: options.Dialect, maxBytes: options.MaxQueryTextBytes, collapse: options.CollapseInLists, omit: options.OmitQueryText}
+	cached, ok := inspections.get(key)
+	if !ok {
+		cached.operation = Operation(statement)
+		cached.simple = SQLCName(statement)
+		sanitized, safe := SanitizeWithOptions(statement, options)
+		if safe {
+			cached.sanitized = sanitized
+		}
+		inspections.put(key, cached)
+	}
+	operation := cached.operation
 	simple := strings.TrimSpace(explicitName)
 	qualified := ""
 	if simple != "" {
 		qualified, _ = namer.Parse(simple)
 	}
 	if simple == "" {
-		simple = SQLCName(statement)
+		simple = cached.simple
 	}
 	if simple == "" {
 		simple = operation
@@ -309,18 +383,14 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	if qualified == "" {
 		qualified = namer.Name(normalizeSimpleName(simple))
 	}
-	sanitized, safe := SanitizeWithOptions(statement, options)
-	if !safe {
-		sanitized = SanitizedQuery{}
-	}
-	return Metadata{Name: qualified, Operation: strings.ToUpper(operation), SanitizedSQL: sanitized.Text, QueryTextTruncated: sanitized.Truncated, ArgumentCount: len(args)}
+	return Metadata{Name: qualified, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args)}
 }
 
 // Attributes returns standard database attributes plus safe query metadata.
 func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
-	attrs := []attribute.KeyValue{QuerySummaryKey.String(m.Name), BindCountKey.Int(m.ArgumentCount), ArgumentCountKey.Int(m.ArgumentCount)}
+	attrs := []attribute.KeyValue{QuerySummaryKey.String(m.Name), BindCountKey.Int(m.ArgumentCount)}
 	if system != "" {
-		attrs = append(attrs, SystemKey.String(system), LegacySystemKey.String(system))
+		attrs = append(attrs, SystemKey.String(system))
 	}
 	if namespace != "" {
 		attrs = append(attrs, NamespaceKey.String(namespace))
@@ -369,7 +439,11 @@ func StartSpan(ctx context.Context, config SpanConfig) (context.Context, *DBSpan
 	if TracingDisabled(ctx) || config.Tracer == nil {
 		return ctx, &DBSpan{}
 	}
-	meta := InspectDialect(config.Namer, config.Name, config.Statement, config.Args, config.Dialect)
+	name := NameFromContext(ctx)
+	if name == "" {
+		name = config.Name
+	}
+	meta := InspectDialect(config.Namer, name, config.Statement, config.Args, config.Dialect)
 	kind := config.Kind
 	if kind == trace.SpanKindUnspecified {
 		kind = trace.SpanKindClient

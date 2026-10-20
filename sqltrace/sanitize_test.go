@@ -77,13 +77,33 @@ func FuzzSanitizeDoesNotRetainQuotedPayload(f *testing.F) {
 		if payload == "" || strings.ContainsAny(payload, "'\\") || !utf8.ValidString(payload) {
 			t.Skip()
 		}
-		query := "SELECT '" + payload + "'"
-		got, ok := SanitizeDialect(DialectPostgreSQL, query)
-		if !ok {
-			t.Fatalf("rejected generated quoted literal %q", query)
-		}
-		if got.Text != "SELECT ?" {
-			t.Fatalf("sanitized SQL retained structure from payload %q in %q", payload, got.Text)
+		for _, dialect := range []Dialect{DialectGeneric, DialectPostgreSQL, DialectDuckDB, DialectSQLite, DialectMySQL} {
+			query := "SELECT '" + payload + "'"
+			got, ok := SanitizeDialect(dialect, query)
+			if !ok {
+				t.Fatalf("%s rejected generated quoted literal %q", dialect, query)
+			}
+			if got.Text != "SELECT ?" {
+				t.Fatalf("%s sanitizer retained structure from payload %q in %q", dialect, payload, got.Text)
+			}
 		}
 	})
+}
+
+func TestSanitizeCanOmitQueryText(t *testing.T) {
+	got, ok := SanitizeWithOptions("SELECT 'secret'", SanitizeOptions{Dialect: DialectPostgreSQL, OmitQueryText: true})
+	if !ok || got.Text != "" || got.Truncated {
+		t.Fatalf("result = %#v, ok = %v", got, ok)
+	}
+}
+
+func BenchmarkSanitizeDialects(b *testing.B) {
+	statement := "SELECT id, name FROM widgets WHERE tenant_id = $1 AND status IN ('open', 'closed') ORDER BY created_at DESC LIMIT 25"
+	for _, dialect := range []Dialect{DialectPostgreSQL, DialectDuckDB, DialectSQLite, DialectMySQL} {
+		b.Run(string(dialect), func(b *testing.B) {
+			for b.Loop() {
+				_, _ = SanitizeDialect(dialect, statement)
+			}
+		})
+	}
 }

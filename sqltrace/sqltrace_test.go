@@ -61,7 +61,7 @@ func TestNamerConstructionAndQualifiedParsing(t *testing.T) {
 	}
 }
 
-func TestInspectDialectReportsTruncationAndDualBindCount(t *testing.T) {
+func TestInspectDialectReportsTruncationAndBindCount(t *testing.T) {
 	meta := InspectWithOptions(MustNamer("example.storage"), "Find", "SELECT résumé FROM accounts WHERE id = $1", []any{1}, SanitizeOptions{Dialect: DialectPostgreSQL, MaxQueryTextBytes: 10})
 	if !meta.QueryTextTruncated {
 		t.Fatal("truncation not reported")
@@ -69,11 +69,11 @@ func TestInspectDialectReportsTruncationAndDualBindCount(t *testing.T) {
 	attrs := meta.Attributes("postgresql", "example")
 	got := map[string]int64{}
 	for _, attr := range attrs {
-		if attr.Key == BindCountKey || attr.Key == ArgumentCountKey {
+		if attr.Key == BindCountKey {
 			got[string(attr.Key)] = attr.Value.AsInt64()
 		}
 	}
-	if got[string(BindCountKey)] != 1 || got[string(ArgumentCountKey)] != 1 {
+	if got[string(BindCountKey)] != 1 {
 		t.Fatalf("bind count attrs = %#v", got)
 	}
 }
@@ -83,6 +83,40 @@ func TestInspectPreservesQualifiedExplicitName(t *testing.T) {
 	meta := InspectDialect(namer, "example.storage.FindWidget", "SELECT $1", []any{1}, DialectPostgreSQL)
 	if meta.Name != "example.storage.FindWidget" {
 		t.Fatalf("name = %q", meta.Name)
+	}
+}
+
+func TestInspectOmitsQueryTextButKeepsMetadata(t *testing.T) {
+	meta := InspectWithOptions(MustNamer("example.storage"), "FindWidget", "SELECT * FROM widgets WHERE token = $1", []any{"secret"}, SanitizeOptions{Dialect: DialectPostgreSQL, OmitQueryText: true})
+	if meta.Name != "example.storage.FindWidget" || meta.Operation != "SELECT" || meta.ArgumentCount != 1 || meta.SanitizedSQL != "" {
+		t.Fatalf("metadata = %#v", meta)
+	}
+	for _, attr := range meta.Attributes("postgresql", "example") {
+		if attr.Key == QueryTextKey {
+			t.Fatalf("query text attribute emitted: %#v", attr)
+		}
+	}
+}
+
+func TestInspectionCacheIsBounded(t *testing.T) {
+	cache := newInspectionCache(2)
+	for _, statement := range []string{"SELECT 1", "SELECT 2", "SELECT 3"} {
+		key := inspectionCacheKey{statement: statement}
+		cache.put(key, inspectionCacheValue{operation: "SELECT"})
+	}
+	if cache.order.Len() != 2 || len(cache.entries) != 2 {
+		t.Fatalf("cache sizes = %d, %d", cache.order.Len(), len(cache.entries))
+	}
+	if _, ok := cache.get(inspectionCacheKey{statement: "SELECT 1"}); ok {
+		t.Fatal("least recently used entry was not evicted")
+	}
+}
+
+func BenchmarkInspectCached(b *testing.B) {
+	namer := MustNamer("example.storage")
+	statement := "-- name: FindWidgets :many\nSELECT * FROM widgets WHERE tenant_id = $1 AND status = $2"
+	for b.Loop() {
+		_ = InspectDialect(namer, "", statement, []any{1, "active"}, DialectPostgreSQL)
 	}
 }
 

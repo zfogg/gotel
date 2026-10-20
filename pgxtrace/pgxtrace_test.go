@@ -37,14 +37,14 @@ func TestQueryTracerUsesSQLCNameAndSafeAttributes(t *testing.T) {
 		switch string(attr.Key) {
 		case "db.query.text":
 			attrs[string(attr.Key)] = attr.Value.AsString()
-		case "db.query.parameter.count":
+		case "gotel.db.query.bind_count":
 			attrs[string(attr.Key)] = attr.Value.AsInt64()
 		}
 	}
 	if attrs["db.query.text"] != "SELECT * FROM widgets WHERE token = ? AND attempts > ?" {
 		t.Fatalf("query text = %#v", attrs["db.query.text"])
 	}
-	if attrs["db.query.parameter.count"] != int64(1) {
-		t.Fatalf("parameter count = %#v", attrs["db.query.parameter.count"])
+	if attrs["gotel.db.query.bind_count"] != int64(1) {
+		t.Fatalf("parameter count = %#v", attrs["gotel.db.query.bind_count"])
 	}
 }
