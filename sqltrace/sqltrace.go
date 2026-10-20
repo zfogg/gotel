@@ -260,6 +260,10 @@ func InspectDialect(namer Namer, explicitName, statement string, args []any, dia
 func InspectWithOptions(namer Namer, explicitName, statement string, args []any, options SanitizeOptions) Metadata {
 	operation := Operation(statement)
 	simple := strings.TrimSpace(explicitName)
+	qualified := ""
+	if simple != "" {
+		qualified, _ = namer.Parse(simple)
+	}
 	if simple == "" {
 		simple = SQLCName(statement)
 	}
@@ -269,12 +273,14 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	if simple == "" {
 		simple = "Unknown"
 	}
-	name := namer.Name(normalizeSimpleName(simple))
+	if qualified == "" {
+		qualified = namer.Name(normalizeSimpleName(simple))
+	}
 	sanitized, safe := SanitizeWithOptions(statement, options)
 	if !safe {
 		sanitized = SanitizedQuery{}
 	}
-	return Metadata{Name: name, Operation: strings.ToUpper(operation), SanitizedSQL: sanitized.Text, QueryTextTruncated: sanitized.Truncated, ArgumentCount: len(args)}
+	return Metadata{Name: qualified, Operation: strings.ToUpper(operation), SanitizedSQL: sanitized.Text, QueryTextTruncated: sanitized.Truncated, ArgumentCount: len(args)}
 }
 
 // Attributes returns standard database attributes plus safe query metadata.

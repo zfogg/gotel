@@ -78,6 +78,14 @@ func TestInspectDialectReportsTruncationAndDualBindCount(t *testing.T) {
 	}
 }
 
+func TestInspectPreservesQualifiedExplicitName(t *testing.T) {
+	namer := MustNamer("example.storage")
+	meta := InspectDialect(namer, "example.storage.FindWidget", "SELECT $1", []any{1}, DialectPostgreSQL)
+	if meta.Name != "example.storage.FindWidget" {
+		t.Fatalf("name = %q", meta.Name)
+	}
+}
+
 func TestSanitizeRejectsUnterminatedContent(t *testing.T) {
 	for _, query := range []string{"SELECT 'secret", "SELECT $$secret", "SELECT 1 /* secret"} {
 		if _, ok := Sanitize(query); ok {
