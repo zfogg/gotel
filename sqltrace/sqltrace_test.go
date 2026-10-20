@@ -108,3 +108,16 @@ func TestCallerNamerFindsOwningFunctionThroughClosure(t *testing.T) {
 		t.Fatalf("caller name = %q", got)
 	}
 }
+
+func TestCallerNamerSkipsWrappers(t *testing.T) {
+	caller := NewCallerNamer(CallerConfig{
+		MatchPrefix: "github.com/zfogg/gotel/sqltrace.",
+		Skip:        []string{"invokeCallerWrapper"},
+		Fallback:    "Unknown",
+	})
+	if got := invokeCallerWrapper(caller); got != "TestCallerNamerSkipsWrappers" {
+		t.Fatalf("caller name = %q", got)
+	}
+}
+
+func invokeCallerWrapper(caller func() string) string { return caller() }

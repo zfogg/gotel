@@ -66,16 +66,19 @@ type Config struct {
 	Headers        map[string]string
 	Signals        Signals
 	Attributes     []attribute.KeyValue
-	Sampler        sdktrace.Sampler
-	MetricInterval time.Duration
-	Propagator     propagation.TextMapPropagator
-	TraceExporter  sdktrace.SpanExporter
-	MetricReader   sdkmetric.Reader
-	LogExporter    sdklog.Exporter
-	TraceOptions   []sdktrace.TracerProviderOption
-	MetricOptions  []sdkmetric.Option
-	LogOptions     []sdklog.LoggerProviderOption
-	Slog           *SlogConfig
+	// ResourceOptions extend the standard SDK/host/OS/process resource. Use
+	// resource.WithFromEnv to honor OTEL_RESOURCE_ATTRIBUTES and OTEL_SERVICE_NAME.
+	ResourceOptions []resource.Option
+	Sampler         sdktrace.Sampler
+	MetricInterval  time.Duration
+	Propagator      propagation.TextMapPropagator
+	TraceExporter   sdktrace.SpanExporter
+	MetricReader    sdkmetric.Reader
+	LogExporter     sdklog.Exporter
+	TraceOptions    []sdktrace.TracerProviderOption
+	MetricOptions   []sdkmetric.Option
+	LogOptions      []sdklog.LoggerProviderOption
+	Slog            *SlogConfig
 }
 
 // Runtime owns providers created by Start.
@@ -115,7 +118,9 @@ func Start(ctx context.Context, config Config) (_ *Runtime, err error) {
 	if config.Environment != "" {
 		attrs = append(attrs, attribute.String("deployment.environment.name", config.Environment))
 	}
-	res, err := resource.New(ctx, resource.WithTelemetrySDK(), resource.WithHost(), resource.WithOS(), resource.WithProcess(), resource.WithAttributes(attrs...))
+	resourceOptions := []resource.Option{resource.WithTelemetrySDK(), resource.WithHost(), resource.WithOS(), resource.WithProcess(), resource.WithAttributes(attrs...)}
+	resourceOptions = append(resourceOptions, config.ResourceOptions...)
+	res, err := resource.New(ctx, resourceOptions...)
 	if err != nil && res == nil {
 		return nil, err
 	}

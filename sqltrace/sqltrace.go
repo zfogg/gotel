@@ -156,24 +156,54 @@ func isASCIILetter(c byte) bool { return c >= 'a' && c <= 'z' || c >= 'A' && c <
 
 var callerNames sync.Map
 
+// CallerConfig controls source-owned fallback query names.
+type CallerConfig struct {
+	// MatchPrefix is a fully qualified Go package or receiver prefix.
+	MatchPrefix string
+	// Skip excludes adapter and forwarding methods such as Query and Exec.
+	Skip []string
+	// MaxDepth bounds stack inspection. Values below one use 96 frames.
+	MaxDepth int
+	// Fallback is returned when no stable matching function is found.
+	Fallback string
+}
+
 // CallerNamer returns a cached caller resolver. matchPrefix may identify a Go
 // package or a more specific receiver prefix. It skips compiler-generated
 // wrappers and strips receiver and generic type syntax. An empty string is
 // returned when no matching stable function exists; callers must use a
 // deterministic fallback.
 func CallerNamer(matchPrefix string) func() string {
+	return NewCallerNamer(CallerConfig{MatchPrefix: matchPrefix})
+}
+
+// NewCallerNamer returns a cached caller resolver with configurable wrapper
+// skips and deterministic fallback behavior.
+func NewCallerNamer(config CallerConfig) func() string {
+	skipped := make(map[string]struct{}, len(config.Skip))
+	for _, name := range config.Skip {
+		skipped[name] = struct{}{}
+	}
+	depth := config.MaxDepth
+	if depth < 1 {
+		depth = 96
+	}
 	return func() string {
-		pcs := make([]uintptr, 96)
+		pcs := make([]uintptr, depth)
 		n := runtime.Callers(2, pcs)
 		for _, pc := range pcs[:n] {
 			fn := runtime.FuncForPC(pc)
-			if fn == nil || !strings.HasPrefix(fn.Name(), matchPrefix) {
+			if fn == nil || !strings.HasPrefix(fn.Name(), config.MatchPrefix) {
 				continue
 			}
 			if cached, ok := callerNames.Load(pc); ok {
-				return cached.(string)
+				candidate := cached.(string)
+				if _, skip := skipped[candidate]; !skip {
+					return candidate
+				}
+				continue
 			}
-			name := strings.TrimPrefix(fn.Name(), matchPrefix)
+			name := strings.TrimPrefix(fn.Name(), config.MatchPrefix)
 			name = strings.TrimPrefix(name, ".")
 			name = stripGenericSyntax(name)
 			parts := strings.Split(name, ".")
@@ -184,11 +214,14 @@ func CallerNamer(matchPrefix string) func() string {
 				}
 				if validSimpleName(candidate) {
 					callerNames.Store(pc, candidate)
-					return candidate
+					if _, skip := skipped[candidate]; !skip {
+						return candidate
+					}
+					break
 				}
 			}
 		}
-		return ""
+		return config.Fallback
 	}
 }
 
