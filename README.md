@@ -52,20 +52,29 @@ current semantic-convention attributes only: migrate `db.system` to
 
 Since v0.5, `db.query.summary` is a structural SQL skeleton, independent of span
 names. For example: `SELECT … FROM signals LEFT JOIN LATERAL (SELECT … FROM
-bars WHERE … LIMIT 1) WHERE … ORDER BY … LIMIT ?`. Recursive/materialized CTE
+bars WHERE … LIMIT 1) AS latest ON signals.id = latest.signal_id WHERE … ORDER BY … LIMIT ?`. Recursive/materialized CTE
 definitions and references stay scoped instead of being flattened into tables.
 JOIN kinds, scalar/EXISTS subqueries, UNION/INTERSECT/EXCEPT (including ALL),
 grouping, ordering, window modifiers, writes, conflicts and locking stay visible.
 Function-only calls become `SELECT prepare_signal_grading`.
 
-`…` means omitted expressions (including projection lists, predicates and join
-conditions); `?` means a dynamic row bound. Standalone integer LIMIT/OFFSET/FETCH
+Since v0.5.1, join `ON` predicates, `USING (keys)` and `MERGE … ON` conditions retain their
+identifiers, operators, boolean structure and nested query skeletons. Source
+aliases are preserved as `AS alias` so qualified join keys remain meaningful.
+All predicate literals (including numeric constants) and bind placeholders become
+`?`; argument values are never interpolated.
+Table-function `WITH ORDINALITY` is preserved, including its source/column aliases.
+PostgreSQL/DuckDB arrays and subscripts are expressions, not bracket-quoted
+identifiers: their literal elements/indices are sanitized in both attributes.
+
+`…` means omitted expressions (including projection lists and WHERE/HAVING
+predicates); `?` also means a dynamic row bound. Standalone integer LIMIT/OFFSET/FETCH
 counts, including nested `LIMIT 1`, are retained. Parameter values are never
 interpolated, and computed bounds become `?`. This policy is deliberately
 different from `db.query.text`, which still sanitizes **all** numeric literals.
 Identifiers remain visible, so do not embed sensitive data in identifier names.
 
-Summaries omit aliases and sqlc names, preserve quoted/schema-qualified
+Summaries omit sqlc names, preserve quoted/schema-qualified
 identifiers and repeated joins, and cap the result at 4096 UTF-8 bytes. They are computed
 from the complete sanitized statement before query-text truncation, cached with
 the other metadata, and remain available when `OmitQueryText` is enabled.

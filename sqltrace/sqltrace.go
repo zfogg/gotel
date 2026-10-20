@@ -505,7 +505,7 @@ func statementOperation(dialect Dialect, statement string) string {
 	if !ok {
 		return ""
 	}
-	tokens := summaryTokens(safe.Text)
+	tokens := summaryTokens(safe.Text, dialect)
 	for len(tokens) > 0 && tokens[0].text == "(" {
 		tokens = tokens[1:]
 	}

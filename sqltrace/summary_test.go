@@ -15,14 +15,14 @@ var updateSummaries = flag.Bool("update-summaries", false, "regenerate the revie
 func TestSummary(t *testing.T) {
 	cases := []struct{ query, want string }{
 		{"-- name: FindAccount :one\nSELECT id FROM accounts WHERE token='secret'", "SELECT … FROM accounts WHERE …"},
-		{"SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)", "SELECT … FROM accounts JOIN holdings WHERE … EXISTS (SELECT … FROM orders WHERE …)"},
+		{"SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)", "SELECT … FROM accounts AS a JOIN holdings AS h ON h.account_id=a.id WHERE … EXISTS (SELECT … FROM orders AS o WHERE …)"},
 		{"WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id>$1), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id", "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), picked AS (SELECT … FROM candidates) DELETE FROM signals USING picked WHERE …"},
-		{"WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree", "WITH RECURSIVE tree AS (SELECT … FROM nodes UNION ALL SELECT … FROM nodes JOIN tree) SELECT … FROM tree"},
+		{"WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree", "WITH RECURSIVE tree AS (SELECT … FROM nodes UNION ALL SELECT … FROM nodes AS n JOIN tree AS t ON n.parent=t.id) SELECT … FROM tree"},
 		{"WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts", "WITH accounts AS (SELECT … FROM accounts) SELECT … FROM accounts"},
-		{"WITH requested(id) AS (VALUES (1),(2)) SELECT * FROM requested JOIN accounts USING(id)", "WITH requested AS (VALUES …) SELECT … FROM requested JOIN accounts"},
-		{"SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)", "SELECT … FROM (accounts JOIN holdings)"},
+		{"WITH requested(id) AS (VALUES (1),(2)) SELECT * FROM requested JOIN accounts USING(id)", "WITH requested AS (VALUES …) SELECT … FROM requested JOIN accounts USING (id)"},
+		{"SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)", "SELECT … FROM (accounts AS a JOIN holdings AS h ON h.account_id=a.id)"},
 		{"WITH lock_result AS (SELECT pg_advisory_lock($1)) SELECT * FROM lock_result", "WITH lock_result AS (SELECT pg_advisory_lock) SELECT … FROM lock_result"},
-		{"WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON true", "WITH x AS (SELECT … FROM public.accounts) SELECT … FROM (WITH x AS (SELECT … FROM holdings) SELECT … FROM x) JOIN x"},
+		{"WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON true", "WITH x AS (SELECT … FROM public.accounts) SELECT … FROM (WITH x AS (SELECT … FROM holdings) SELECT … FROM x) AS q JOIN x ON ?"},
 		{"INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id", "INSERT INTO results SELECT … FROM signals ON CONFLICT DO UPDATE SET … RETURNING …"},
 		{"INSERT INTO results(id) VALUES($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id", "INSERT INTO results VALUES … ON CONFLICT DO UPDATE SET … WHERE …"},
 		{"WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone", "WITH gone AS (DELETE FROM events RETURNING …) INSERT INTO archive SELECT … FROM gone"},
@@ -32,11 +32,11 @@ func TestSummary(t *testing.T) {
 		{"SELECT prepare_signal_grading($1, $2, $3, $4)", "SELECT prepare_signal_grading"},
 		{"SELECT public.prepare_signal_grading($1, $2)", "SELECT public.prepare_signal_grading"},
 		{"SELECT pg_try_advisory_lock(hashtextextended($1,0))::bool", "SELECT pg_try_advisory_lock"},
-		{"SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT 1) b ON true", "SELECT … FROM signals JOIN LATERAL (SELECT … FROM bars WHERE … LIMIT 1)"},
+		{"SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT 1) b ON true", "SELECT … FROM signals AS s JOIN LATERAL (SELECT … FROM bars WHERE … LIMIT 1) AS b ON ?"},
 		{"UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id", "UPDATE accounts SET … (SELECT … FROM ledger) FROM users WHERE …"},
-		{"MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity", "MERGE INTO inventory USING changes WHEN MATCHED THEN UPDATE SET …"},
+		{"MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity", "MERGE INTO inventory AS i USING changes AS c ON i.id=c.id WHEN MATCHED THEN UPDATE SET …"},
 		{"EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars", "EXPLAIN ANALYZE SELECT … FROM bars"},
-		{"SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true", "SELECT … FROM \"Reporting\".\"Order History\" JOIN \"JOIN\""},
+		{"SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true", "SELECT … FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?"},
 		{"SELECT * FROM a, b, c WHERE a.id=b.id", "SELECT … FROM a, b, c WHERE …"},
 		{"SELECT * FROM read_parquet('secret/path')", "SELECT … FROM read_parquet(…)"},
 		{"SELECT 'secret FROM passwords' AS value", "SELECT …"},
@@ -116,10 +116,10 @@ func TestStonkpileQuerySummaries(t *testing.T) {
 			if !ok {
 				t.Fatalf("%s: invalid corpus SQL", name)
 			}
-			for _, keyword := range []string{"JOIN", "LATERAL", "LIMIT", "OFFSET", "UNION", "INTERSECT", "EXCEPT"} {
+			for _, keyword := range []string{"JOIN", "ON", "USING", "LATERAL", "LIMIT", "OFFSET", "UNION", "INTERSECT", "EXCEPT"} {
 				countKeyword := func(sql string) int {
 					n := 0
-					for _, token := range summaryTokens(sql) {
+					for _, token := range summaryTokens(sql, DialectPostgreSQL) {
 						if token.is(keyword) {
 							n++
 						}
@@ -153,6 +153,8 @@ func TestStonkpileQuerySummaries(t *testing.T) {
 func FuzzSummary(f *testing.F) {
 	f.Add("WITH t AS (SELECT * FROM bars) SELECT * FROM t")
 	f.Add("SELECT $$secret$$")
+	f.Add("SELECT * FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT id FROM c LIMIT 1)")
+	f.Add("SELECT * FROM a JOIN b ON CASE WHEN a.id>1 THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)")
 	f.Fuzz(func(t *testing.T, query string) {
 		if len(query) > 65536 {
 			t.Skip()

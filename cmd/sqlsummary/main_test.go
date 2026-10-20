@@ -28,7 +28,7 @@ func TestRun(t *testing.T) {
 	if err := json.Unmarshal(data, &rows); err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 1 || rows[0].Name != "Large" || rows[0].Line != 5 || rows[0].Summary != "SELECT … FROM accounts LEFT JOIN LATERAL (SELECT … FROM events LIMIT 1) LIMIT ?" {
+	if len(rows) != 1 || rows[0].Name != "Large" || rows[0].Line != 5 || rows[0].Summary != "SELECT … FROM accounts LEFT JOIN LATERAL (SELECT … FROM events LIMIT 1) AS e ON ? LIMIT ?" {
 		t.Fatalf("%+v", rows)
 	}
 	if err := run(filepath.Join(dir, "absent"), 10, sqltrace.DialectPostgreSQL, "", false); err == nil {

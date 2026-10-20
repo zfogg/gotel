@@ -27,7 +27,8 @@ const (
 // Summary returns a bounded SQL skeleton, independently of application names.
 // It retains CTE definitions, nested SELECTs, join types (including LATERAL),
 // set operators, grouping/ordering, row bounds, locking and write structure.
-// Predicates, projections, join conditions and function arguments are omitted.
+// Join predicates and USING keys retain identifiers/operators with sanitized
+// values; other predicates, projections and non-join function arguments are omitted.
 // Only standalone integer LIMIT/OFFSET/FETCH counts are retained; bind values,
 // expressions and sqlc.arg/narg references become ?. Summary never interpolates
 // argument values. Malformed quoting returns SQL.
@@ -36,7 +37,7 @@ func Summary(dialect Dialect, query string) string {
 	if !ok {
 		return "SQL"
 	}
-	shape := summarize(summaryTokens(safe.Text), 0)
+	shape := summarize(summaryTokens(safe.Text, dialect), 0)
 	if shape == "" {
 		return "SQL"
 	}
@@ -52,15 +53,16 @@ func Summary(dialect Dialect, query string) string {
 
 // summaryToken keeps quoted identifiers opaque and numeric tokens distinct.
 type summaryToken struct {
-	text string
-	word bool
+	text  string
+	word  bool
+	space bool // Whitespace before this token in the sanitized template.
 }
 
 // is recognizes keywords without interpreting quoted identifiers as syntax.
 func (t summaryToken) is(s string) bool { return t.word && strings.EqualFold(t.text, s) }
 
 // summaryTokens tokenizes sanitized input, preserving only structural spelling.
-func summaryTokens(sql string) []summaryToken {
+func summaryTokens(sql string, dialect Dialect) []summaryToken {
 	var out []summaryToken
 	for i := 0; i < len(sql); {
 		if sql[i] <= ' ' {
@@ -68,8 +70,9 @@ func summaryTokens(sql string) []summaryToken {
 			continue
 		}
 		start := i
+		spaced := i > 0 && sql[i-1] <= ' '
 		switch c := sql[i]; {
-		case c == '"' || c == '`' || c == '[':
+		case c == '"' || c == '`' || c == '[' && bracketIdentifierDialect(dialect):
 			close := c
 			if c == '[' {
 				close = ']'
@@ -100,6 +103,7 @@ func summaryTokens(sql string) []summaryToken {
 			i++
 			out = append(out, summaryToken{text: sql[start:i]})
 		}
+		out[len(out)-1].space = spaced
 	}
 	return out
 }
@@ -125,12 +129,17 @@ func identifier(tokens []summaryToken, i int) (string, int) {
 
 // closingParen finds a balanced group's end, tolerating incomplete SQL.
 func closingParen(tokens []summaryToken, start int) int {
+	return closingGroup(tokens, start, "(", ")")
+}
+
+// closingGroup finds a balanced parenthesis or array/subscript boundary.
+func closingGroup(tokens []summaryToken, start int, open, close string) int {
 	depth := 0
 	for i := start; i < len(tokens); i++ {
-		if tokens[i].text == "(" {
+		if tokens[i].text == open {
 			depth++
 		}
-		if tokens[i].text == ")" {
+		if tokens[i].text == close {
 			depth--
 			if depth == 0 {
 				return i
@@ -214,6 +223,9 @@ func clauseEnd(tokens []summaryToken, start int) int {
 		if tokens[i].is("GROUP") && i > 0 && tokens[i-1].is("WITHIN") {
 			continue
 		}
+		if tokens[i].is("ON") && i+1 < len(tokens) && tokens[i+1].is("CONFLICT") {
+			return i
+		}
 		if clauseBoundary(tokens[i]) || tokens[i].text == ")" {
 			return i
 		}
@@ -295,8 +307,8 @@ func joinAt(tokens []summaryToken, i int) (string, int) {
 	return "", start
 }
 
-// relation renders tables, table functions and parenthesized query/join sources.
-func relation(tokens []summaryToken, i, depth int) (string, int) {
+// relationSource renders tables, table functions and parenthesized query/join sources.
+func relationSource(tokens []summaryToken, i, depth int) (string, int) {
 	prefix := ""
 	for i < len(tokens) && (tokens[i].is("ONLY") || tokens[i].is("LATERAL")) {
 		prefix += strings.ToUpper(tokens[i].text) + " "
@@ -330,7 +342,101 @@ func relation(tokens []summaryToken, i, depth int) (string, int) {
 	return prefix + name, next
 }
 
-// relations retains join topology but omits aliases and ON/USING expressions.
+// relation retains aliases so qualified join keys can be resolved to sources.
+func relation(tokens []summaryToken, i, depth int) (string, int) {
+	name, next := relationSource(tokens, i, depth)
+	if next+1 < len(tokens) && tokens[next].is("WITH") && tokens[next+1].is("ORDINALITY") {
+		name += " WITH ORDINALITY"
+		next += 2
+	}
+	if next >= len(tokens) {
+		return name, next
+	}
+	explicit := tokens[next].is("AS")
+	alias := next
+	if explicit {
+		alias++
+	}
+	if alias < len(tokens) && identifierToken(tokens[alias]) && !clauseBoundary(tokens[alias]) &&
+		!tokens[alias].is("ON") && !tokens[alias].is("WHEN") && !tokens[alias].is("WITH") &&
+		!tokens[alias].is("TABLESAMPLE") && !tokens[alias].is("PIVOT") && !tokens[alias].is("UNPIVOT") {
+		if join, _ := joinAt(tokens, alias); join == "" {
+			name += " AS " + tokens[alias].text
+			next = alias + 1
+			if next < len(tokens) && tokens[next].text == "(" {
+				end := closingParen(tokens, next)
+				name += joinExpression(tokens[next:end+min(1, len(tokens)-end)], depth+1)
+				next = end + 1
+			}
+		}
+	}
+	return name, next
+}
+
+// joinExpression preserves sanitized predicate shape and nested query scopes.
+// Summary's private numeric-preservation mode is only safe for row bounds:
+// replace every numeric token here, including decimals and exponent notation.
+func joinExpression(tokens []summaryToken, depth int) string {
+	if depth > 64 {
+		return "…"
+	}
+	var out strings.Builder
+	for i := 0; i < len(tokens); i++ {
+		t := tokens[i]
+		if out.Len() > 0 && t.space {
+			out.WriteByte(' ')
+		}
+		if t.text == "(" {
+			end := closingParen(tokens, i)
+			out.WriteByte('(')
+			body := tokens[i+1 : end]
+			if len(body) > 0 && queryStart(body[0]) {
+				out.WriteString(summarize(body, depth+1))
+			} else {
+				out.WriteString(joinExpression(body, depth+1))
+			}
+			out.WriteByte(')')
+			i = end
+		} else if len(t.text) > 0 && (isDigit(t.text[0]) || t.text == "." && i+1 < len(tokens) && isDigit(tokens[i+1].text[0])) {
+			out.WriteByte('?')
+			if t.text == "." {
+				i++
+			}
+		} else {
+			out.WriteString(t.text)
+		}
+	}
+	return out.String()
+}
+
+// joinConditionEnd keeps CASE/grouped expressions scoped and stops before the
+// next joined/comma-separated source, never treating a nested join as a sibling.
+func joinConditionEnd(tokens []summaryToken, start int) int {
+	cases := 0
+	for i := start; i < len(tokens); i++ {
+		if tokens[i].text == "[" {
+			i = closingGroup(tokens, i, "[", "]")
+			continue
+		}
+		if tokens[i].text == "(" {
+			i = closingParen(tokens, i)
+			continue
+		}
+		if tokens[i].is("CASE") {
+			cases++
+		} else if tokens[i].is("END") && cases > 0 {
+			cases--
+		}
+		if cases == 0 {
+			if join, _ := joinAt(tokens, i); join != "" || tokens[i].text == "," {
+				return i
+			}
+		}
+	}
+	return len(tokens)
+}
+
+// relations retains sources, aliases, join topology and sanitized conditions.
 func relations(tokens []summaryToken, depth int) string {
 	if depth > 64 {
 		return "…"
@@ -341,6 +447,12 @@ func relations(tokens []summaryToken, depth int) string {
 	first, i := relation(tokens, 0, depth)
 	parts := []string{first}
 	for i < len(tokens) {
+		if tokens[i].is("ON") || tokens[i].is("USING") {
+			end := joinConditionEnd(tokens, i+1)
+			parts = append(parts, strings.ToUpper(tokens[i].text), joinExpression(tokens[i+1:end], depth+1))
+			i = end
+			continue
+		}
 		if join, next := joinAt(tokens, i); join != "" {
 			source, end := relation(tokens, next, depth)
 			parts = append(parts, join, source)
@@ -402,7 +514,7 @@ func sourceEnd(tokens []summaryToken, start int) int {
 		}
 		if clauseBoundary(tokens[i]) || tokens[i].is("ON") {
 			// ON belongs to a join's condition inside a FROM source. Keep it
-			// there; relations drops expressions while discovering later joins.
+			// there; relations renders its sanitized predicate and later joins.
 			if tokens[i].is("ON") {
 				continue
 			}
@@ -631,6 +743,9 @@ func summaryTail(tokens []summaryToken, i int, op string, parts []string, depth 
 		}
 		if t.is("INTO") && (op == "INSERT" || op == "MERGE") {
 			name, next := identifier(tokens, i+1)
+			if op == "MERGE" {
+				name, next = relation(tokens, i+1, depth+1)
+			}
 			parts = append(parts, "INTO", name)
 			i = next
 			if i < len(tokens) && tokens[i].text == "(" {

@@ -70,6 +70,7 @@ func sanitizeWithOptions(statement string, options SanitizeOptions, summaryNumbe
 	}
 
 	var out strings.Builder
+	brackets := 0
 	space := false
 	for i := 0; i < len(statement); {
 		if isSpace(statement[i]) {
@@ -133,7 +134,7 @@ func sanitizeWithOptions(statement string, options SanitizeOptions, summaryNumbe
 			i = end
 			continue
 		}
-		if statement[i] == '"' || statement[i] == '`' || statement[i] == '[' {
+		if statement[i] == '"' || statement[i] == '`' || statement[i] == '[' && bracketIdentifierDialect(options.Dialect) {
 			end, ok := skipIdentifier(statement, i)
 			if !ok {
 				return SanitizedQuery{}, false
@@ -141,6 +142,16 @@ func sanitizeWithOptions(statement string, options SanitizeOptions, summaryNumbe
 			out.WriteString(statement[i:end])
 			i = end
 			continue
+		}
+		if !bracketIdentifierDialect(options.Dialect) {
+			if statement[i] == '[' {
+				brackets++
+			} else if statement[i] == ']' {
+				brackets--
+				if brackets < 0 {
+					return SanitizedQuery{}, false
+				}
+			}
 		}
 		if end, ok := placeholderEnd(statement, i); ok {
 			out.WriteByte('?')
@@ -175,6 +186,9 @@ func sanitizeWithOptions(statement string, options SanitizeOptions, summaryNumbe
 		i++
 	}
 
+	if brackets != 0 {
+		return SanitizedQuery{}, false
+	}
 	text := strings.TrimSpace(out.String())
 	if options.CollapseInLists {
 		text = collapsePlaceholderLists(text)
@@ -189,6 +203,12 @@ func sanitizeWithOptions(statement string, options SanitizeOptions, summaryNumbe
 		result.Truncated = true
 	}
 	return result, true
+}
+
+// bracketIdentifierDialect separates SQLite-style identifier quoting from
+// PostgreSQL/DuckDB array constructors, subscripts and array type annotations.
+func bracketIdentifierDialect(dialect Dialect) bool {
+	return dialect == DialectGeneric || dialect == DialectSQLite || dialect == ""
 }
 
 func stripLeadingComments(statement string) (string, bool) {
