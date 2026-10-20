@@ -130,7 +130,7 @@ func TestSanitizeRejectsUnterminatedContent(t *testing.T) {
 
 func TestDuckDBSummary(t *testing.T) {
 	got := Summary(DialectDuckDB, "SELECT id FROM spans WHERE trace_id = 'secret' ORDER BY start_ns DESC")
-	if want := "SELECT id FROM spans WHERE trace_id = ? ORDER BY start_ns DESC · 1 args"; got != want {
+	if want := "SELECT spans"; got != want {
 		t.Fatalf("Summary = %q, want %q", got, want)
 	}
 }

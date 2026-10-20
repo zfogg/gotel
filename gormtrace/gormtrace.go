@@ -144,7 +144,6 @@ func (p *plugin) after(op string) func(*gorm.DB) {
 		// Preserve the name selected before GORM built SQL, but attach the final
 		// sanitized template and actual bind count.
 		attrs := metadata.Attributes(p.system(db), p.config.Namespace)
-		attrs = append(attrs, sqltrace.QuerySummaryKey.String(st.name))
 		if db.Statement.Table != "" {
 			attrs = append(attrs, attribute.String("db.collection.name", db.Statement.Table))
 		}

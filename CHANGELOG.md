@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.4.0
+
+- Generate SQL operation-and-table summaries instead of repeating span names.
+- Resolve CTEs, joins, subqueries, set operations and write dependencies, with
+  function names for table-free queries and bounded, literal-free output.
+- Apply summaries consistently to SQL, GORM, pgx, COPY, batch query events and
+  prepared statements; classify CTE statements by their outer SQL operation.
+- Cover all 540 Stonkpile named queries in a portable, versioned SQL corpus,
+  plus focused complex-query, privacy, adapter and all-dialect fuzz regressions.
+- Replace the DuckDB-only summary parser with a shared token-based structural
+  summarizer; no database connection or native parser dependency is required.
+
 ## v0.3.0
 
 - Add lifecycle-safe `database/sql` query, query-row, and exec adapters.

@@ -5,7 +5,6 @@ go 1.26.0
 require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/mattn/go-sqlite3 v1.14.22
-	github.com/sqlc-dev/darkwing v0.1.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.19.0
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.20.0

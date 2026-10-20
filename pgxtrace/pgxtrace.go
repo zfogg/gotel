@@ -66,7 +66,7 @@ func (t *Tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.T
 	if name == "" {
 		name = meta.Name
 	}
-	attrs := append(meta.Attributes(t.config.System, t.config.Namespace), sqltrace.QuerySummaryKey.String(name))
+	attrs := meta.Attributes(t.config.System, t.config.Namespace)
 	attrs = append(attrs, connectionAttributes(conn)...)
 	ctx, span := t.tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(attrs...))
 	return context.WithValue(ctx, querySpanKey{}, spanState{span, time.Now(), meta.Operation})
@@ -83,7 +83,8 @@ func (t *Tracer) TraceCopyFromStart(ctx context.Context, conn *pgx.Conn, data pg
 		return ctx
 	}
 	name := t.config.Namer.MustName("CopyFrom")
-	attrs := []attribute.KeyValue{sqltrace.SystemKey.String(t.config.System), sqltrace.NamespaceKey.String(t.config.Namespace), sqltrace.OperationKey.String("COPY"), sqltrace.QuerySummaryKey.String(name), attribute.Int("db.query.column.count", len(data.ColumnNames))}
+	meta := sqltrace.InspectWithOptions(t.config.Namer, "CopyFrom", "COPY "+data.TableName.Sanitize()+" FROM STDIN", nil, t.config.Sanitize)
+	attrs := append(meta.Attributes(t.config.System, t.config.Namespace), attribute.Int("db.query.column.count", len(data.ColumnNames)))
 	attrs = append(attrs, connectionAttributes(conn)...)
 	ctx, span := t.tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(attrs...))
 	return context.WithValue(ctx, copySpanKey{}, spanState{span, time.Now(), "COPY"})
@@ -100,7 +101,7 @@ func (t *Tracer) TraceBatchStart(ctx context.Context, conn *pgx.Conn, data pgx.T
 		return ctx
 	}
 	name := t.config.Namer.MustName("Batch")
-	attrs := []attribute.KeyValue{sqltrace.SystemKey.String(t.config.System), sqltrace.NamespaceKey.String(t.config.Namespace), sqltrace.QuerySummaryKey.String(name)}
+	attrs := []attribute.KeyValue{sqltrace.SystemKey.String(t.config.System), sqltrace.NamespaceKey.String(t.config.Namespace), sqltrace.OperationKey.String("BATCH")}
 	if data.Batch != nil {
 		attrs = append(attrs, attribute.Int("db.operation.batch.size", data.Batch.Len()))
 	}
@@ -152,7 +153,7 @@ func (t *Tracer) TraceConnectStart(ctx context.Context, data pgx.TraceConnectSta
 		return ctx
 	}
 	name := t.config.Namer.MustName("Connect")
-	attrs := []attribute.KeyValue{sqltrace.SystemKey.String(t.config.System), sqltrace.NamespaceKey.String(t.config.Namespace), sqltrace.QuerySummaryKey.String(name)}
+	attrs := []attribute.KeyValue{sqltrace.SystemKey.String(t.config.System), sqltrace.NamespaceKey.String(t.config.Namespace), sqltrace.OperationKey.String("CONNECT")}
 	if data.ConnConfig != nil {
 		attrs = append(attrs, attribute.String("server.address", data.ConnConfig.Host), attribute.Int("server.port", int(data.ConnConfig.Port)))
 	}

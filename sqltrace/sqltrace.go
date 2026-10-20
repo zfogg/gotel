@@ -20,7 +20,7 @@ import (
 const (
 	// QueryTextKey contains a sanitized SQL template, never interpolated values.
 	QueryTextKey = attribute.Key("db.query.text")
-	// QuerySummaryKey contains the stable application-owned operation name.
+	// QuerySummaryKey contains a bounded operation-and-table SQL summary.
 	QuerySummaryKey = attribute.Key("db.query.summary")
 	// BindCountKey contains the number of bind arguments without colliding with
 	// db.query.parameter.<key>, which is reserved for actual parameter values.
@@ -162,6 +162,7 @@ type inspectionCacheKey struct {
 
 type inspectionCacheValue struct {
 	operation string
+	summary   string
 	simple    string
 	sanitized SanitizedQuery
 }
@@ -325,6 +326,8 @@ func isCompilerFrame(name string) bool {
 type Metadata struct {
 	// Name is the qualified, low-cardinality span name.
 	Name string
+	// Summary describes SQL operations and physical tables, not the span name.
+	Summary string
 	// Operation is the upper-case SQL verb when one can be determined.
 	Operation string
 	// SanitizedSQL is the safe query template, or empty when sanitization fails.
@@ -357,7 +360,8 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	key := inspectionCacheKey{statement: statement, dialect: options.Dialect, maxBytes: options.MaxQueryTextBytes, collapse: options.CollapseInLists, omit: options.OmitQueryText}
 	cached, ok := inspections.get(key)
 	if !ok {
-		cached.operation = Operation(statement)
+		cached.summary = Summary(options.Dialect, statement)
+		cached.operation = strings.Fields(cached.summary)[0]
 		cached.simple = SQLCName(statement)
 		sanitized, safe := SanitizeWithOptions(statement, options)
 		if safe {
@@ -383,12 +387,15 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	if qualified == "" {
 		qualified = namer.Name(normalizeSimpleName(simple))
 	}
-	return Metadata{Name: qualified, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args)}
+	return Metadata{Name: qualified, Summary: cached.summary, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args)}
 }
 
 // Attributes returns standard database attributes plus safe query metadata.
 func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
-	attrs := []attribute.KeyValue{QuerySummaryKey.String(m.Name), BindCountKey.Int(m.ArgumentCount)}
+	attrs := []attribute.KeyValue{BindCountKey.Int(m.ArgumentCount)}
+	if m.Summary != "" {
+		attrs = append(attrs, QuerySummaryKey.String(m.Summary))
+	}
 	if system != "" {
 		attrs = append(attrs, SystemKey.String(system))
 	}

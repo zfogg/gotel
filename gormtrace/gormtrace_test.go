@@ -53,7 +53,7 @@ func TestPluginNamesAndSanitizesEveryOperation(t *testing.T) {
 		if attrs["db.query.text"] != "SELECT ?" {
 			t.Fatalf("query text = %#v", attrs["db.query.text"])
 		}
-		if attrs["db.query.summary"] != "example.storage.FindSecret" {
+		if attrs["db.query.summary"] != "SELECT" {
 			t.Fatalf("query summary = %#v", attrs["db.query.summary"])
 		}
 		if attrs["gotel.db.query.bind_count"] != int64(1) {

@@ -11,7 +11,7 @@ safe, useful database spans.
 - the real bind argument count in `gotel.db.query.bind_count`;
 - standard database system, namespace, operation, and summary attributes;
 - dialect-tolerant sanitization for PostgreSQL, DuckDB, SQLite, and MySQL syntax;
-- optional DuckDB AST summaries for genuinely ad hoc SQL.
+- automatic bounded SQL operation-and-table summaries, independent of span names.
 
 `gormtrace` and `pgxtrace` apply that contract at the driver boundary so every
 query is covered. `pgxtrace` covers queries, COPY, batches, prepare, and connect;
@@ -49,3 +49,21 @@ still retain stable names, operation classification, and bind counts. v0.3 emits
 current semantic-convention attributes only: migrate `db.system` to
 `db.system.name` and `db.query.parameter.count` to
 `gotel.db.query.bind_count` before upgrading.
+
+Since v0.4, `db.query.summary` describes the SQL instead of repeating the span
+name. For example, a span named `stonkpile.storage.ListOutcomesForStrategyByHorizon`
+has summary `SELECT signal_outcomes, signals`. CTEs (including recursive and
+materialized CTEs), joins, lateral/scalar subqueries, set operations, windowed
+queries and INSERT/UPDATE/DELETE/MERGE source queries resolve to physical tables.
+Data-modifying CTEs retain their writes: `SELECT signals; INSERT signals`.
+Function-only calls become `SELECT prepare_signal_grading`.
+
+Summaries omit predicates, values, projection lists, aliases and sqlc names.
+They preserve quoted/schema-qualified identifiers, show at most five targets
+per operation, and cap the entire summary at 256 UTF-8 bytes. They are computed
+from the complete sanitized statement before query-text truncation, cached with
+the other metadata, and remain available when `OmitQueryText` is enabled.
+They describe SQL structure, not execution plans or tables accessed inside a
+stored function. Unknown syntax falls back to a recognized operation or `SQL`.
+Connection and batch container spans do not emit a fictitious query summary;
+batch query events and prepared statements carry their actual SQL summaries.
