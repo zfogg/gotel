@@ -55,6 +55,9 @@ func TestSummary(t *testing.T) {
 }
 
 func TestSummaryPoliciesAndBounds(t *testing.T) {
+	if meta := Inspect(MustNamer("example.storage"), "", "", nil); meta.Name != "example.storage.Unknown" || meta.Operation != "" {
+		t.Fatalf("empty statement lost Unknown fallback: %+v", meta)
+	}
 	query := "-- name: FindBars :many\nWITH recent AS (SELECT * FROM bars WHERE ts>$1) SELECT * FROM recent"
 	options := DefaultSanitizeOptions(DialectPostgreSQL)
 	options.OmitQueryText = true

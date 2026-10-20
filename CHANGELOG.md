@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.1
+
+- Preserve Unknown span naming for empty SQL and operation-name fallbacks for
+  SQL outside the summary grammar.
+
 ## v0.4.0
 
 - Generate SQL operation-and-table summaries instead of repeating span names.

@@ -362,6 +362,11 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	if !ok {
 		cached.summary = Summary(options.Dialect, statement)
 		cached.operation = strings.Fields(cached.summary)[0]
+		if cached.operation == "SQL" {
+			// Preserve Unknown naming for empty input and the historical verb
+			// fallback for statements outside the structural summary grammar.
+			cached.operation = Operation(statement)
+		}
 		cached.simple = SQLCName(statement)
 		sanitized, safe := SanitizeWithOptions(statement, options)
 		if safe {
