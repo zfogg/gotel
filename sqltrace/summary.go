@@ -44,8 +44,10 @@ type summaryToken struct {
 	word bool
 }
 
+// is matches an unquoted keyword without treating quoted names as SQL syntax.
 func (t summaryToken) is(s string) bool { return t.word && strings.EqualFold(t.text, s) }
 
+// summaryTokens splits already-sanitized SQL while preserving identifier quotes.
 func summaryTokens(sql string) []summaryToken {
 	var out []summaryToken
 	for i := 0; i < len(sql); {
@@ -97,6 +99,7 @@ type querySummary struct {
 	functions []string
 }
 
+// appendUnique deduplicates dependencies without changing their source order.
 func appendUnique(dst []string, values ...string) []string {
 	for _, v := range values {
 		if v == "" {
@@ -116,6 +119,7 @@ func appendUnique(dst []string, values ...string) []string {
 	return dst
 }
 
+// absorb folds a referenced CTE or nested query's dependencies into its parent.
 func (s *querySummary) absorb(child querySummary) {
 	if child.op != "SELECT" && child.op != "VALUES" && child.op != "" && child.op != "SQL" {
 		s.writes = appendUnique(s.writes, child.op+summaryTargets(child.targets))
@@ -125,6 +129,7 @@ func (s *querySummary) absorb(child querySummary) {
 	s.functions = appendUnique(s.functions, child.functions...)
 }
 
+// summaryTargets limits the displayed dependency list while marking omissions.
 func summaryTargets(names []string) string {
 	if len(names) == 0 {
 		return ""
@@ -135,6 +140,7 @@ func summaryTargets(names []string) string {
 	return " " + strings.Join(names, ", ")
 }
 
+// text renders operations and dependencies within the global UTF-8 byte bound.
 func (s querySummary) text() string {
 	if s.op == "" {
 		return "SQL"
@@ -165,6 +171,7 @@ func (s querySummary) text() string {
 	return text
 }
 
+// identifierKey applies SQL case folding for CTE lookup, retaining quoted case.
 func identifierKey(name string) string {
 	if strings.HasPrefix(name, "\"") {
 		return strings.ReplaceAll(strings.Trim(name, "\""), "\"\"", "\"")
@@ -178,6 +185,7 @@ func identifierKey(name string) string {
 	return strings.ToLower(name)
 }
 
+// identifier consumes one potentially schema-qualified identifier.
 func identifier(tokens []summaryToken, i int) (string, int) {
 	if i >= len(tokens) {
 		return "", i
@@ -212,6 +220,8 @@ func closingParen(tokens []summaryToken, start int) int {
 	return len(tokens)
 }
 
+// summarize resolves a statement's local CTE scope and structural dependencies.
+// depth caps work on deeply nested input; each recursive call owns its CTE map.
 func summarize(tokens []summaryToken, inherited map[string]querySummary, depth int) querySummary {
 	if depth > 64 || len(tokens) == 0 {
 		return querySummary{}
@@ -394,6 +404,7 @@ func summarize(tokens []summaryToken, inherited map[string]querySummary, depth i
 	return s
 }
 
+// summarySyntax excludes parenthesized SQL constructs from function summaries.
 func summarySyntax(t summaryToken) bool {
 	for _, keyword := range []string{"IN", "EXISTS", "OVER", "FILTER", "AS", "ON", "VALUES", "SELECT", "DISTINCT", "CAST", "CASE", "ANY", "ALL"} {
 		if t.is(keyword) {
@@ -403,6 +414,7 @@ func summarySyntax(t summaryToken) bool {
 	return false
 }
 
+// scanExpressions discovers scalar subqueries inside casts, predicates and calls.
 func (s *querySummary) scanExpressions(tokens []summaryToken, ctes map[string]querySummary, depth int) {
 	if depth > 64 {
 		return
