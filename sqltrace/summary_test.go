@@ -121,7 +121,7 @@ func TestStonkpileQuerySummaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(want) != output.String() {
+	if strings.ReplaceAll(string(want), "\r\n", "\n") != output.String() {
 		t.Fatal("summary snapshot changed; inspect output before regenerating with -update-summaries")
 	}
 	t.Logf("covered %d named queries across %d files", count, len(files))
