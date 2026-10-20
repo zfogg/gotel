@@ -60,3 +60,11 @@ func TestDuckDBSummary(t *testing.T) {
 		t.Fatalf("Summary = %q, want %q", got, want)
 	}
 }
+
+func TestCallerNamerFindsOwningFunctionThroughClosure(t *testing.T) {
+	caller := CallerNamer("github.com/zfogg/gotel/sqltrace.")
+	invoke := func() string { return caller() }
+	if got := invoke(); got != "TestCallerNamerFindsOwningFunctionThroughClosure" {
+		t.Fatalf("caller name = %q", got)
+	}
+}

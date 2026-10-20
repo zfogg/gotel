@@ -110,22 +110,38 @@ func CallerNamer(matchPrefix string) func() string {
 			}
 			name := strings.TrimPrefix(fn.Name(), matchPrefix)
 			name = strings.TrimPrefix(name, ".")
-			if close := strings.Index(name, ")."); close >= 0 {
-				name = name[close+2:]
-			}
-			if slash := strings.LastIndexByte(name, '/'); slash >= 0 {
-				name = name[slash+1:]
-			}
-			if dot := strings.IndexByte(name, '.'); dot >= 0 {
-				name = name[:dot]
-			}
-			name = strings.TrimSuffix(name, "-fm")
-			if validSimpleName(name) {
-				return name
+			parts := strings.Split(name, ".")
+			for i := len(parts) - 1; i >= 0; i-- {
+				candidate := strings.TrimSuffix(parts[i], "-fm")
+				if isCompilerFrame(candidate) {
+					continue
+				}
+				if validSimpleName(candidate) {
+					return candidate
+				}
 			}
 		}
 		return ""
 	}
+}
+
+func isCompilerFrame(name string) bool {
+	for _, prefix := range []string{"func", "gowrap", "deferwrap"} {
+		if !strings.HasPrefix(name, prefix) || len(name) == len(prefix) {
+			continue
+		}
+		allDigits := true
+		for _, r := range name[len(prefix):] {
+			if r < '0' || r > '9' {
+				allDigits = false
+				break
+			}
+		}
+		if allDigits {
+			return true
+		}
+	}
+	return false
 }
 
 // Metadata is safe, bounded information about one SQL operation.
