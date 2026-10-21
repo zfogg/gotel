@@ -29,13 +29,6 @@ export function browserHttpClientSpanName({
   return `${prefix}.http.client.${method.toUpperCase()} ${destination}`
 }
 
-function concreteFetchMethod(request: Request | RequestInit): string {
-  if (!request.method) {
-    throw new Error('fetch instrumentation request method was not normalized')
-  }
-  return request.method
-}
-
 export function createBrowserFetchInstrumentation({
   applicationOrigin = globalThis.location.origin,
   prefix,
@@ -48,16 +41,11 @@ export function createBrowserFetchInstrumentation({
         span.updateName(
           browserHttpClientSpanName({
             applicationOrigin,
-            method: concreteFetchMethod(request),
+            method: (request as Request).method,
             prefix,
             responseUrl: result.url,
           }),
         )
-      }
-    },
-    requestHook(_span, request) {
-      if (!(request instanceof Request) && !request.method) {
-        request.method = 'GET'
       }
     },
   })

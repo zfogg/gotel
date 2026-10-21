@@ -4,12 +4,6 @@ export function browserHttpClientSpanName({ applicationOrigin, method, prefix, r
     const destination = url.origin === applicationOrigin ? url.pathname : `${url.host}${url.pathname}`;
     return `${prefix}.http.client.${method.toUpperCase()} ${destination}`;
 }
-function concreteFetchMethod(request) {
-    if (!request.method) {
-        throw new Error('fetch instrumentation request method was not normalized');
-    }
-    return request.method;
-}
 export function createBrowserFetchInstrumentation({ applicationOrigin = globalThis.location.origin, prefix, ...config }) {
     return new FetchInstrumentation({
         ...config,
@@ -17,15 +11,10 @@ export function createBrowserFetchInstrumentation({ applicationOrigin = globalTh
             if (result instanceof Response) {
                 span.updateName(browserHttpClientSpanName({
                     applicationOrigin,
-                    method: concreteFetchMethod(request),
+                    method: request.method,
                     prefix,
                     responseUrl: result.url,
                 }));
-            }
-        },
-        requestHook(_span, request) {
-            if (!(request instanceof Request) && !request.method) {
-                request.method = 'GET';
             }
         },
     });
