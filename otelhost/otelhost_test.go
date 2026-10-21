@@ -2,6 +2,8 @@ package otelhost
 
 import (
 	"context"
+	"os"
+	goruntime "runtime"
 	"testing"
 
 	"go.opentelemetry.io/otel"
@@ -30,6 +32,23 @@ func TestStartWithInjectedTraceExporter(t *testing.T) {
 	spans := exporter.GetSpans()
 	if len(spans) != 1 || spans[0].Name != "probe" {
 		t.Fatalf("exported spans = %#v", spans)
+	}
+	attrs := spans[0].Resource.Set()
+	for _, key := range []attribute.Key{"host.name", "os.type", "os.description", "process.executable.name", "process.executable.path", "process.runtime.description", "telemetry.sdk.version"} {
+		if value, ok := attrs.Value(key); !ok || value.AsString() == "" {
+			t.Errorf("missing resource attribute %s", key)
+		}
+	}
+	for key, want := range map[attribute.Key]string{
+		"service.name": "example", "service.version": "1.2.3", "deployment.environment.name": "test",
+		"process.runtime.version": goruntime.Version(), "telemetry.sdk.language": "go", "telemetry.sdk.name": "opentelemetry", "tenant": "demo",
+	} {
+		if value, _ := attrs.Value(key); value.AsString() != want {
+			t.Errorf("%s = %v, want %q", key, value, want)
+		}
+	}
+	if value, _ := attrs.Value("process.pid"); value.AsInt64() != int64(os.Getpid()) {
+		t.Errorf("process.pid = %v", value)
 	}
 	if err := runtime.Shutdown(context.Background()); err != nil {
 		t.Fatal(err)
