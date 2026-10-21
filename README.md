@@ -3,6 +3,31 @@
 Reusable OpenTelemetry building blocks for Go applications, with a focus on
 safe, useful database spans.
 
+`httptrace` shares HTTP naming between applications and instrumentation libraries:
+`myapp.http.client.GET example.com/path` and
+`myapp.http.server.GET /items/{id}`. It preserves every HTTP method, including
+extension methods, and leaves existing destination attributes unchanged.
+Client names retain the host, port and escaped path, excluding URL credentials,
+query parameters and fragments. Server names use resolved route templates;
+unresolved requests use `unknown` instead of raw per-request URLs.
+
+```go
+names := httptrace.Namer{Prefix: "myapp"}
+transport := otelhttp.NewTransport(http.DefaultTransport,
+    otelhttp.WithSpanNameFormatter(names.ClientSpanName))
+handler := otelhttp.NewHandler(names.RouteMiddleware(nil)(mux), "myapp",
+    otelhttp.WithSpanNameFormatter(names.ServerSpanName))
+```
+
+The package depends only on `net/http` and the OTel API, not Chi, Gin, Echo or
+`otelhttp`. Its formatters work directly with `otelhttp` options. Go ServeMux
+uses `Request.Pattern`; other routers supply a callback to `RouteMiddleware`
+that returns the final route template after the handler runs. Install that
+middleware inside HTTP instrumentation. `SetServerRoute` also updates an
+existing span directly when an application's middleware has additional work.
+Neither route hook creates a second span or wraps the response writer, so
+streaming, flushing and WebSocket upgrades retain their existing behavior.
+
 `sqltrace` provides:
 
 - stable application prefixes such as `spaniel.storage.GetStats`;

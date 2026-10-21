@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.0
+
+- Add router-independent HTTP client/server span naming with application prefixes,
+  all HTTP methods, unchanged destination attributes, escaped client paths and
+  bounded server route templates.
+- Add route-finalization middleware and a direct existing-span hook without
+  adding router dependencies, duplicate spans or response-writer wrappers.
+
 ## v0.5.0
 
 - Render scoped CTE definitions, nested queries, typed/LATERAL joins and set
