@@ -14,7 +14,7 @@ export type BrowserFetchInstrumentationOptions = Omit<
   FetchInstrumentationConfig,
   'applyCustomAttributesOnSpan' | 'requestHook'
 > & {
-  applicationOrigin: string
+  applicationOrigin?: string
   prefix: string
 }
 
@@ -37,7 +37,7 @@ function concreteFetchMethod(request: Request | RequestInit): string {
 }
 
 export function createBrowserFetchInstrumentation({
-  applicationOrigin,
+  applicationOrigin = globalThis.location.origin,
   prefix,
   ...config
 }: BrowserFetchInstrumentationOptions): FetchInstrumentation {

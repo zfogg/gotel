@@ -12,7 +12,6 @@ fragments never enter span names. The application prefix is required explicitly.
 import { createBrowserFetchInstrumentation } from '@zfogg/gotel'
 
 const fetchInstrumentation = createBrowserFetchInstrumentation({
-  applicationOrigin: globalThis.location.origin,
   prefix: 'myapp',
   ignoreUrls: [/\/telemetry\//],
   propagateTraceHeaderCorsUrls: [globalThis.location.origin],

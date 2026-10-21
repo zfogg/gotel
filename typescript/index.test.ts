@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { browserHttpClientSpanName, createBrowserFetchInstrumentation } from './index'
+
+afterEach(() => vi.unstubAllGlobals())
 
 describe('browserHttpClientSpanName', () => {
   it('uses only the path for same-origin requests', () => {
@@ -28,8 +30,8 @@ describe('browserHttpClientSpanName', () => {
 
 describe('createBrowserFetchInstrumentation', () => {
   it('normalizes the browser default method once at the request boundary', () => {
+    vi.stubGlobal('location', { origin: 'http://localhost:8085' })
     const instrumentation = createBrowserFetchInstrumentation({
-      applicationOrigin: 'http://localhost:8085',
       prefix: 'ratio',
     })
     const config = instrumentation.getConfig()
