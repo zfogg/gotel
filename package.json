@@ -1,0 +1,38 @@
+{
+  "name": "@zfogg/gotel",
+  "version": "0.6.0",
+  "description": "Reusable OpenTelemetry conventions for Go and TypeScript applications",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "tsc -p tsconfig.json --noEmit && vitest run",
+    "prepare": "pnpm run build"
+  },
+  "peerDependencies": {
+    "@opentelemetry/api": ">=1.9.0 <1.10.0",
+    "@opentelemetry/instrumentation-fetch": ">=0.208.0 <0.224.0"
+  },
+  "devDependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/instrumentation-fetch": "0.223.0",
+    "@opentelemetry/sdk-logs": "0.223.0",
+    "@opentelemetry/sdk-trace": "2.12.0",
+    "@types/node": "24.10.1",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  },
+  "packageManager": "pnpm@10.20.0"
+}

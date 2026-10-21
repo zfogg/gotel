@@ -3,6 +3,22 @@
 Reusable OpenTelemetry building blocks for Go applications, with a focus on
 safe, useful database spans.
 
+The `@zfogg/gotel` TypeScript package shares browser HTTP span naming and fetch
+instrumentation between applications. Same-origin requests use route-like paths;
+external requests retain their host and non-default port. Query strings and
+fragments never enter span names. The application prefix is required explicitly.
+
+```ts
+import { createBrowserFetchInstrumentation } from '@zfogg/gotel'
+
+const fetchInstrumentation = createBrowserFetchInstrumentation({
+  applicationOrigin: globalThis.location.origin,
+  prefix: 'myapp',
+  ignoreUrls: [/\/telemetry\//],
+  propagateTraceHeaderCorsUrls: [globalThis.location.origin],
+})
+```
+
 `httptrace` shares HTTP naming between applications and instrumentation libraries:
 `myapp.http.client.GET example.com/path` and
 `myapp.http.server.GET /items/{id}`. It preserves every HTTP method, including
