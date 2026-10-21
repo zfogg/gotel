@@ -18,8 +18,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "check": "tsc -p tsconfig.json --noEmit && vitest run",
-    "prepare": "pnpm run build"
+    "check": "tsc -p tsconfig.json --noEmit && vitest run"
   },
   "peerDependencies": {
     "@opentelemetry/api": ">=1.9.0 <1.10.0",
