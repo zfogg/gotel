@@ -33,3 +33,9 @@ func TestArgsSizeCountsPayloadWithoutReturningValues(t *testing.T) {
 		t.Fatalf("argsSize = %d, want %d", got, want)
 	}
 }
+
+func TestScriptCacheMissIsNotReportedAsAnOperationFailure(t *testing.T) {
+	if err := traceError(redis.ErrNoScript); err != nil {
+		t.Fatalf("trace error = %v, want nil", err)
+	}
+}

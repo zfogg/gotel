@@ -3,6 +3,7 @@ package redistrace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -40,15 +41,20 @@ func (h *hook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 			attribute.String("db.operation.name", operation),
 		)
 		err := next(ctx, cmd)
-		if err == redis.Nil {
-			err = nil
-		}
+		err = traceError(err)
 		gotel.End(span, err)
 		if h.config.Observe != nil {
 			h.config.Observe(ctx, Observation{Command: operation, Count: 1, Duration: time.Since(started), Err: err, PayloadBytes: argsSize(cmd.Args())})
 		}
 		return cmd.Err()
 	}
+}
+
+func traceError(err error) error {
+	if errors.Is(err, redis.Nil) || errors.Is(err, redis.ErrNoScript) {
+		return nil
+	}
+	return err
 }
 
 func argsSize(args []interface{}) int {
