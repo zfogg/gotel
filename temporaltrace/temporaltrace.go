@@ -45,7 +45,9 @@ func New(config Config) (interceptor.Interceptor, error) {
 }
 
 // Name translates Temporal SDK Operation:Type names into stable operation
-// families while retaining the actual workflow/activity name.
+// families while retaining the actual workflow/activity name. Scheduling an
+// activity and executing it are separate operations, so they must not share a
+// span name even when a worker and workflow client run in the same process.
 func Name(raw string) string {
 	operation, name, ok := strings.Cut(raw, ":")
 	if !ok {
@@ -55,8 +57,10 @@ func Name(raw string) string {
 	switch operation {
 	case "RunWorkflow", "StartWorkflow":
 		kind = "workflow"
-	case "RunActivity", "StartActivity":
-		kind = "activity"
+	case "StartActivity":
+		kind = "activity.schedule"
+	case "RunActivity":
+		kind = "activity.execute"
 	case "RunChildWorkflow", "StartChildWorkflow":
 		kind = "workflow.child"
 	}
