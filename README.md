@@ -131,3 +131,8 @@ go run ./cmd/sqlsummary -dir ../stonkpile/internal/db -largest 10
 
 Use `-json` for structured output and `-out report.txt` to save the report. Ranking
 is by generated SQL byte size, not source file size or estimated query cost.
+
+## C applications
+
+[`c-gotel`](c-gotel/README.md) provides a pure-C telemetry host, shared HTTP naming,
+named SQLite tracing, context, logs and cumulative operation metrics over OTLP/HTTP.

@@ -1,7 +1,7 @@
 #include <gotel/gotel.h>
 #include <stdatomic.h>
 typedef struct {
-  atomic_uint_fast64_t count, errors, total_ns, buckets[8];
+  atomic_uint_fast64_t count, errors, total_ns;
 } gotel_measurement_t;
 struct gotel_host {
   gotel_options_t options;
