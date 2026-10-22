@@ -4,6 +4,7 @@ package gormtrace
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -15,6 +16,51 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
+
+// WrapTransactions instruments connection acquisition and the BEGIN, COMMIT,
+// and ROLLBACK lifecycle that GORM callbacks cannot observe.
+func WrapTransactions(db *sql.DB, application gotel.Application) gorm.ConnPool {
+	return &transactionPool{DB: db, application: application}
+}
+
+type transactionPool struct {
+	*sql.DB
+	application gotel.Application
+}
+
+func (p *transactionPool) GetDBConn() (*sql.DB, error) { return p.DB, nil }
+func (p *transactionPool) BeginTx(ctx context.Context, opts *sql.TxOptions) (pool gorm.ConnPool, err error) {
+	beginCtx, span := p.application.ComponentTracer(gotel.ComponentStorage).Start(ctx, p.application.StorageName("db", "transaction.begin"))
+	defer func() { gotel.End(span, err) }()
+	tx, err := p.DB.BeginTx(beginCtx, opts)
+	if err != nil {
+		return nil, err
+	}
+	return &tracedTransaction{Tx: tx, ctx: ctx, db: p.DB, application: p.application}, nil
+}
+
+type tracedTransaction struct {
+	*sql.Tx
+	ctx         context.Context
+	db          *sql.DB
+	application gotel.Application
+}
+
+func (t *tracedTransaction) GetDBConn() (*sql.DB, error) { return t.db, nil }
+func (t *tracedTransaction) Commit() (err error) {
+	_, span := t.application.ComponentTracer(gotel.ComponentStorage).Start(t.ctx, t.application.StorageName("db", "transaction.commit"))
+	defer func() { gotel.End(span, err) }()
+	return t.Tx.Commit()
+}
+func (t *tracedTransaction) Rollback() (err error) {
+	_, span := t.application.ComponentTracer(gotel.ComponentStorage).Start(t.ctx, t.application.StorageName("db", "transaction.rollback"))
+	defer func() { gotel.End(span, err) }()
+	return t.Tx.Rollback()
+}
+
+var _ gorm.ConnPoolBeginner = (*transactionPool)(nil)
+var _ gorm.GetDBConnector = (*transactionPool)(nil)
+var _ gorm.Tx = (*tracedTransaction)(nil)
 
 // Config controls one GORM plugin instance.
 type Config struct {

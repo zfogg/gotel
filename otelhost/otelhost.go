@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/zfogg/gotel"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
+	goruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
@@ -78,7 +80,10 @@ type Config struct {
 	MetricOptions   []sdkmetric.Option
 	LogOptions      []sdklog.LoggerProviderOption
 	Slog            *SlogConfig
+	RuntimeMetrics  bool
 }
+
+var runtimeMetricsOnce sync.Once
 
 // Runtime owns providers created by Start.
 type Runtime struct {
@@ -185,6 +190,13 @@ func Start(ctx context.Context, config Config) (_ *Runtime, err error) {
 		propagator = propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{})
 	}
 	otel.SetTextMapPropagator(propagator)
+	if config.RuntimeMetrics {
+		runtimeMetricsOnce.Do(func() {
+			if err := goruntime.Start(); err != nil {
+				otel.Handle(err)
+			}
+		})
+	}
 	runtime.shutdown = stack.Shutdown
 	return runtime, nil
 }

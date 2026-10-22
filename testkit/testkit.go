@@ -3,6 +3,7 @@ package testkit
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func Install(t testing.TB) *tracetest.SpanRecorder {
@@ -49,4 +51,65 @@ func RequireBoundedNames(t testing.TB, spans tracetest.SpanStubs) {
 			t.Error(err)
 		}
 	}
+}
+
+// RequireNoDuplicateSpans rejects identically timed, named, and parented spans.
+func RequireNoDuplicateSpans(t testing.TB, spans tracetest.SpanStubs) {
+	t.Helper()
+	seen := map[string]struct{}{}
+	for _, span := range spans {
+		key := fmt.Sprintf("%s|%s|%s|%d|%d", span.Name, span.SpanContext.SpanID(), span.Parent.SpanID(), span.StartTime.UnixNano(), span.EndTime.UnixNano())
+		// Different IDs can still be duplicated instrumentation, so omit the ID.
+		key = fmt.Sprintf("%s|%s|%d|%d", span.Name, span.Parent.SpanID(), span.StartTime.UnixNano(), span.EndTime.UnixNano())
+		if _, ok := seen[key]; ok {
+			t.Errorf("duplicate span: %s", span.Name)
+		}
+		seen[key] = struct{}{}
+	}
+}
+
+// RequireTemporalTopology verifies one workflow root and its activity children.
+func RequireTemporalTopology(t testing.TB, spans tracetest.SpanStubs, prefix, workflow string, activities ...string) {
+	t.Helper()
+	RequireNoDuplicateSpans(t, spans)
+	wantWorkflow := prefix + ".temporal.workflow." + workflow
+	var root trace.SpanID
+	for _, span := range spans {
+		if span.Name == wantWorkflow {
+			if root.IsValid() {
+				t.Errorf("multiple workflow spans %q", wantWorkflow)
+			}
+			root = span.SpanContext.SpanID()
+		}
+	}
+	if !root.IsValid() {
+		t.Errorf("missing workflow span %q", wantWorkflow)
+		return
+	}
+	for _, activity := range activities {
+		want := prefix + ".temporal.activity." + activity
+		count := 0
+		for _, span := range spans {
+			if span.Name == want {
+				count++
+				if span.Parent.SpanID() != root {
+					t.Errorf("activity %q is not child of workflow", want)
+				}
+			}
+		}
+		if count != 1 {
+			t.Errorf("activity span %q count=%d, want 1", want, count)
+		}
+	}
+}
+
+// RequireSpanName reports whether a smoke operation installed instrumentation.
+func RequireSpanName(t testing.TB, spans tracetest.SpanStubs, name string) {
+	t.Helper()
+	for _, span := range spans {
+		if span.Name == name {
+			return
+		}
+	}
+	t.Errorf("missing span %q", name)
 }
