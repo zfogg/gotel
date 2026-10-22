@@ -3,6 +3,7 @@ package redistrace
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -12,10 +13,11 @@ import (
 )
 
 type Observation struct {
-	Command  string
-	Count    int
-	Duration time.Duration
-	Err      error
+	Command      string
+	Count        int
+	Duration     time.Duration
+	Err          error
+	PayloadBytes int
 }
 
 type Config struct {
@@ -43,10 +45,25 @@ func (h *hook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 		}
 		gotel.End(span, err)
 		if h.config.Observe != nil {
-			h.config.Observe(ctx, Observation{Command: operation, Count: 1, Duration: time.Since(started), Err: err})
+			h.config.Observe(ctx, Observation{Command: operation, Count: 1, Duration: time.Since(started), Err: err, PayloadBytes: argsSize(cmd.Args())})
 		}
 		return cmd.Err()
 	}
+}
+
+func argsSize(args []interface{}) int {
+	size := 0
+	for _, arg := range args {
+		switch value := arg.(type) {
+		case string:
+			size += len(value)
+		case []byte:
+			size += len(value)
+		default:
+			size += len(fmt.Sprint(value))
+		}
+	}
+	return size
 }
 
 func (h *hook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.ProcessPipelineHook {
