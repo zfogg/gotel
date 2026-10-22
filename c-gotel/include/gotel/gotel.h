@@ -12,6 +12,13 @@ typedef struct {
   bool realtime;
 } gotel_operation_t;
 typedef struct {
+  const char *name, *unit;
+  otlp_metric_type_t type;
+  const double *bounds;
+  size_t bound_count;
+} gotel_metric_t;
+
+typedef struct {
   otlp_exporter_opts_t exporter;
   unsigned signals;
   double realtime_sample_rate;
@@ -21,12 +28,18 @@ typedef struct {
   uint64_t (*realtime_ns)(void);
   const gotel_operation_t *operations;
   size_t operation_count;
+  const gotel_metric_t *metrics;
+  size_t metric_count;
 } gotel_options_t;
 /* Options are copied; exporter strings/resources are copied during create.
  * The operation catalog and its names must remain alive until destroy. No internal threads.
  * Stop and join all producers before drain/destroy. Tick/drain: one owner only. */
 otlp_status_t gotel_create(const gotel_options_t *options, gotel_host_t **output);
 void gotel_destroy(gotel_host_t *host);
+/* Fixed catalogs bound cardinality. Record is thread-safe and allocates no memory;
+ * tick/drain snapshot cumulative values. Counter values must be nonnegative.
+ * Catalogs must remain alive until destroy. Histograms require sorted finite bounds. */
+otlp_status_t gotel_metric_record(gotel_host_t *host, size_t metric, double value);
 otlp_status_t gotel_tick(gotel_host_t *host);
 otlp_status_t gotel_drain(gotel_host_t *host);
 void gotel_set_logger(gotel_host_t *host, otlp_log_fn logger, void *context);

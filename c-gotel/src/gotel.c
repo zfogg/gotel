@@ -42,6 +42,20 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
   for (size_t i = 0; i < o->operation_count; ++i)
     if (!o->operations[i].name || !*o->operations[i].name || strlen(o->operations[i].name) > 220)
       return OTLP_ERR_INVALID_ARGUMENT;
+  if ((!o->metrics && o->metric_count) || o->metric_count > SIZE_MAX - o->operation_count)
+    return OTLP_ERR_INVALID_ARGUMENT;
+  for (size_t i = 0; i < o->metric_count; ++i) {
+    const gotel_metric_t *m = &o->metrics[i];
+    if (!m->name || !*m->name || strlen(m->name) > 220 || m->type < OTLP_METRIC_COUNTER ||
+        m->type > OTLP_METRIC_HISTOGRAM || (!m->bounds && m->bound_count))
+      return OTLP_ERR_INVALID_ARGUMENT;
+    for (size_t j = 0; j < m->bound_count; ++j)
+      if (!isfinite(m->bounds[j]) || (j && m->bounds[j] <= m->bounds[j - 1]))
+        return OTLP_ERR_INVALID_ARGUMENT;
+    for (size_t j = 0; j < i; ++j)
+      if (!strcmp(m->name, o->metrics[j].name))
+        return OTLP_ERR_INVALID_ARGUMENT;
+  }
   gotel_host_t *h = calloc(1, sizeof(*h));
   if (!h)
     return OTLP_ERR_NOMEM;
@@ -52,6 +66,31 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
   if (!h->measurements || !h->exporter || !h->tracer) {
     gotel_destroy(h);
     return OTLP_ERR_NOMEM;
+  }
+  h->instrument_count = o->operation_count + o->metric_count;
+  h->instruments = calloc(h->instrument_count, sizeof(*h->instruments));
+  if (!h->instruments) {
+    gotel_destroy(h);
+    return OTLP_ERR_NOMEM;
+  }
+  static const double seconds[] = {.0001, .0005, .001, .0025, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10};
+  for (size_t i = 0; i < h->instrument_count; ++i) {
+    gotel_instrument_t *instrument = &h->instruments[i];
+    atomic_flag_clear(&instrument->lock);
+    if (i < o->operation_count) {
+      char name[256];
+      snprintf(name, sizeof(name), "%s.duration", o->operations[i].name);
+      instrument->value =
+          otlp_metric_create(OTLP_METRIC_HISTOGRAM, name, "s", NULL, seconds, sizeof(seconds) / sizeof(seconds[0]));
+    } else {
+      const gotel_metric_t *m = &o->metrics[i - o->operation_count];
+      instrument->value = otlp_metric_create(m->type, m->name, m->unit, NULL, m->bounds, m->bound_count);
+    }
+    if (!instrument->value) {
+      gotel_destroy(h);
+      return OTLP_ERR_NOMEM;
+    }
+    otlp_metric_set_start_time(instrument->value, o->realtime_ns());
   }
   atomic_init(&h->sequence, 0);
   atomic_init(&h->rate_window, 0);
@@ -71,8 +110,31 @@ void gotel_destroy(gotel_host_t *h) {
     return;
   otlp_tracer_free(h->tracer);
   otlp_exporter_free(h->exporter);
+  if (h->instruments) {
+    for (size_t i = 0; i < h->instrument_count; ++i)
+      otlp_metric_free(h->instruments[i].value);
+    free(h->instruments);
+  }
   free(h->measurements);
   free(h);
+}
+static otlp_status_t record_instrument(gotel_host_t *h, size_t i, double value) {
+  gotel_instrument_t *m = &h->instruments[i];
+  while (atomic_flag_test_and_set_explicit(&m->lock, memory_order_acquire)) {
+  }
+  otlp_status_t result = otlp_metric_record(m->value, value);
+  if (result == OTLP_OK)
+    m->recorded = true;
+  atomic_flag_clear_explicit(&m->lock, memory_order_release);
+  return result;
+}
+otlp_status_t gotel_metric_record(gotel_host_t *h, size_t metric, double value) {
+  if (!h || metric >= h->options.metric_count || !isfinite(value) ||
+      (value < 0 && h->options.metrics[metric].type == OTLP_METRIC_COUNTER))
+    return OTLP_ERR_INVALID_ARGUMENT;
+  if (!(h->options.signals & GOTEL_METRICS))
+    return OTLP_OK;
+  return record_instrument(h, h->options.operation_count + metric, value);
 }
 static bool sample(gotel_host_t *h, uint64_t now) {
   uint64_t x = atomic_fetch_add(&h->sequence, 1) + UINT64_C(0x9e3779b97f4a7c15);
@@ -138,6 +200,7 @@ void gotel_end(gotel_scope_t *s) {
   uint64_t elapsed = h->options.monotonic_ns() - s->started_ns;
   if (h->options.signals & GOTEL_METRICS) {
     gotel_measurement_t *m = &h->measurements[s->operation];
+    record_instrument(h, s->operation, (double)elapsed / 1e9);
     atomic_fetch_add(&m->count, 1);
     atomic_fetch_add(&m->total_ns, elapsed);
     if (s->failed)
@@ -191,6 +254,16 @@ void gotel_log(gotel_host_t *h, otlp_severity_t severity, const char *body, cons
 static void export_metrics(gotel_host_t *h) {
   if (!(h->options.signals & GOTEL_METRICS))
     return;
+  for (size_t i = 0; i < h->instrument_count; ++i) {
+    gotel_instrument_t *m = &h->instruments[i];
+    while (atomic_flag_test_and_set_explicit(&m->lock, memory_order_acquire)) {
+    }
+    if (m->recorded) {
+      otlp_metric_set_time(m->value, h->options.realtime_ns());
+      otlp_exporter_emit_metric(h->exporter, m->value);
+    }
+    atomic_flag_clear_explicit(&m->lock, memory_order_release);
+  }
   for (size_t i = 0; i < h->options.operation_count; ++i) {
     gotel_measurement_t *m = &h->measurements[i];
     uint64_t count = atomic_load(&m->count);

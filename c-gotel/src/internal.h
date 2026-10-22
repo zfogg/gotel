@@ -1,6 +1,11 @@
 #include <gotel/gotel.h>
 #include <stdatomic.h>
 typedef struct {
+  atomic_flag lock;
+  otlp_metric_t *value;
+  bool recorded;
+} gotel_instrument_t;
+typedef struct {
   atomic_uint_fast64_t count, errors, total_ns;
 } gotel_measurement_t;
 struct gotel_host {
@@ -8,6 +13,8 @@ struct gotel_host {
   otlp_exporter_t *exporter;
   otlp_tracer_t *tracer;
   gotel_measurement_t *measurements;
+  gotel_instrument_t *instruments;
+  size_t instrument_count;
   atomic_uint_fast64_t sequence, rate_window;
   uint64_t last_metrics_ns, epoch_ns;
 };

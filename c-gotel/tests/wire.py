@@ -96,6 +96,18 @@ try:
         if signals & 4:
             assert b'test.cli.count' in payload
             metrics = records(server.records, '/v1/metrics')
+            def point(name, kind):
+                metric = next(m for m in metrics if m[1] == [name.encode()])
+                return fields(fields(metric[kind][0])[1][0])
+            assert struct.unpack('<d', point('test.bytes', 7)[4][0])[0] == (4050 if signals == 4 else 50)
+            assert struct.unpack('<d', point('test.depth', 5)[4][0])[0] == 2
+            histogram = point('test.size', 9)
+            assert struct.unpack('<Q', histogram[4][0])[0] == (4002 if signals == 4 else 2)
+            assert struct.unpack('<d', histogram[5][0])[0] == (40055 if signals == 4 else 55)
+            assert struct.unpack('<4Q', histogram[6][0]) == (0, 4001 if signals == 4 else 1, 1, 0)
+            duration = point('test.cli.duration', 9)
+            assert struct.unpack('<Q', duration[4][0])[0] == 1
+            assert abs(struct.unpack('<d', duration[5][0])[0] - .005) < 1e-9
             metric = next(m for m in metrics if m[1] == [b'test.cli.count'])
             point = fields(fields(metric[7][0])[1][0])
             assert struct.unpack('<d', point[4][0])[0] == 1.0
