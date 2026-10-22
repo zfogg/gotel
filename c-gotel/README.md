@@ -169,3 +169,28 @@ Clear capture/scripts only after producers stop. Use the context manager to clos
 servers; snapshots are copies safe to inspect while requests arrive. The wire
 decoder rejects malformed/truncated input instead of silently accepting partial
 messages. The support library and collector have their own contract tests.
+
+## HTTPS
+
+c-gotel exports OTLP/protobuf over HTTP or HTTPS using OpenSSL 1.1.1 or newer.
+TLS 1.3 is enabled, with TLS 1.2 as the minimum. Certificate chains, validity
+periods, and DNS/IP endpoint identities are verified; verification cannot be
+disabled. DNS endpoints send SNI. `gotel_options_t.tls_ca_file` selects a PEM
+bundle replacing system roots; NULL uses OpenSSL default paths plus native
+Windows ROOT/macOS anchors. OpenSSL's `SSL_CERT_FILE`/`SSL_CERT_DIR` apply to
+default paths. Custom bundles are read during create and may be released after
+create; roots remain owned by the host through request destruction.
+
+CMake reuses existing `OpenSSL::SSL`/`OpenSSL::Crypto` targets when embedded.
+Standalone consumers must provide OpenSSL development headers/libraries.
+There are no additional library threads. Nonblocking memory BIOs bridge the
+existing platform sockets; tick/drain perform handshake and encrypted I/O.
+TLS handshakes share the configured send/read inactivity deadline. HTTPS
+connections are closed after each batch (plain HTTP retains upstream reuse).
+The pinned upstream HTTP sources are adapted in the build directory, with
+source hash checks, leaving shared dependency caches untouched.
+
+`c-gotel-tls` tests real TLS 1.2 and TLS 1.3 collectors, all three signals,
+70KB records across TLS records, transient failures, default/custom roots,
+expired/untrusted/wrong-identity certificates, malformed bundles, and a stalled
+handshake. Run `ctest --test-dir build --output-on-failure` after building tests.
