@@ -9,6 +9,7 @@ import (
 	"github.com/zfogg/gotel"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"go.temporal.io/sdk/client"
 	otelcontrib "go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/interceptor"
 )
@@ -16,6 +17,19 @@ import (
 type Config struct {
 	Application             gotel.Application
 	AllowInvalidParentSpans bool
+}
+
+// ConfigureClient installs Temporal tracing once, on the client. Temporal's
+// combined interceptor is also a WorkerInterceptor and the SDK carries it into
+// workers created from that client. Registering it again in worker.Options
+// produces duplicate, identically timed workflow and activity spans.
+func ConfigureClient(options client.Options, config Config) (client.Options, error) {
+	tracing, err := New(config)
+	if err != nil {
+		return options, err
+	}
+	options.Interceptors = append(options.Interceptors, tracing)
+	return options, nil
 }
 
 func New(config Config) (interceptor.Interceptor, error) {
