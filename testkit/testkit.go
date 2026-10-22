@@ -58,9 +58,8 @@ func RequireNoDuplicateSpans(t testing.TB, spans tracetest.SpanStubs) {
 	t.Helper()
 	seen := map[string]struct{}{}
 	for _, span := range spans {
-		key := fmt.Sprintf("%s|%s|%s|%d|%d", span.Name, span.SpanContext.SpanID(), span.Parent.SpanID(), span.StartTime.UnixNano(), span.EndTime.UnixNano())
 		// Different IDs can still be duplicated instrumentation, so omit the ID.
-		key = fmt.Sprintf("%s|%s|%d|%d", span.Name, span.Parent.SpanID(), span.StartTime.UnixNano(), span.EndTime.UnixNano())
+		key := fmt.Sprintf("%s|%s|%d|%d", span.Name, span.Parent.SpanID(), span.StartTime.UnixNano(), span.EndTime.UnixNano())
 		if _, ok := seen[key]; ok {
 			t.Errorf("duplicate span: %s", span.Name)
 		}
