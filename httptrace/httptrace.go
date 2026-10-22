@@ -5,6 +5,7 @@ package httptrace
 import (
 	"context"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -36,9 +37,29 @@ func (n Namer) Handler(next http.Handler, operation string, options ...otelhttp.
 func (n Namer) ClientSpanName(_ string, r *http.Request) string {
 	target := ""
 	if r.URL != nil {
-		target = r.URL.Host + r.URL.EscapedPath()
+		target = r.URL.Host + boundedClientPath(r.URL.EscapedPath())
 	}
 	return n.name("client", r.Method, target)
+}
+
+var (
+	clientUUIDSegment = regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
+	clientHexSegment  = regexp.MustCompile(`(?i)^[0-9a-f]{24,}$`)
+	clientIntSegment  = regexp.MustCompile(`^[0-9]+$`)
+)
+
+// boundedClientPath keeps stable endpoint segments while replacing common
+// resource identifiers. HTTP clients do not have router templates, so raw
+// UUIDs, long hashes, and integer IDs would otherwise create one span name per
+// resource and violate the same cardinality contract enforced for servers.
+func boundedClientPath(path string) string {
+	parts := strings.Split(path, "/")
+	for i, part := range parts {
+		if clientUUIDSegment.MatchString(part) || clientHexSegment.MatchString(part) || clientIntSegment.MatchString(part) {
+			parts[i] = "{id}"
+		}
+	}
+	return strings.Join(parts, "/")
 }
 
 // ServerSpanName uses Go's resolved ServeMux pattern. Unmatched or unresolved

@@ -35,4 +35,23 @@ describe("browserHttpClientSpanName", () => {
       }),
     ).toBe("stonkpile.http.client.POST example.com:8443/orders");
   });
+
+  it("bounds resource identifiers in same-origin and external paths", () => {
+    expect(
+      browserHttpClientSpanName({
+        applicationOrigin: "http://pi5:8081",
+        method: "DELETE",
+        prefix: "stonkpile",
+        responseUrl: "http://pi5:8081/api/reports/a128a1ac-6537-4a9e-9280-0ef7c14c33e2",
+      }),
+    ).toBe("stonkpile.http.client.DELETE /api/reports/{id}");
+    expect(
+      browserHttpClientSpanName({
+        applicationOrigin: "http://pi5:8081",
+        method: "GET",
+        prefix: "stonkpile",
+        responseUrl: "https://example.com/runs/2460",
+      }),
+    ).toBe("stonkpile.http.client.GET example.com/runs/{id}");
+  });
 });

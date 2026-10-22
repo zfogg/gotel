@@ -164,3 +164,17 @@ func TestClientSpanNameAllMethods(t *testing.T) {
 		})
 	}
 }
+
+func TestClientSpanNameBoundsResourceIdentifiers(t *testing.T) {
+	for _, tc := range []struct{ raw, want string }{
+		{"https://example.com/orders/a128a1ac-6537-4a9e-9280-0ef7c14c33e2", "example.com/orders/{id}"},
+		{"https://example.com/reports/2360f5747fbf826f6e5ccde6376418286a886fcf2032122eb24a75f351391af0", "example.com/reports/{id}"},
+		{"https://example.com/runs/2460", "example.com/runs/{id}"},
+		{"https://example.com/bars/5m", "example.com/bars/5m"},
+	} {
+		r := httptest.NewRequest(http.MethodDelete, tc.raw, nil)
+		if got := (Namer{Prefix: "stonkpile"}).ClientSpanName("", r); got != "stonkpile.http.client.DELETE "+tc.want {
+			t.Errorf("%s: got %q", tc.raw, got)
+		}
+	}
+}
