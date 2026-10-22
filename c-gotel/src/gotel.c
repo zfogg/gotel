@@ -60,6 +60,13 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
   if (!h)
     return OTLP_ERR_NOMEM;
   h->options = *o;
+  /* Build roots once per host, before requests can borrow them. HTTP-only hosts
+   * may run on minimal systems without a CA store. Explicit invalid bundles fail. */
+  otlp_status_t tls_status = gotel_tls_store_create(o->tls_ca_file, &h->tls);
+  if (tls_status != OTLP_OK && o->tls_ca_file && *o->tls_ca_file) {
+    free(h);
+    return tls_status;
+  }
   h->measurements = calloc(o->operation_count, sizeof(*h->measurements));
   h->exporter = otlp_exporter_create(&o->exporter);
   h->tracer = otlp_tracer_create(o->exporter.service_name, "c-gotel", "0.1.0");
@@ -116,6 +123,7 @@ void gotel_destroy(gotel_host_t *h) {
       otlp_metric_free(h->instruments[i].value);
     free(h->instruments);
   }
+  gotel_tls_store_free(h->tls);
   free(h->measurements);
   free(h);
 }
@@ -300,13 +308,19 @@ otlp_status_t gotel_tick(gotel_host_t *h) {
     export_metrics(h);
     h->last_metrics_ns = now;
   }
-  return otlp_exporter_tick(h->exporter, 0);
+  gotel_tls_store *previous = gotel_tls_select(h->tls);
+  otlp_status_t result = otlp_exporter_tick(h->exporter, 0);
+  gotel_tls_select(previous);
+  return result;
 }
 otlp_status_t gotel_drain(gotel_host_t *h) {
   if (!h)
     return OTLP_ERR_NULL;
   export_metrics(h);
-  return otlp_exporter_flush(h->exporter);
+  gotel_tls_store *previous = gotel_tls_select(h->tls);
+  otlp_status_t result = otlp_exporter_flush(h->exporter);
+  gotel_tls_select(previous);
+  return result;
 }
 otlp_status_t gotel_stats(gotel_host_t *h, otlp_exporter_stats_t *out) {
   return h ? otlp_exporter_get_stats(h->exporter, out) : OTLP_ERR_NULL;

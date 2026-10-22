@@ -20,6 +20,8 @@ typedef struct {
 
 typedef struct {
   otlp_exporter_opts_t exporter;
+  /* NULL uses system roots. A PEM bundle replaces system roots. Verification is always enabled. */
+  const char *tls_ca_file;
   unsigned signals;
   double realtime_sample_rate;
   uint32_t realtime_max_per_second;

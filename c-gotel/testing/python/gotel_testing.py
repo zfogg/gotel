@@ -125,11 +125,14 @@ class _Handler(http.server.BaseHTTPRequestHandler):
 
 
 class Collector:
-    def __init__(self, max_body=16 * 1024 * 1024):
+    def __init__(self, max_body=16 * 1024 * 1024, ssl_context=None):
+        self._https = ssl_context is not None
         self.max_body = max_body
         self._condition = threading.Condition()
         self._records, self._attempts, self._scripts = [], [], {}
         self._server = _Server(('127.0.0.1', 0), _Handler)
+        if ssl_context is not None:
+            self._server.socket = ssl_context.wrap_socket(self._server.socket, server_side=True)
         self._server.collector = self
         self._thread = threading.Thread(target=self._server.serve_forever,
                                         kwargs={'poll_interval': .01}, daemon=True)
@@ -139,7 +142,7 @@ class Collector:
         return self._server.server_port
     @property
     def url(self):
-        return f'http://127.0.0.1:{self.server_port}'
+        return f'{"https" if self._https else "http"}://127.0.0.1:{self.server_port}'
     def endpoint(self, signal='traces'):
         if signal not in ('traces', 'logs', 'metrics'):
             raise ValueError('unknown signal')

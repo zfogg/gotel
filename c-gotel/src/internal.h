@@ -1,3 +1,4 @@
+#include "tls.h"
 #include <gotel/gotel.h>
 #include <stdatomic.h>
 typedef struct {
@@ -10,6 +11,7 @@ typedef struct {
 } gotel_measurement_t;
 struct gotel_host {
   gotel_options_t options;
+  gotel_tls_store *tls;
   otlp_exporter_t *exporter;
   otlp_tracer_t *tracer;
   gotel_measurement_t *measurements;
