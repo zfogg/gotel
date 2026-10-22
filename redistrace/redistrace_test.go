@@ -26,3 +26,10 @@ func TestCommandNameIsBoundedAndNeverContainsArguments(t *testing.T) {
 		t.Fatalf("span name = %q", got)
 	}
 }
+
+func TestArgsSizeCountsPayloadWithoutReturningValues(t *testing.T) {
+	args := []interface{}{"SET", "bt:report:secret-report-id", []byte("payload")}
+	if got, want := argsSize(args), len("SET")+len("bt:report:secret-report-id")+len("payload"); got != want {
+		t.Fatalf("argsSize = %d, want %d", got, want)
+	}
+}
