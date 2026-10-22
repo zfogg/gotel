@@ -654,7 +654,12 @@ func summarize(tokens []summaryToken, depth int) string {
 			}
 			name, next := identifier(tokens, j)
 			if name != "" && next < end && tokens[next].text == "(" && !tokens[j].is("EXISTS") && !tokens[j].is("CAST") {
-				functions = append(functions, name)
+				close := closingParen(tokens, next)
+				if close == next+1 {
+					functions = append(functions, name+"()")
+				} else {
+					functions = append(functions, name+"(…)")
+				}
 				j = next - 1
 			}
 		}

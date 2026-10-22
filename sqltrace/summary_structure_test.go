@@ -8,7 +8,7 @@ import (
 // TestSummaryRowBounds checks scope, static counts and noninterpolation independently.
 func TestSummaryRowBounds(t *testing.T) {
 	cases := []struct{ sql, want string }{
-		{"INSERT INTO a SELECT unnest($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id", "INSERT INTO a SELECT unnest ON CONFLICT DO UPDATE SET …"},
+		{"INSERT INTO a SELECT unnest($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id", "INSERT INTO a SELECT unnest(…) ON CONFLICT DO UPDATE SET …"},
 		{"INSERT INTO a SELECT id FROM b WHERE b.active=true ON CONFLICT(id) DO NOTHING RETURNING id", "INSERT INTO a SELECT … FROM b WHERE … ON CONFLICT DO NOTHING RETURNING …"},
 		{"SELECT * FROM a LIMIT 20 OFFSET 0", "SELECT … FROM a LIMIT 20 OFFSET 0"},
 		{"SELECT * FROM a LIMIT $1 OFFSET $2", "SELECT … FROM a LIMIT ? OFFSET ?"},
@@ -91,7 +91,7 @@ func TestSummaryJoinConditions(t *testing.T) {
 			t.Fatalf("%s: %s", dialect, got)
 		}
 		query = `INSERT INTO a SELECT unnest(CASE WHEN cardinality($1::text[]) = 0 THEN ARRAY[cardinality($2::text[])] ELSE $1 END) ON CONFLICT(id) DO NOTHING`
-		if got := Summary(dialect, query); got != "INSERT INTO a SELECT unnest ON CONFLICT DO NOTHING" {
+		if got := Summary(dialect, query); got != "INSERT INTO a SELECT unnest(…) ON CONFLICT DO NOTHING" {
 			t.Fatalf("%s: %s", dialect, got)
 		}
 	}
