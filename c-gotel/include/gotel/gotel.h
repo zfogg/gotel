@@ -30,6 +30,10 @@ typedef struct {
   size_t operation_count;
   const gotel_metric_t *metrics;
   size_t metric_count;
+  /* Structured exporter events may run on producer or exporter threads.
+   * Callbacks must be thread-safe and must not reenter the exporter. */
+  otlp_event_fn exporter_event;
+  void *exporter_event_context;
 } gotel_options_t;
 /* Options are copied; exporter strings/resources are copied during create.
  * The operation catalog and its names must remain alive until destroy. No internal threads.

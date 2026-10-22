@@ -52,11 +52,17 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
     otlp_span_free(span);
   }
   if (h->options.signals & GOTEL_METRICS) {
-    otlp_metric_t *m = otlp_metric_create(OTLP_METRIC_HISTOGRAM, "db.client.operation.duration", "s", NULL, NULL, 0);
+    static const double bounds[] = {.0001, .0005, .001, .0025, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10};
+    otlp_metric_t *m = otlp_metric_create(OTLP_METRIC_HISTOGRAM, "db.client.operation.duration", "s", NULL, bounds,
+                                          sizeof(bounds) / sizeof(bounds[0]));
     if (m) {
       otlp_metric_set_attribute_string(m, "db.system.name", "sqlite");
       otlp_metric_set_attribute_string(m, "db.query.summary", span_name);
-      otlp_metric_mark_time(m);
+      uint64_t end = h->options.realtime_ns();
+      uint64_t duration = extra ? *(sqlite3_uint64 *)extra : 0;
+      otlp_metric_set_aggregation_temporality(m, OTLP_AGG_TEMP_DELTA);
+      otlp_metric_set_start_time(m, end >= duration ? end - duration : 0);
+      otlp_metric_set_time(m, end);
       otlp_metric_record(m, extra ? (double)*(sqlite3_uint64 *)extra / 1e9 : 0);
       otlp_exporter_emit_metric(h->exporter, m);
       otlp_metric_free(m);

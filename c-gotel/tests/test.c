@@ -249,10 +249,25 @@ static void concurrency(void) {
   concurrent(h);
   gotel_destroy(h);
 }
+typedef struct {
+  unsigned retries, batches;
+} event_counts_t;
+static void event_logger(void *context, const otlp_event_t *event) {
+  event_counts_t *counts = context;
+  if (event->code == OTLP_EVT_RETRY_ARMED)
+    ++counts->retries;
+  if (event->code == OTLP_EVT_BATCH_SENT)
+    ++counts->batches;
+}
 static void wire(const char *endpoint, unsigned signals) {
+  event_counts_t events = {0};
   gotel_options_t o = options();
   o.exporter.endpoint = endpoint;
   o.exporter.flush_timeout_ms = 2000;
+  o.exporter.backoff_initial_ms = 10;
+  o.exporter.backoff_max_ms = 20;
+  o.exporter_event = event_logger;
+  o.exporter_event_context = &events;
   o.signals = signals;
   gotel_host_t *h = NULL;
   CHECK(gotel_create(&o, &h) == OTLP_OK);
@@ -276,6 +291,9 @@ static void wire(const char *endpoint, unsigned signals) {
   if (signals == GOTEL_METRICS)
     concurrent(h);
   CHECK(gotel_drain(h) == OTLP_OK);
+  CHECK(events.retries ==
+        ((signals & GOTEL_TRACES ? 1 : 0) + (signals & GOTEL_LOGS ? 1 : 0) + (signals & GOTEL_METRICS ? 1 : 0)));
+  CHECK(events.batches >= events.retries);
   gotel_destroy(h);
 }
 int main(int argc, char **argv) {

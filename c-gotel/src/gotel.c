@@ -92,6 +92,7 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
     }
     otlp_metric_set_start_time(instrument->value, o->realtime_ns());
   }
+  otlp_exporter_set_event_logger(h->exporter, o->exporter_event, o->exporter_event_context);
   atomic_init(&h->sequence, 0);
   atomic_init(&h->rate_window, 0);
   for (size_t i = 0; i < o->operation_count; ++i) {

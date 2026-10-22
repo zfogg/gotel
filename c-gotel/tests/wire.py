@@ -1,5 +1,6 @@
 """Real HTTP/protobuf export, signal selection, names and bind-value exclusion."""
 import http.server
+import socketserver
 import subprocess
 import sys
 import threading
@@ -57,6 +58,12 @@ def records(requests, path):
 class Receiver(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         payload = self.rfile.read(int(self.headers['Content-Length']))
+        if self.path not in self.server.retried:
+            self.server.retried.add(self.path)
+            self.send_response(503)
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            return
         self.server.records.append((self.path, payload))
         self.send_response(200)
         self.send_header('Content-Type', 'application/x-protobuf')
@@ -65,7 +72,15 @@ class Receiver(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
-server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Receiver)
+class LoopbackServer(http.server.ThreadingHTTPServer):
+    def server_bind(self):
+        # Reverse DNS is unnecessary for a loopback-only fixture and can take
+        # tens of seconds on hosts with an unavailable resolver.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = 'localhost'
+        self.server_port = self.server_address[1]
+
+server = LoopbackServer(('127.0.0.1', 0), Receiver)
 server.records = []
 thread = threading.Thread(target=server.serve_forever, daemon=True)
 thread.start()
@@ -75,6 +90,7 @@ try:
                            (1, {'/v1/traces'}), (2, {'/v1/logs'}),
                            (4, {'/v1/metrics'}), (0, set())]:
         server.records.clear()
+        server.retried = set()
         subprocess.run([sys.argv[1], endpoint, str(signals)], check=True, timeout=15)
         assert {p for p, _ in server.records} == paths, [p for p, _ in server.records]
         payload = b''.join(body for _, body in server.records)
@@ -94,6 +110,16 @@ try:
         if signals & 2:
             assert b'wire message' in payload
         if signals & 4:
+            if len(sys.argv) < 3 or sys.argv[2] == 'ON':
+                sql_metrics = [m for m in records(server.records, '/v1/metrics')
+                               if m[1] == [b'db.client.operation.duration']]
+                assert len(sql_metrics) == 3
+                for metric in sql_metrics:
+                    histogram = fields(metric[9][0])
+                    assert histogram[2] == [1], 'SQLite observations must use delta temporality'
+                    point = fields(histogram[1][0])
+                    assert struct.unpack('<Q', point[4][0])[0] == 1
+                    assert len(point[7][0]) == 15 * 8
             assert b'test.cli.count' in payload
             metrics = records(server.records, '/v1/metrics')
             def point(name, kind):
