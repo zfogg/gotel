@@ -165,9 +165,13 @@ static void export_metrics(gotel_host_t *h) {
     uint64_t count = atomic_load(&m->count);
     if (!count) continue;
     const char *operation = h->options.operations[i].name;
-    otlp_metric_t *c = otlp_metric_create(OTLP_METRIC_COUNTER,"gotel.operation.count","{operation}",NULL,NULL,0);
-    otlp_metric_t *e = otlp_metric_create(OTLP_METRIC_COUNTER,"gotel.operation.errors","{error}",NULL,NULL,0);
-    otlp_metric_t *d = otlp_metric_create(OTLP_METRIC_COUNTER,"gotel.operation.duration.sum","s",NULL,NULL,0);
+    char count_name[256], error_name[256], duration_name[256];
+    snprintf(count_name,sizeof(count_name),"%s.count",operation);
+    snprintf(error_name,sizeof(error_name),"%s.errors",operation);
+    snprintf(duration_name,sizeof(duration_name),"%s.duration.sum",operation);
+    otlp_metric_t *c = otlp_metric_create(OTLP_METRIC_COUNTER,count_name,"{operation}",NULL,NULL,0);
+    otlp_metric_t *e = otlp_metric_create(OTLP_METRIC_COUNTER,error_name,"{error}",NULL,NULL,0);
+    otlp_metric_t *d = otlp_metric_create(OTLP_METRIC_COUNTER,duration_name,"s",NULL,NULL,0);
     otlp_metric_t *items[] = {c,e,d};
     double values[] = {(double)count,(double)atomic_load(&m->errors),(double)atomic_load(&m->total_ns)/1e9};
     for (size_t j=0;j<3;++j) if(items[j]) {

@@ -36,7 +36,7 @@ try:
         if signals & 2:
             assert b'wire message' in payload
         if signals & 4:
-            assert b'gotel.operation.count' in payload
+            assert b'test.cli.count' in payload
     print('c-gotel OTLP wire tests passed')
 finally:
     server.shutdown()

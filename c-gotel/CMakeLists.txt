@@ -5,7 +5,11 @@ option(CGOTEL_BUILD_TESTS "Build c-gotel unit and wire tests" OFF)
 option(CGOTEL_WITH_SQLITE "Build SQLite trace adapter" ON)
 FetchContent_Declare(otlp_c GIT_REPOSITORY https://github.com/riboseinc/otlp-c.git
   GIT_TAG 0798449d66331c3953b8ba9354164cfbf2f3bdaf)
+# Do not let the dependency define a generic docs target in its consumer.
+set(_gotel_disable_doxygen "${CMAKE_DISABLE_FIND_PACKAGE_Doxygen}")
+set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen TRUE)
 FetchContent_MakeAvailable(otlp_c)
+set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen "${_gotel_disable_doxygen}")
 # otlp-c v1.1.19 calls Sleep in exporter translation units without
 # including its declaration. Supply the Windows headers for that pinned version.
 if(WIN32)
