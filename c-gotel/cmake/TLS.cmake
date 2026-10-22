@@ -2,10 +2,12 @@
 # in every translation unit. Never modify the shared FetchContent source cache.
 set(_stage "${CMAKE_CURRENT_BINARY_DIR}/otlp-tls")
 file(MAKE_DIRECTORY "${_stage}")
-file(SHA256 "${otlp_c_SOURCE_DIR}/src/http_client.c" _http_hash)
-file(SHA256 "${otlp_c_SOURCE_DIR}/src/http_client.h" _header_hash)
-if(NOT _http_hash STREQUAL "70810d6f37049c4f88b23b55ae442b516ddcad498dd5c3e35869bf67c5a9f245" OR
-   NOT _header_hash STREQUAL "ab73471b1bf235d28d9fcd8135e8aae4c1a181eb062208bf8d2ac953e8a5b9af")
+file(READ "${otlp_c_SOURCE_DIR}/src/http_client.c" _http_source)
+string(SHA256 _http_hash "${_http_source}")
+file(READ "${otlp_c_SOURCE_DIR}/src/http_client.h" _http_header)
+string(SHA256 _header_hash "${_http_header}")
+if(NOT _http_hash STREQUAL "f5a511b4b624266ce4dbafc85b6ce94aae715dd1bb199cc7c64c664d8634c393" OR
+   NOT _header_hash STREQUAL "9ec75f239f20b0d669dc7207ddcfa08bbd90a1ea338a5562709acd7859a52e3f")
   message(FATAL_ERROR "The pinned otlp-c HTTP implementation changed; review the TLS adapter")
 endif()
 
