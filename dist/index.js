@@ -12,6 +12,15 @@ export function browserHttpClientSpanName({ applicationOrigin, method, prefix, r
 export function createBrowserFetchInstrumentation({ applicationOrigin = globalThis.location.origin, prefix, ...config }) {
     return new FetchInstrumentation({
         ...config,
+        requestHook(span, request) {
+            const typedRequest = request;
+            span.updateName(browserHttpClientSpanName({
+                applicationOrigin,
+                method: typedRequest.method,
+                prefix,
+                responseUrl: typedRequest.url,
+            }));
+        },
         applyCustomAttributesOnSpan(span, request, result) {
             if (result instanceof Response) {
                 span.updateName(browserHttpClientSpanName({

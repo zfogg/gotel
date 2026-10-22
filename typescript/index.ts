@@ -45,6 +45,17 @@ export function createBrowserFetchInstrumentation({
 }: BrowserFetchInstrumentationOptions): FetchInstrumentation {
   return new FetchInstrumentation({
     ...config,
+    requestHook(span, request) {
+      const typedRequest = request as Request
+      span.updateName(
+        browserHttpClientSpanName({
+          applicationOrigin,
+          method: typedRequest.method,
+          prefix,
+          responseUrl: typedRequest.url,
+        }),
+      )
+    },
     applyCustomAttributesOnSpan(span, request, result) {
       if (result instanceof Response) {
         span.updateName(
