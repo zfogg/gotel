@@ -28,6 +28,7 @@ otlp_status_t gotel_create(const gotel_options_t *options, gotel_host_t **output
 void gotel_destroy(gotel_host_t *host);
 otlp_status_t gotel_tick(gotel_host_t *host);
 otlp_status_t gotel_drain(gotel_host_t *host);
+void gotel_set_logger(gotel_host_t *host, otlp_log_fn logger, void *context);
 otlp_status_t gotel_stats(gotel_host_t *host, otlp_exporter_stats_t *stats);
 otlp_status_t gotel_parse_signals(const char *text, unsigned *signals);
 

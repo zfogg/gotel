@@ -197,3 +197,7 @@ otlp_status_t gotel_drain(gotel_host_t *h) {
 otlp_status_t gotel_stats(gotel_host_t *h, otlp_exporter_stats_t *out) {
   return h ? otlp_exporter_get_stats(h->exporter,out) : OTLP_ERR_NULL;
 }
+
+void gotel_set_logger(gotel_host_t *h, otlp_log_fn logger, void *context) {
+  if(h) otlp_exporter_set_logger(h->exporter,logger,context);
+}
