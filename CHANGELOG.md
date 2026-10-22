@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.7.0
+
+- Add the shared `Application` facade, resource builder, HTTP client/server bundle, background and cleanup contexts, safe error recording, and trace test kit.
+- Add reusable Temporal and Redis instrumentation with application-prefixed workflow, activity, and command names.
+- Add a complete browser telemetry provider/resource/fetch factory for TypeScript applications.
+
 ## v0.6.0
 
 - Add router-independent HTTP client/server span naming with application prefixes,

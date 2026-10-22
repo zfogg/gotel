@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -15,6 +16,18 @@ import (
 // is a stable application identifier, such as "stonkpile", "ratio" or "spaniel".
 // The zero value produces names starting with "http.".
 type Namer struct{ Prefix string }
+
+// Transport instruments outbound HTTP with the shared naming convention.
+func (n Namer) Transport(base http.RoundTripper, options ...otelhttp.Option) http.RoundTripper {
+	options = append([]otelhttp.Option{otelhttp.WithSpanNameFormatter(n.ClientSpanName)}, options...)
+	return otelhttp.NewTransport(base, options...)
+}
+
+// Handler instruments inbound HTTP and finalizes the route name after routing.
+func (n Namer) Handler(next http.Handler, operation string, options ...otelhttp.Option) http.Handler {
+	options = append([]otelhttp.Option{otelhttp.WithSpanNameFormatter(n.ServerSpanName)}, options...)
+	return otelhttp.NewHandler(n.RouteMiddleware(nil)(next), operation, options...)
+}
 
 // ClientSpanName plugs directly into otelhttp.WithSpanNameFormatter. It keeps
 // the destination host (including its port) and escaped path, omitting URL
@@ -61,9 +74,6 @@ func (n Namer) RouteMiddleware(resolve func(*http.Request) string) func(http.Han
 }
 
 func (n Namer) name(role, method, target string) string {
-	if method == "" {
-		method = http.MethodGet
-	}
 	if role == "server" && target == "" {
 		target = "unknown"
 	}

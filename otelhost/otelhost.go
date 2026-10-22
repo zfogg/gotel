@@ -25,7 +25,6 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // Protocol selects the OTLP transport.
@@ -111,16 +110,7 @@ func Start(ctx context.Context, config Config) (_ *Runtime, err error) {
 	if config.MetricInterval <= 0 {
 		config.MetricInterval = 10 * time.Second
 	}
-	attrs := append([]attribute.KeyValue{semconv.ServiceName(config.ServiceName)}, config.Attributes...)
-	if config.ServiceVersion != "" {
-		attrs = append(attrs, semconv.ServiceVersion(config.ServiceVersion))
-	}
-	if config.Environment != "" {
-		attrs = append(attrs, attribute.String("deployment.environment.name", config.Environment))
-	}
-	resourceOptions := []resource.Option{resource.WithTelemetrySDK(), resource.WithHost(), resource.WithOS(), resource.WithProcess(), resource.WithAttributes(attrs...)}
-	resourceOptions = append(resourceOptions, config.ResourceOptions...)
-	res, err := resource.New(ctx, resourceOptions...)
+	res, err := NewResource(ctx, ResourceConfig{ServiceName: config.ServiceName, ServiceVersion: config.ServiceVersion, Environment: config.Environment, Attributes: config.Attributes, Options: config.ResourceOptions})
 	if err != nil && res == nil {
 		return nil, err
 	}

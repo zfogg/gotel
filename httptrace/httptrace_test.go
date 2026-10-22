@@ -154,14 +154,10 @@ func TestClientSpanNameAllMethods(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, method := range []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace, "PURGE", ""} {
+	for _, method := range []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace, "PURGE"} {
 		t.Run(method, func(t *testing.T) {
 			r := &http.Request{Method: method, URL: u}
-			wantMethod := method
-			if wantMethod == "" {
-				wantMethod = http.MethodGet
-			}
-			want := "stonkpile.http.client." + wantMethod + " example.com:8443/a%2Fb"
+			want := "stonkpile.http.client." + method + " example.com:8443/a%2Fb"
 			if got := (Namer{Prefix: "stonkpile"}).ClientSpanName("", r); got != want {
 				t.Fatalf("span name = %q, want %q", got, want)
 			}

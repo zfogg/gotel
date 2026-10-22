@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -67,8 +66,7 @@ func Finish(span trace.Span, started time.Time, err error) {
 	}
 	span.SetAttributes(attribute.Float64("operation.duration_seconds", time.Since(started).Seconds()))
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
+		RecordError(span, err)
 	}
 	span.End()
 }
@@ -79,8 +77,7 @@ func End(span trace.Span, err error) {
 		return
 	}
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
+		RecordError(span, err)
 	}
 	span.End()
 }
