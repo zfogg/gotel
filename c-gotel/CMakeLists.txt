@@ -13,6 +13,29 @@ set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen "${_gotel_disable_doxygen}")
 # otlp-c v1.1.19 calls Sleep in exporter translation units without
 # including its declaration. Supply the Windows headers for that pinned version.
 if(WIN32)
+  # SO_ERROR can be zero while a nonblocking Winsock connect is still pending.
+  # Wait for writability before considering it connected (Docker port forwarding
+  # reliably exposes the race). Keep the pinned upstream source cache untouched.
+  file(READ "${otlp_c_SOURCE_DIR}/src/platform_win.c" _gotel_platform)
+  set(_gotel_connect_anchor "if (!s->connecting)\n\t\treturn OTLP_OK;")
+  string(FIND "${_gotel_platform}" "${_gotel_connect_anchor}" _gotel_connect_position)
+  if(_gotel_connect_position EQUAL -1)
+    message(FATAL_ERROR "Pinned otlp-c Windows connect implementation changed")
+  endif()
+  string(REPLACE "${_gotel_connect_anchor}" "${_gotel_connect_anchor}
+    fd_set writable, failed;
+    FD_ZERO(&writable); FD_ZERO(&failed);
+    FD_SET(s->s, &writable); FD_SET(s->s, &failed);
+    struct timeval wait = {0, 0};
+    int ready = select(0, NULL, &writable, &failed, &wait);
+    if (ready == SOCKET_ERROR) return OTLP_ERR_CONNECT;
+    if (!ready) return OTLP_ERR_WOULDBLOCK;
+" _gotel_platform "${_gotel_platform}")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/otlp_platform_win.c" "${_gotel_platform}")
+  get_target_property(_gotel_otlp_sources otlp_c SOURCES)
+  list(REMOVE_ITEM _gotel_otlp_sources src/platform_win.c)
+  set_property(TARGET otlp_c PROPERTY SOURCES "${_gotel_otlp_sources}")
+  target_sources(otlp_c PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/otlp_platform_win.c")
   if(MSVC AND NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
     target_compile_options(otlp_c PRIVATE /FI${CMAKE_CURRENT_SOURCE_DIR}/src/otlp_windows.h)
   else()
