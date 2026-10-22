@@ -44,41 +44,41 @@ func (e *CardinalityError) Error() string {
 	return "high-cardinality span name (" + e.Reason + "): " + e.Name
 }
 
-func RequireBoundedNames(t testing.TB, spans tracetest.SpanStubs) {
+func RequireBoundedNames(t testing.TB, spans []sdktrace.ReadOnlySpan) {
 	t.Helper()
 	for _, span := range spans {
-		if err := ValidateSpanName(span.Name); err != nil {
+		if err := ValidateSpanName(span.Name()); err != nil {
 			t.Error(err)
 		}
 	}
 }
 
 // RequireNoDuplicateSpans rejects identically timed, named, and parented spans.
-func RequireNoDuplicateSpans(t testing.TB, spans tracetest.SpanStubs) {
+func RequireNoDuplicateSpans(t testing.TB, spans []sdktrace.ReadOnlySpan) {
 	t.Helper()
 	seen := map[string]struct{}{}
 	for _, span := range spans {
 		// Different IDs can still be duplicated instrumentation, so omit the ID.
-		key := fmt.Sprintf("%s|%s|%d|%d", span.Name, span.Parent.SpanID(), span.StartTime.UnixNano(), span.EndTime.UnixNano())
+		key := fmt.Sprintf("%s|%s|%d|%d", span.Name(), span.Parent().SpanID(), span.StartTime().UnixNano(), span.EndTime().UnixNano())
 		if _, ok := seen[key]; ok {
-			t.Errorf("duplicate span: %s", span.Name)
+			t.Errorf("duplicate span: %s", span.Name())
 		}
 		seen[key] = struct{}{}
 	}
 }
 
 // RequireTemporalTopology verifies one workflow root and its activity children.
-func RequireTemporalTopology(t testing.TB, spans tracetest.SpanStubs, prefix, workflow string, activities ...string) {
+func RequireTemporalTopology(t testing.TB, spans []sdktrace.ReadOnlySpan, prefix, workflow string, activities ...string) {
 	t.Helper()
 	RequireNoDuplicateSpans(t, spans)
 	wantWorkflow := prefix + ".temporal.workflow." + workflow
 	var root trace.SpanID
 	for _, span := range spans {
-		if span.Name == wantWorkflow {
+		if span.Name() == wantWorkflow {
 			if root.IsValid() {
 				t.Errorf("multiple workflow spans %q", wantWorkflow)
 			}
-			root = span.SpanContext.SpanID()
+			root = span.SpanContext().SpanID()
 		}
 	}
 	if !root.IsValid() {
@@ -89,9 +89,9 @@ func RequireTemporalTopology(t testing.TB, spans tracetest.SpanStubs, prefix, wo
 		want := prefix + ".temporal.activity." + activity
 		count := 0
 		for _, span := range spans {
-			if span.Name == want {
+			if span.Name() == want {
 				count++
-				if span.Parent.SpanID() != root {
+				if span.Parent().SpanID() != root {
 					t.Errorf("activity %q is not child of workflow", want)
 				}
 			}
@@ -103,10 +103,10 @@ func RequireTemporalTopology(t testing.TB, spans tracetest.SpanStubs, prefix, wo
 }
 
 // RequireSpanName reports whether a smoke operation installed instrumentation.
-func RequireSpanName(t testing.TB, spans tracetest.SpanStubs, name string) {
+func RequireSpanName(t testing.TB, spans []sdktrace.ReadOnlySpan, name string) {
 	t.Helper()
 	for _, span := range spans {
-		if span.Name == name {
+		if span.Name() == name {
 			return
 		}
 	}
