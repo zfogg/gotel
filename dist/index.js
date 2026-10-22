@@ -33,16 +33,40 @@ export function createBrowserFetchInstrumentation({ applicationOrigin = globalTh
         },
     });
 }
+// AuthenticatedSpanExporter drops queued browser spans after logout while the
+// server independently enforces authentication on every export.
+export class AuthenticatedSpanExporter {
+    options;
+    constructor(options) {
+        this.options = options;
+    }
+    export(spans, callback) {
+        if (!this.options.authenticated()) {
+            callback({ code: 0 });
+            return;
+        }
+        this.options.exporter.export(spans, callback);
+    }
+    shutdown() { return this.options.exporter.shutdown(); }
+    forceFlush() { return this.options.exporter.forceFlush?.() ?? Promise.resolve(); }
+}
+export function browserTelemetryResource(options) {
+    return defaultResource().merge(resourceFromAttributes({
+        'service.name': options.serviceName,
+        ...(options.serviceVersion ? { 'service.version': options.serviceVersion } : {}),
+        ...(options.environment ? { 'deployment.environment.name': options.environment } : {}),
+        ...options.attributes,
+    }));
+}
+const providers = new Map();
 // startBrowserTelemetry owns the standard browser resource, provider, batch
 // processor, and fetch instrumentation. Applications retain exporter policy by
 // supplying traceExporter (for example, an authenticated exporter wrapper).
 export function startBrowserTelemetry({ prefix, serviceName, serviceVersion, environment, attributes = {}, applicationOrigin, resource, traceExportUrl = '/api/telemetry/v1/traces', traceExporter, batch, fetch = {}, }) {
-    const applicationResource = defaultResource().merge(resourceFromAttributes({
-        'service.name': serviceName,
-        ...(serviceVersion ? { 'service.version': serviceVersion } : {}),
-        ...(environment ? { 'deployment.environment.name': environment } : {}),
-        ...attributes,
-    }));
+    const existing = providers.get(serviceName);
+    if (existing)
+        return existing;
+    const applicationResource = browserTelemetryResource({ serviceName, serviceVersion, environment, attributes });
     const exporter = traceExporter ?? new OTLPTraceExporter({ url: traceExportUrl });
     const provider = new WebTracerProvider({
         resource: resource ? applicationResource.merge(resource) : applicationResource,
@@ -54,6 +78,14 @@ export function startBrowserTelemetry({ prefix, serviceName, serviceVersion, env
             createBrowserFetchInstrumentation({ ...fetch, applicationOrigin, prefix }),
         ],
     });
+    providers.set(serviceName, provider);
     return provider;
+}
+export async function shutdownBrowserTelemetry(serviceName) {
+    const provider = providers.get(serviceName);
+    if (!provider)
+        return;
+    providers.delete(serviceName);
+    await provider.shutdown();
 }
 //# sourceMappingURL=index.js.map

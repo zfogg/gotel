@@ -27,5 +27,18 @@ export interface BrowserTelemetryOptions {
     batch?: BatchSpanProcessorBrowserConfig;
     fetch?: Omit<BrowserFetchInstrumentationOptions, 'prefix' | 'applicationOrigin'>;
 }
+export interface AuthenticatedExporterOptions {
+    authenticated: () => boolean;
+    exporter: SpanExporter;
+}
+export declare class AuthenticatedSpanExporter implements SpanExporter {
+    private readonly options;
+    constructor(options: AuthenticatedExporterOptions);
+    export(spans: Parameters<SpanExporter['export']>[0], callback: Parameters<SpanExporter['export']>[1]): void;
+    shutdown(): Promise<void>;
+    forceFlush(): Promise<void>;
+}
+export declare function browserTelemetryResource(options: Pick<BrowserTelemetryOptions, 'serviceName' | 'serviceVersion' | 'environment' | 'attributes'>): Resource;
 export declare function startBrowserTelemetry({ prefix, serviceName, serviceVersion, environment, attributes, applicationOrigin, resource, traceExportUrl, traceExporter, batch, fetch, }: BrowserTelemetryOptions): WebTracerProvider;
+export declare function shutdownBrowserTelemetry(serviceName: string): Promise<void>;
 //# sourceMappingURL=index.d.ts.map
