@@ -39,3 +39,17 @@ func TestScriptCacheMissIsNotReportedAsAnOperationFailure(t *testing.T) {
 		t.Fatalf("trace error = %v, want nil", err)
 	}
 }
+
+func TestHookReturnsChainErrorWhenCommandHasNoError(t *testing.T) {
+	h := New(Config{Application: gotel.NewApplication("ratio")})
+	process := h.ProcessHook(func(context.Context, redis.Cmder) error {
+		return redis.ErrNoScript
+	})
+	cmd := redis.NewCmd(t.Context(), "evalsha", "digest", 0)
+	if err := process(t.Context(), cmd); err != redis.ErrNoScript {
+		t.Fatalf("process error = %v, want %v", err, redis.ErrNoScript)
+	}
+	if cmd.Err() != nil {
+		t.Fatalf("fixture command unexpectedly has error %v", cmd.Err())
+	}
+}

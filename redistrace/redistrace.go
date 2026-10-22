@@ -41,12 +41,12 @@ func (h *hook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 			attribute.String("db.operation.name", operation),
 		)
 		err := next(ctx, cmd)
-		err = traceError(err)
-		gotel.End(span, err)
+		traceErr := traceError(err)
+		gotel.End(span, traceErr)
 		if h.config.Observe != nil {
-			h.config.Observe(ctx, Observation{Command: operation, Count: 1, Duration: time.Since(started), Err: err, PayloadBytes: argsSize(cmd.Args())})
+			h.config.Observe(ctx, Observation{Command: operation, Count: 1, Duration: time.Since(started), Err: traceErr, PayloadBytes: argsSize(cmd.Args())})
 		}
-		return cmd.Err()
+		return err
 	}
 }
 
