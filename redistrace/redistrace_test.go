@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func TestCommandNameIsBoundedAndNeverContainsArguments(t *testing.T) {
@@ -51,5 +52,41 @@ func TestHookReturnsChainErrorWhenCommandHasNoError(t *testing.T) {
 	}
 	if cmd.Err() != nil {
 		t.Fatalf("fixture command unexpectedly has error %v", cmd.Err())
+	}
+}
+
+func TestDisableRootSpansKeepsObservationsAndTracesChildren(t *testing.T) {
+	recorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
+	previous := otel.GetTracerProvider()
+	otel.SetTracerProvider(provider)
+	defer func() { otel.SetTracerProvider(previous); _ = provider.Shutdown(context.Background()) }()
+	observed := 0
+	h := New(Config{
+		Application:      gotel.NewApplication("stonkpile"),
+		DisableRootSpans: true,
+		Observe:          func(context.Context, Observation) { observed++ },
+	})
+	process := h.ProcessHook(func(context.Context, redis.Cmder) error { return nil })
+	cmd := redis.NewCmd(t.Context(), "GET", "secret")
+	if err := process(t.Context(), cmd); err != nil {
+		t.Fatal(err)
+	}
+	if len(recorder.Ended()) != 0 || observed != 1 {
+		t.Fatalf("root spans = %d, observations = %d; want 0, 1", len(recorder.Ended()), observed)
+	}
+	ctx, parent := provider.Tracer("test").Start(t.Context(), "stonkpile.operation")
+	if err := process(ctx, cmd); err != nil {
+		t.Fatal(err)
+	}
+	parent.End()
+	var childParent trace.SpanID
+	for _, span := range recorder.Ended() {
+		if span.Name() == "stonkpile.storage.redis.get" {
+			childParent = span.Parent().SpanID()
+		}
+	}
+	if childParent != parent.SpanContext().SpanID() || observed != 2 {
+		t.Fatalf("child parent = %s, observations = %d; want %s, 2", childParent, observed, parent.SpanContext().SpanID())
 	}
 }
