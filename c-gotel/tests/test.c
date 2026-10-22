@@ -1,4 +1,4 @@
-#include <gotel/gotel.h>
+#include <gotel/testing.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,8 +16,6 @@
       exit(1);                                                                                                         \
     }                                                                                                                  \
   } while (0)
-static uint64_t now = 1000000000;
-static uint64_t clock_ns(void) { return now; }
 static const gotel_operation_t ops[] = {{"test.cli", false}, {"test.frame", true}, {"test.child", false}};
 static const double metric_bounds[] = {1, 10, 100};
 static const gotel_metric_t metrics[] = {
@@ -34,8 +32,8 @@ static gotel_options_t options(void) {
   o.exporter.queue_capacity = 64;
   o.signals = GOTEL_ALL;
   o.realtime_sample_rate = 0.01;
-  o.monotonic_ns = clock_ns;
-  o.realtime_ns = clock_ns;
+  o.monotonic_ns = gotel_test_monotonic_ns;
+  o.realtime_ns = gotel_test_realtime_ns;
   o.operations = ops;
   o.operation_count = 3;
   o.metrics = metrics;
@@ -70,31 +68,31 @@ static void validation(void) {
   gotel_host_t *h = (void *)1;
   gotel_options_t o = options();
   o.realtime_sample_rate = NAN;
-  CHECK(gotel_create(&o, &h) != OTLP_OK && h == NULL);
+  CHECK(gotel_test_create(&o, &h) != OTLP_OK && h == NULL);
   o = options();
   o.exporter.queue_capacity = 3;
-  CHECK(gotel_create(&o, &h) != OTLP_OK && h == NULL);
+  CHECK(gotel_test_create(&o, &h) != OTLP_OK && h == NULL);
   o = options();
   o.signals = 8;
-  CHECK(gotel_create(&o, &h) != OTLP_OK);
+  CHECK(gotel_test_create(&o, &h) != OTLP_OK);
   o = options();
   o.metrics = NULL;
-  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
+  CHECK(gotel_test_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
   gotel_metric_t bad[] = {metrics[0], metrics[0]};
   o.metrics = bad;
   o.metric_count = 2;
-  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
+  CHECK(gotel_test_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
   double unsorted[] = {2, 1};
   bad[0] = (gotel_metric_t){"bad", "s", OTLP_METRIC_HISTOGRAM, unsorted, 2};
   o.metric_count = 1;
-  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
+  CHECK(gotel_test_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
   unsorted[1] = INFINITY;
-  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
+  CHECK(gotel_test_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
 }
 static void sampling(void) {
   gotel_options_t o = options();
   gotel_host_t *h = NULL;
-  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(gotel_test_create(&o, &h) == OTLP_OK);
   size_t sampled = 0;
   for (int i = 0; i < 10000; ++i) {
     gotel_scope_t s, c;
@@ -113,21 +111,21 @@ static void sampling(void) {
   gotel_destroy(h);
   o.realtime_sample_rate = 1;
   o.realtime_max_per_second = 2;
-  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(gotel_test_create(&o, &h) == OTLP_OK);
   for (int i = 0; i < 3; ++i) {
     gotel_scope_t s;
     gotel_begin(h, &s, 1, NULL);
     CHECK((s.span != NULL) == (i < 2));
     gotel_end(&s);
   }
-  now += 1000000000;
+  CHECK(gotel_test_clock_advance(1000000000) == OTLP_OK);
   gotel_scope_t s;
   gotel_begin(h, &s, 1, NULL);
   CHECK(s.span);
   gotel_end(&s);
   gotel_destroy(h);
   o.realtime_sample_rate = 0;
-  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(gotel_test_create(&o, &h) == OTLP_OK);
   gotel_scope_t root, frame;
   gotel_begin(h, &root, 0, NULL);
   CHECK(root.span);
@@ -141,7 +139,7 @@ static void context_and_signals(void) {
   gotel_options_t o = options();
   gotel_host_t *h = NULL;
   gotel_scope_t root, child;
-  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(gotel_test_create(&o, &h) == OTLP_OK);
   gotel_begin(h, &root, 0, NULL);
   gotel_context_t c = gotel_current_context();
   gotel_end(&root);
@@ -153,7 +151,7 @@ static void context_and_signals(void) {
   gotel_end(&child);
   gotel_destroy(h);
   o.signals = GOTEL_METRICS;
-  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(gotel_test_create(&o, &h) == OTLP_OK);
   gotel_begin(h, &root, 0, NULL);
   CHECK(!root.span);
   gotel_end(&root);
@@ -191,7 +189,7 @@ static void registry(void) {
   CHECK(gotel_query_find(NULL, 0, "SELECT 1") == NULL);
   gotel_options_t o = options();
   gotel_host_t *h = NULL;
-  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(gotel_test_create(&o, &h) == OTLP_OK);
   sqlite3 *db = NULL;
   CHECK(sqlite3_open(":memory:", &db) == SQLITE_OK);
   gotel_sqlite_t *a = NULL;
@@ -212,6 +210,9 @@ static void *produce(void *arg)
 #endif
 {
   gotel_host_t *h = arg;
+  gotel_test_clock_set(7, 9);
+  CHECK(gotel_test_clock_advance(11) == OTLP_OK);
+  CHECK(gotel_test_monotonic_ns() == 18 && gotel_test_realtime_ns() == 20);
   for (int i = 0; i < 1000; ++i) {
     gotel_scope_t s;
     CHECK(gotel_metric_record(h, 0, 1) == OTLP_OK);
@@ -223,6 +224,7 @@ static void *produce(void *arg)
   return 0;
 }
 static void concurrent(gotel_host_t *h) {
+  uint64_t before = gotel_test_monotonic_ns();
 #ifdef _WIN32
   HANDLE threads[4];
   for (int i = 0; i < 4; ++i) {
@@ -240,34 +242,26 @@ static void concurrent(gotel_host_t *h) {
     CHECK(pthread_join(threads[i], NULL) == 0);
 #endif
   CHECK(!gotel_current_context().valid);
+  CHECK(gotel_test_monotonic_ns() == before);
 }
 static void concurrency(void) {
   gotel_options_t o = options();
   gotel_host_t *h = NULL;
   o.signals = GOTEL_METRICS;
-  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(gotel_test_create(&o, &h) == OTLP_OK);
   concurrent(h);
   gotel_destroy(h);
 }
-typedef struct {
-  unsigned retries, batches;
-} event_counts_t;
-static void event_logger(void *context, const otlp_event_t *event) {
-  event_counts_t *counts = context;
-  if (event->code == OTLP_EVT_RETRY_ARMED)
-    ++counts->retries;
-  if (event->code == OTLP_EVT_BATCH_SENT)
-    ++counts->batches;
-}
 static void wire(const char *endpoint, unsigned signals) {
-  event_counts_t events = {0};
+  gotel_test_events_t *events = gotel_test_events_create();
+  CHECK(events != NULL);
   gotel_options_t o = options();
   o.exporter.endpoint = endpoint;
   o.exporter.flush_timeout_ms = 2000;
   o.exporter.backoff_initial_ms = 10;
   o.exporter.backoff_max_ms = 20;
-  o.exporter_event = event_logger;
-  o.exporter_event_context = &events;
+  o.exporter_event = gotel_test_event_record;
+  o.exporter_event_context = events;
   o.signals = signals;
   gotel_host_t *h = NULL;
   CHECK(gotel_create(&o, &h) == OTLP_OK);
@@ -283,18 +277,57 @@ static void wire(const char *endpoint, unsigned signals) {
   gotel_scope_t root;
   gotel_begin(h, &root, 0, NULL);
   gotel_log(h, OTLP_SEVERITY_INFO, "wire message", __FILE__, __LINE__, __func__);
-  now += 5000000;
+  CHECK(gotel_test_clock_advance(5000000) == OTLP_OK);
+  gotel_error(&root, "fixture.error", "wire failure");
   gotel_end(&root);
+  gotel_log(h, OTLP_SEVERITY_INFO, "wire outside", __FILE__, __LINE__, __func__);
 #ifdef CGOTEL_WITH_SQLITE
   sqlite_test(h);
 #endif
   if (signals == GOTEL_METRICS)
     concurrent(h);
   CHECK(gotel_drain(h) == OTLP_OK);
-  CHECK(events.retries ==
+  gotel_test_event_counts_t counts = gotel_test_events_snapshot(events);
+  CHECK(counts.retries ==
         ((signals & GOTEL_TRACES ? 1 : 0) + (signals & GOTEL_LOGS ? 1 : 0) + (signals & GOTEL_METRICS ? 1 : 0)));
-  CHECK(events.batches >= events.retries);
+  CHECK(counts.batches >= counts.retries);
   gotel_destroy(h);
+  gotel_test_events_destroy(events);
+}
+static void testing_support(void) {
+  gotel_test_clock_set(10, 20);
+  CHECK(gotel_test_clock_advance(5) == OTLP_OK);
+  CHECK(gotel_test_monotonic_ns() == 15 && gotel_test_realtime_ns() == 25);
+  gotel_test_clock_set(UINT64_MAX - 1, 20);
+  CHECK(gotel_test_clock_advance(2) == OTLP_ERR_OVERFLOW);
+  CHECK(gotel_test_monotonic_ns() == UINT64_MAX - 1 && gotel_test_realtime_ns() == 20);
+  gotel_test_clock_set(1000000000, UINT64_C(1700000000000000000));
+  gotel_options_t o = options();
+  o.signals = GOTEL_TRACES;
+  o.exporter.queue_capacity = 2;
+  gotel_test_events_t *events = gotel_test_events_create();
+  CHECK(events);
+  o.exporter_event = gotel_test_event_record;
+  o.exporter_event_context = events;
+  gotel_host_t *h = NULL;
+  CHECK(gotel_test_create(&o, &h) == OTLP_OK);
+  gotel_test_script_t bad = {.count = 1, .fallback_status = 200};
+  CHECK(gotel_test_transport(h, &bad) == OTLP_ERR_INVALID_ARGUMENT);
+  CHECK(gotel_test_transport(NULL, NULL) == OTLP_ERR_INVALID_ARGUMENT);
+  for (int i = 0; i < 10; ++i) {
+    gotel_scope_t scope;
+    gotel_begin(h, &scope, 0, NULL);
+    gotel_end(&scope);
+  }
+  otlp_exporter_stats_t stats;
+  CHECK(gotel_stats(h, &stats) == OTLP_OK);
+  CHECK(stats.emitted + stats.dropped_full == 10 && stats.dropped_full > 0);
+  gotel_test_event_counts_t counts = gotel_test_events_snapshot(events);
+  CHECK(counts.queue_full == stats.dropped_full);
+  CHECK(gotel_drain(h) == OTLP_OK);
+  CHECK(gotel_stats(h, &stats) == OTLP_OK && stats.sent == stats.emitted);
+  gotel_destroy(h);
+  gotel_test_events_destroy(events);
 }
 int main(int argc, char **argv) {
   if (argc == 3 && !strcmp(argv[1], "--case")) {
@@ -308,6 +341,8 @@ int main(int argc, char **argv) {
       context_and_signals();
     else if (!strcmp(argv[2], "registry"))
       registry();
+    else if (!strcmp(argv[2], "testing"))
+      testing_support();
     else if (!strcmp(argv[2], "concurrency"))
       concurrency();
     else
@@ -318,6 +353,7 @@ int main(int argc, char **argv) {
     wire(argv[1], argc > 2 ? (unsigned)atoi(argv[2]) : GOTEL_ALL);
     return 0;
   }
+  testing_support();
   names();
   validation();
   sampling();
@@ -327,7 +363,7 @@ int main(int argc, char **argv) {
 #ifdef CGOTEL_WITH_SQLITE
   gotel_options_t o = options();
   gotel_host_t *h = NULL;
-  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(gotel_test_create(&o, &h) == OTLP_OK);
   sqlite_test(h);
   otlp_exporter_stats_t stats;
   CHECK(gotel_stats(h, &stats) == OTLP_OK);

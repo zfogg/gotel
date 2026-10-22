@@ -116,3 +116,56 @@ omitted. Catalog identities and sorted finite histogram bounds are validated
 at creation. NaN/infinite observations and negative counter increments are rejected.
 The exporter queue can drop a snapshot under pressure; subsequent cumulative
 snapshots retain the measurements. Stop producers before drain/destroy.
+
+## Reusable test support
+
+Enable `CGOTEL_BUILD_TEST_SUPPORT=ON` and link `gotel::testing` from a test
+executable. Production consumers leave the option off. The helper library has
+no Criterion, application, socket, or assertion dependencies.
+
+```c
+#include <gotel/testing.h>
+gotel_test_clock_set(1000000000, 1700000000000000000ULL);
+options.monotonic_ns = gotel_test_monotonic_ns;
+options.realtime_ns = gotel_test_realtime_ns;
+gotel_test_events_t *events = gotel_test_events_create();
+options.exporter_event = gotel_test_event_record;
+options.exporter_event_context = events;
+gotel_host_t *host = NULL;
+/* Check every status using your framework of choice. */
+gotel_test_create(&options, &host); /* no HTTP I/O */
+const int statuses[] = {503, 200};
+gotel_test_script_t script = {statuses, 2, 0, 200};
+gotel_test_transport(host, &script);
+/* Produce scopes/logs/metrics; advance fake measurement time as needed. */
+gotel_drain(host);
+gotel_test_event_counts_t counts = gotel_test_events_snapshot(events);
+/* Inspect counts and gotel_stats(). */
+gotel_destroy(host);
+gotel_test_events_destroy(events);
+```
+
+Fake clocks are thread-local and affect gotel measurement/sampling intervals;
+they do not replace otlp-c's network/backoff clock. Scripts are borrowed and must
+outlive their host or replacement. Event counters are thread-safe and count
+events, not affected items. Install callbacks before starting producers. Null
+transport exercises queueing, signals, outcomes and retry state, but does not
+validate HTTP or serialized payloads.
+
+For actual wire assertions, add `c-gotel/testing/python` to the test's Python
+module path and import `Collector`, `Response`, `protobuf`, `records`, and
+`service_names` from `gotel_testing`. The standard-library-only collector binds
+an ephemeral loopback port, supports response scripts and bounded condition waits,
+and keeps successful-request snapshots separately from all attempts:
+
+```python
+with Collector() as collector:
+    collector.script('/v1/traces', [503, Response(200)])
+    # Run your executable using collector.url or collector.endpoint('traces').
+    # Then inspect records(collector.records, '/v1/traces').
+```
+
+Clear capture/scripts only after producers stop. Use the context manager to close
+servers; snapshots are copies safe to inspect while requests arrive. The wire
+decoder rejects malformed/truncated input instead of silently accepting partial
+messages. The support library and collector have their own contract tests.
