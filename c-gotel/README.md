@@ -100,3 +100,19 @@ parent decisions, rate limits, context restoration, query lookup, reset/finalize
 close lifecycle, and concurrent producers. A real HTTP receiver decodes protobuf
 and checks signal filtering, span/log correlation, timestamps, cumulative metric
 values, and exclusion of bound secrets. Tests run with ASan/UBSan on Linux.
+
+## Bounded application metrics
+
+Every operation emits a cumulative `.duration` histogram with explicit second
+boundaries (100 microseconds through 10 seconds), alongside count/error/duration
+sum counters. Histograms include unsampled operations.
+
+Supply a fixed `gotel_metric_t` catalog through `options.metrics` / `metric_count`.
+`gotel_metric_record(host, index, value)` adds to a counter, replaces a gauge,
+or observes a histogram. Producers allocate no memory; each instrument serializes
+recording and export snapshots with a short atomic lock. Tick/drain publishes
+cumulative snapshots, including gauges recorded as zero. Unused instruments are
+omitted. Catalog identities and sorted finite histogram bounds are validated
+at creation. NaN/infinite observations and negative counter increments are rejected.
+The exporter queue can drop a snapshot under pressure; subsequent cumulative
+snapshots retain the measurements. Stop producers before drain/destroy.

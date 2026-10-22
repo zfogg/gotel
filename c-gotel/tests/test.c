@@ -19,6 +19,12 @@
 static uint64_t now = 1000000000;
 static uint64_t clock_ns(void) { return now; }
 static const gotel_operation_t ops[] = {{"test.cli", false}, {"test.frame", true}, {"test.child", false}};
+static const double metric_bounds[] = {1, 10, 100};
+static const gotel_metric_t metrics[] = {
+    {"test.bytes", "By", OTLP_METRIC_COUNTER, NULL, 0},
+    {"test.depth", "{item}", OTLP_METRIC_GAUGE, NULL, 0},
+    {"test.size", "By", OTLP_METRIC_HISTOGRAM, metric_bounds, 3},
+};
 static gotel_options_t options(void) {
   gotel_options_t o = {0};
   o.exporter.service_name = "c-gotel-test";
@@ -32,6 +38,8 @@ static gotel_options_t options(void) {
   o.realtime_ns = clock_ns;
   o.operations = ops;
   o.operation_count = 3;
+  o.metrics = metrics;
+  o.metric_count = 3;
   return o;
 }
 static void names(void) {
@@ -69,6 +77,19 @@ static void validation(void) {
   o = options();
   o.signals = 8;
   CHECK(gotel_create(&o, &h) != OTLP_OK);
+  o = options();
+  o.metrics = NULL;
+  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
+  gotel_metric_t bad[] = {metrics[0], metrics[0]};
+  o.metrics = bad;
+  o.metric_count = 2;
+  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
+  double unsorted[] = {2, 1};
+  bad[0] = (gotel_metric_t){"bad", "s", OTLP_METRIC_HISTOGRAM, unsorted, 2};
+  o.metric_count = 1;
+  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
+  unsorted[1] = INFINITY;
+  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT);
 }
 static void sampling(void) {
   gotel_options_t o = options();
@@ -193,6 +214,8 @@ static void *produce(void *arg)
   gotel_host_t *h = arg;
   for (int i = 0; i < 1000; ++i) {
     gotel_scope_t s;
+    CHECK(gotel_metric_record(h, 0, 1) == OTLP_OK);
+    CHECK(gotel_metric_record(h, 2, 10) == OTLP_OK);
     gotel_begin(h, &s, 2, NULL);
     CHECK(gotel_current_context().valid);
     gotel_end(&s);
@@ -233,6 +256,15 @@ static void wire(const char *endpoint, unsigned signals) {
   o.signals = signals;
   gotel_host_t *h = NULL;
   CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(gotel_metric_record(h, 0, 20) == OTLP_OK);
+  CHECK(gotel_metric_record(h, 0, 30) == OTLP_OK);
+  CHECK(gotel_metric_record(h, 1, 7) == OTLP_OK);
+  CHECK(gotel_metric_record(h, 1, 2) == OTLP_OK);
+  CHECK(gotel_metric_record(h, 2, 5) == OTLP_OK);
+  CHECK(gotel_metric_record(h, 2, 50) == OTLP_OK);
+  CHECK(gotel_metric_record(h, 3, 1) == OTLP_ERR_INVALID_ARGUMENT);
+  CHECK(gotel_metric_record(h, 0, -1) == OTLP_ERR_INVALID_ARGUMENT);
+  CHECK(gotel_metric_record(h, 1, NAN) == OTLP_ERR_INVALID_ARGUMENT);
   gotel_scope_t root;
   gotel_begin(h, &root, 0, NULL);
   gotel_log(h, OTLP_SEVERITY_INFO, "wire message", __FILE__, __LINE__, __func__);
