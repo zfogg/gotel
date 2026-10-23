@@ -10,7 +10,7 @@ typedef enum { OTLP_OK = 0, OTLP_ERR_NULL, OTLP_ERR_INVALID_ARGUMENT, OTLP_ERR_O
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define GOTEL_SQL_TEXT_MAX 4096
+#define GOTEL_SQL_TEXT_MAX 32768
 #define GOTEL_SQL_SUMMARY_MAX 4096
 typedef enum {
   GOTEL_SQL_GENERIC,
@@ -21,7 +21,7 @@ typedef enum {
 } gotel_sql_dialect_t;
 typedef struct {
   gotel_sql_dialect_t dialect;
-  /* Zero uses 4096. Values above 4096 are rejected. */
+  /* Zero uses 32768. Values above 32768 are rejected. */
   size_t max_query_text_bytes;
   bool omit_query_text;
   bool keep_in_lists;
@@ -31,11 +31,16 @@ typedef struct {
   char summary[GOTEL_SQL_SUMMARY_MAX + 1];
   char operation[32];
   bool truncated;
+  size_t statement_count;
 } gotel_sql_metadata_t;
 /* Dialect-independent inspection, usable without SQLite. Never reads bind
  * values. Malformed quoting fails closed: text is empty and summary is SQL.
  * Input is limited to 1 MiB and nesting to 64 levels. Output is UTF-8 bounded. */
 otlp_status_t gotel_sql_inspect(const char *sql, const gotel_sql_options_t *options, gotel_sql_metadata_t *out);
+/* Sanitizes without the fixed metadata text cap. capacity includes the NUL
+ * terminator; limit is the maximum emitted bytes (zero uses 32768). */
+otlp_status_t gotel_sql_sanitize(const char *sql, gotel_sql_dialect_t dialect, bool collapse_in_lists, size_t limit,
+                                 char *out, size_t capacity, bool *truncated);
 #ifndef CGOTEL_SQL_STANDALONE
 void gotel_sql_attributes(otlp_span_t *span, const gotel_sql_metadata_t *metadata, const char *system,
                           const char *namespace_name, size_t bind_count);

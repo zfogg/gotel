@@ -1,4 +1,4 @@
-set(_gotel_sources gotel.c http.c sql.c resource.c utf8.c)
+set(_gotel_sources gotel.c http.c sql/main.c resource.c utf8.c)
 if(BUILD_SHARED_LIBS)
   add_library(c-gotel SHARED ${_gotel_sources})
 else()
@@ -11,7 +11,7 @@ set_target_properties(c-gotel PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   WINDOWS_EXPORT_ALL_SYMBOLS ON
   VERSION ${PROJECT_VERSION}
-  SOVERSION 0
+  SOVERSION 0.8
 )
 target_compile_definitions(c-gotel PRIVATE CGOTEL_VERSION="${PROJECT_VERSION}")
 target_link_libraries(c-gotel PRIVATE ${CGOTEL_UTF8PROC_TARGET} ${CGOTEL_PCRE2_TARGET})

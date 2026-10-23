@@ -182,7 +182,7 @@ otlp_status_t gotel_resource_detect(gotel_host_t *h) {
   if (h->options.disable_resource_detection)
     return OTLP_OK;
   TRY(string(h, "telemetry.sdk.name", "c-gotel"));
-  TRY(string(h, "telemetry.sdk.language", "cpp"));
+  TRY(string(h, "telemetry.sdk.language", "c"));
   TRY(string(h, "telemetry.sdk.version", CGOTEL_VERSION));
   TRY(string(h, "process.runtime.name", "C"));
 #ifdef __clang__

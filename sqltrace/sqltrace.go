@@ -25,6 +25,8 @@ const (
 	// BindCountKey contains the number of bind arguments without colliding with
 	// db.query.parameter.<key>, which is reserved for actual parameter values.
 	BindCountKey = attribute.Key("gotel.db.query.bind_count")
+	// StatementCountKey is the number of SQL statements in one database call.
+	StatementCountKey = attribute.Key("gotel.db.query.statement_count")
 	// QueryTextTruncatedKey reports that db.query.text was capped by policy.
 	QueryTextTruncatedKey = attribute.Key("gotel.db.query.truncated")
 	// SystemKey identifies the database system, such as postgresql or duckdb.
@@ -161,10 +163,11 @@ type inspectionCacheKey struct {
 }
 
 type inspectionCacheValue struct {
-	operation string
-	summary   string
-	simple    string
-	sanitized SanitizedQuery
+	operation      string
+	summary        string
+	simple         string
+	sanitized      SanitizedQuery
+	statementCount int
 }
 
 type inspectionCacheEntry struct {
@@ -336,6 +339,8 @@ type Metadata struct {
 	QueryTextTruncated bool
 	// ArgumentCount is the number of bind values passed separately from SQL.
 	ArgumentCount int
+	// StatementCount excludes empty statements and ignores semicolons in literals or comments.
+	StatementCount int
 }
 
 // Inspect extracts sqlc names, SQL operation, a sanitized template, and the
@@ -360,15 +365,11 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	key := inspectionCacheKey{statement: statement, dialect: options.Dialect, maxBytes: options.MaxQueryTextBytes, collapse: options.CollapseInLists, omit: options.OmitQueryText}
 	cached, ok := inspections.get(key)
 	if !ok {
-		cached.summary, cached.operation, _ = inspectNative(options.Dialect, statement)
+		cached.summary, cached.operation, cached.sanitized, cached.statementCount, _ = inspectNativeWithOptions(statement, options)
 		if cached.summary == "" {
 			cached.summary = "SQL"
 		}
 		cached.simple = SQLCName(statement)
-		sanitized, safe := SanitizeWithOptions(statement, options)
-		if safe {
-			cached.sanitized = sanitized
-		}
 		inspections.put(key, cached)
 	}
 	operation := cached.operation
@@ -389,12 +390,12 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	if qualified == "" {
 		qualified = namer.Name(normalizeSimpleName(simple))
 	}
-	return Metadata{Name: qualified, Summary: cached.summary, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args)}
+	return Metadata{Name: qualified, Summary: cached.summary, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args), StatementCount: cached.statementCount}
 }
 
 // Attributes returns standard database attributes plus safe query metadata.
 func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
-	attrs := []attribute.KeyValue{BindCountKey.Int(m.ArgumentCount)}
+	attrs := []attribute.KeyValue{BindCountKey.Int(m.ArgumentCount), StatementCountKey.Int(m.StatementCount)}
 	if m.Summary != "" {
 		attrs = append(attrs, QuerySummaryKey.String(m.Summary))
 	}

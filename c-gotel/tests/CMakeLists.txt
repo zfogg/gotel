@@ -18,6 +18,8 @@ if(CGOTEL_BUILD_TESTS)
   target_link_libraries(c-gotel-sql-probe PRIVATE gotel::c-gotel)
   add_test(NAME c-gotel-sql COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/sql_test.py $<TARGET_FILE:c-gotel-sql-probe>)
+  add_test(NAME c-gotel-sanitize COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/sql_sanitize_test.py $<TARGET_FILE:c-gotel-sql-probe>)
 
   add_executable(c-gotel-resource-probe resource_probe.c)
   target_link_libraries(c-gotel-resource-probe PRIVATE gotel::testing)

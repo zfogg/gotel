@@ -15,9 +15,10 @@ static int nibble(char c) {
     return c - 'A' + 10;
   return -1;
 }
-int main(void) {
-  char *line = malloc(2097200), *query = malloc(1048600);
-  if (!line || !query)
+int main(int argc, char **argv) {
+  bool sanitize_only = argc == 2 && strcmp(argv[1], "--sanitize") == 0;
+  char *line = malloc(2097200), *query = malloc(1048600), *sanitized = malloc(1048600);
+  if (!line || !query || !sanitized)
     return 2;
   while (fgets(line, 2097200, stdin)) {
     int dialect = 0, omit = 0, keep = 0;
@@ -35,13 +36,25 @@ int main(void) {
       query[i / 2] = (char)(high * 16 + low);
     }
     query[n / 2] = 0;
+    if (sanitize_only) {
+      bool truncated = false;
+      size_t capacity = limit ? limit + 1 : GOTEL_SQL_TEXT_MAX + 1;
+      if (capacity > 1048600)
+        return 2;
+      otlp_status_t status =
+          gotel_sql_sanitize(query, (gotel_sql_dialect_t)dialect, !keep, limit, sanitized, capacity, &truncated);
+      printf("%d %d ", (int)status, (int)truncated);
+      hex(sanitized);
+      putchar('\n');
+      continue;
+    }
     gotel_sql_metadata_t metadata;
     gotel_sql_options_t options = {.dialect = (gotel_sql_dialect_t)dialect,
                                    .max_query_text_bytes = limit,
                                    .omit_query_text = omit != 0,
                                    .keep_in_lists = keep != 0};
     otlp_status_t status = gotel_sql_inspect(query, &options, &metadata);
-    printf("%d %d ", (int)status, (int)metadata.truncated);
+    printf("%d %d %zu ", (int)status, (int)metadata.truncated, metadata.statement_count);
     hex(metadata.operation);
     putchar(' ');
     hex(metadata.text);
@@ -51,5 +64,6 @@ int main(void) {
   }
   free(line);
   free(query);
+  free(sanitized);
   return 0;
 }

@@ -17,8 +17,8 @@ def inspect(cases):
     lines=result.stdout.splitlines(); assert len(lines)==len(cases),(len(lines),len(cases),result.stderr)
     out=[]
     for line in lines:
-        status,truncated,op,text,summary=line.split(' ')
-        out.append(dict(status=int(status),truncated=bool(int(truncated)),operation=bytes.fromhex(op).decode(),
+        status,truncated,count,op,text,summary=line.split(' ')
+        out.append(dict(status=int(status),truncated=bool(int(truncated)),count=int(count),operation=bytes.fromhex(op).decode(),
                         text=bytes.fromhex(text).decode(),summary=bytes.fromhex(summary).decode()))
     return out
 errors=[]
@@ -27,6 +27,23 @@ index_result=inspect([dict(query=index_query,dialect=1)])[0]
 assert index_result['status']==0
 assert index_result['summary']=='CREATE INDEX idx_participants_session ON ...'
 assert index_result['text']==index_query
+multi = [
+    ('SELECT 1; UPDATE t SET x=\'SECRET\'; DELETE FROM t WHERE id=2', 3,
+     'SELECT …; UPDATE t SET …; DELETE FROM t WHERE …'),
+    ('SELECT \';\' AS separator; SELECT 2', 2, 'SELECT …; SELECT …'),
+    ('SELECT $$a;b$$; SELECT 2', 2, 'SELECT …; SELECT …'),
+    ('SELECT 1;; ; SELECT 2;', 2, 'SELECT …; SELECT …'),
+    ('SELECT 1/* ; hidden */; -- ; hidden\nSELECT 2', 2, 'SELECT …; SELECT …'),
+    ('/* first ; */ SELECT 1; /* second\n ; */ SELECT 2 -- third ;\n;', 2,
+     'SELECT …; SELECT …'),
+]
+for query, count, summary in multi:
+    result=inspect([dict(query=query,dialect=2)])[0]
+    assert result['status']==0 and result['count']==count and result['summary']==summary,(query,result)
+    assert 'SECRET' not in result['text'] and 'hidden' not in result['text'],(query,result)
+for query in ("SELECT 1; SELECT 'SECRET", 'SELECT 1; /* SECRET'):
+    result=inspect([dict(query=query,dialect=2)])[0]
+    assert result['status']!=0 and result['count']==0 and not result['text'],result
 for case,result in zip(edge_cases,inspect([dict(query=case['query'],dialect=dialects[case['dialect']]) for case in edge_cases])):
     assert result['status']==0,(case['name'],result)
     assert result['operation']==case['operation'],(case['name'],result)
@@ -84,7 +101,7 @@ alphabet="abcXYZ0123$@?:;.,[]()/*-+ '\"`\\\n"
 for i in range(4000):
     noise.append(dict(query='SELECT '+''.join(rng.choice(alphabet) for _ in range(rng.randrange(1,200))),dialect=i%5))
 for c,r in zip(noise,inspect(noise)):
-    assert len(r['text'].encode())<=4096 and len(r['summary'].encode())<=4096
+    assert len(r['text'].encode())<=32768 and len(r['summary'].encode())<=4096
     if r['status']!=0:assert r['text']=='' and r['summary']=='SQL'
 deep=[dict(query='SELECT '+('('*200)+'1'+(')'*200),dialect=d) for d in range(5)]
 for r in inspect(deep):assert len(r['summary'].encode())<=4096
