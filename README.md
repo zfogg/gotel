@@ -1,7 +1,72 @@
 # gotel
 
-Reusable OpenTelemetry building blocks for Go applications, with a focus on
-safe, useful database spans.
+OpenTelemetry building blocks in three languages:
+
+- **Go** (`sqltrace`, `httptrace`, `otelhost`, and adapters) instruments
+  applications and emits traces, logs, metrics, and resource attributes.
+  `sqltrace` uses the shared C implementation for SQL summaries, operation
+  detection, and sanitized `db.query.text`.
+- **C** (`c-gotel/`) instruments native applications. Its SQL scanner is the
+  common implementation used by both C and Go; the C library can be built
+  static or shared with CMake.
+- **TypeScript** (`@zfogg/gotel`) instruments browser requests and gives them
+  stable, route-like HTTP span names.
+
+The default `db.query.text` limit is **32 KiB** in C and Go. Applications can
+choose a smaller cap, omit query text, or request uncapped text through the Go
+API (subject to the 1 MiB SQL input limit). Sanitization removes literals and
+comments before applying the cap; summaries have a separate 4 KiB limit.
+
+## C library
+
+`c-gotel/` provides native trace scopes, structured log correlation, bounded
+operation metrics, resource detection, HTTP naming, and SQLite query spans.
+Applications create a host with an operation catalog, call `gotel_begin` and
+`gotel_end` around work, and call `gotel_tick` from their own loop or worker to
+export OTLP/HTTP protobuf. The library does not start a background thread.
+The SQLite adapter attaches to an existing connection; it does not replace
+SQLite calls. SQL inspection itself works without SQLite.
+
+The public [C SQL API](c-gotel/include/gotel/sql.h) has two entry points:
+`gotel_sql_inspect` returns the sanitized text, structural summary, outer
+operation, truncation flag, and top-level statement count;
+`gotel_sql_sanitize` sanitizes text independently and supports a caller-sized
+output buffer. Both scan every statement, including ones after a semicolon,
+and fail closed if a later string or comment is malformed. C and Go emit
+`gotel.db.query.statement_count`; a normal single-statement call reports `1`.
+Semicolons inside strings, quoted identifiers, and comments do not count.
+
+```c
+#include <gotel/sql.h>
+
+gotel_sql_options_t policy = {.dialect = GOTEL_SQL_POSTGRESQL};
+gotel_sql_metadata_t query;
+if (gotel_sql_inspect("SELECT * FROM items WHERE id=$1; UPDATE audit SET seen=true",
+                      &policy, &query) == OTLP_OK) {
+  /* query.statement_count is 2; query.text contains no bind values. */
+}
+```
+
+The SQL implementation lives in `c-gotel/src/sql/`: `scanner.c` handles
+quoting, comments, placeholders and literals; `summary.c` builds structural
+summaries; `api.c` applies limits and returns metadata; and `common.c` contains
+shared helpers. `main.c` includes those files as one translation unit. CMake
+builds `main.c` for the native library; cgo includes that same file for Go.
+This keeps SQL behavior and security fixes in one place.
+
+Build the C library with CMake and Clang:
+
+```sh
+cmake -S c-gotel -B c-gotel/build -G Ninja -DCMAKE_C_COMPILER=clang
+cmake --build c-gotel/build
+```
+
+`BUILD_SHARED_LIBS=ON` selects a shared library; static is the default.
+`CGOTEL_WITH_SQLITE=OFF` removes the optional SQLite adapter. A parent CMake
+project can use `add_subdirectory(gotel/c-gotel)` and link `gotel::c-gotel`.
+The library accepts existing utf8proc and PCRE2 targets, as ascii-chat does;
+otherwise CMake resolves those dependencies. See the
+[C library guide](c-gotel/README.md) for the lifecycle, adapters, and tests.
 
 The `@zfogg/gotel` TypeScript package shares browser HTTP span naming and fetch
 instrumentation between applications. Same-origin requests use route-like paths;
@@ -49,11 +114,12 @@ streaming, flushing and WebSocket upgrades retain their existing behavior.
 - sqlc `-- name:` extraction and context-carried explicit names;
 - sanitized SQL templates in `db.query.text` (never bind values);
 - the real bind argument count in `gotel.db.query.bind_count`;
+- the number of nonempty SQL statements in `gotel.db.query.statement_count`;
 - standard database system, namespace, operation, and summary attributes;
 - dialect-tolerant sanitization for PostgreSQL, DuckDB, SQLite, and MySQL syntax;
 - automatic bounded SQL operation-and-table summaries, independent of span names.
 
-SQL summaries and operation detection compile the same C parser used by
+SQL summaries, operation detection, and query-text sanitization compile the same C parser used by
 `c-gotel` through cgo. `go get` only fetches the module; building a Go program
 that imports `sqltrace` (or its database adapters) requires cgo and a C compiler.
 The Go build compiles bundled utf8proc source and does not invoke CMake or

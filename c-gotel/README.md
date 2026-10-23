@@ -96,14 +96,23 @@ It never uses expanded SQL or reads bind values. Malformed quoting fails closed.
 
 `gotel_sql_inspect` returns distinct fields: `text` is the sanitized SQL template,
 `summary` is a structural skeleton of CTEs, sources, aliases, joins, nested
-queries, clauses and row bounds, and `operation` is the outer SQL verb. Text
-defaults to 4096 bytes, independently of the 4096-byte summary budget; both stay
+queries, clauses and row bounds, `operation` is the first SQL verb, and
+`statement_count` counts nonempty top-level statements in the call. Text
+defaults to 32768 bytes, independently of the 4096-byte summary budget; both stay
 on UTF-8 boundaries. Static integer row bounds may appear in the summary but
 are sanitized in query text. Input is limited to 1 MiB and structural recursion
 to 64 levels. This is a telemetry parser, not SQL syntax validation or execution.
+`gotel_sql_sanitize` exposes the same fail-closed text scanner with a caller-sized
+buffer; Go uses it for custom and uncapped query-text policies. Both APIs scan
+every statement and reject a malformed later statement without emitting text.
+Semicolons in quoted content or comments do not increase `statement_count`.
+The implementation is split under `src/sql/`: `scanner.c`, `summary.c`,
+`api.c`, and `common.c` are included by `main.c`. CMake compiles only `main.c`;
+the Go cgo package includes the same file, so it runs the identical parser.
 
 The SQLite adapter exports `db.query.text`, `db.query.summary`,
-`db.operation.name`, `db.system.name`, and the bind count while retaining the
+`db.operation.name`, `db.system.name`, the bind count, and
+`gotel.db.query.statement_count` while retaining the
 application-owned span name. The summary is SQL structure, never the query's
 application name. `gotel_sqlite_attach_with_options` additionally accepts a
 logical database namespace, text omission, a smaller text budget and IN-list

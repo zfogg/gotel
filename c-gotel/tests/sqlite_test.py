@@ -28,6 +28,7 @@ with Collector() as receiver:
             assert a['db.query.summary']!=s[5][0]
             assert a['db.namespace']==b'fixture' and a['db.system.name']==b'sqlite'
             assert a['db.operation.name']==b'SELECT' and a['gotel.db.query.bind_count']==1
+            assert a['gotel.db.query.statement_count']==1
             if mode=='omit':assert 'db.query.text' not in a and 'gotel.db.query.truncated' not in a
             elif mode=='truncate':assert len(a['db.query.text'])<=12 and a['gotel.db.query.truncated']==1
             else:assert a['db.query.text']==b'SELECT id FROM accounts WHERE token=? AND id=?'

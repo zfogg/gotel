@@ -5004,7 +5004,7 @@
     "dialect": 0,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {
@@ -5012,7 +5012,7 @@
     "dialect": 1,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {
@@ -5020,7 +5020,7 @@
     "dialect": 2,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {
@@ -5028,7 +5028,7 @@
     "dialect": 3,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {
@@ -5036,7 +5036,7 @@
     "dialect": 4,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {
@@ -5044,7 +5044,7 @@
     "dialect": 0,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {
@@ -5052,7 +5052,7 @@
     "dialect": 1,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {
@@ -5060,7 +5060,7 @@
     "dialect": 2,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {
@@ -5068,7 +5068,7 @@
     "dialect": 3,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {
@@ -5076,7 +5076,7 @@
     "dialect": 4,
     "safe": true,
     "text": "SET application_name = ?; SELECT ?",
-    "summary": "SET",
+    "summary": "SET; SELECT …",
     "operation": "SET"
   },
   {

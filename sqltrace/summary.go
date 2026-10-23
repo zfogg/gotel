@@ -41,17 +41,66 @@ func nativeDialect(d Dialect) C.gotel_sql_dialect_t {
 }
 
 func inspectNative(d Dialect, query string) (string, string, bool) {
+	summary, operation, _, _, ok := inspectNativeWithOptions(query, SanitizeOptions{Dialect: d, OmitQueryText: true})
+	return summary, operation, ok
+}
+
+func inspectNativeWithOptions(query string, policy SanitizeOptions) (string, string, SanitizedQuery, int, bool) {
 	if strings.IndexByte(query, 0) >= 0 {
-		return "", "", false
+		return "", "", SanitizedQuery{}, 0, false
 	}
 	sql := C.CString(query)
 	defer C.free(unsafe.Pointer(sql))
-	options := C.gotel_sql_options_t{dialect: nativeDialect(d), omit_query_text: true}
+	limit := policy.MaxQueryTextBytes
+	if limit == 0 {
+		limit = DefaultMaxQueryTextBytes
+	}
+	largeLimit := limit < 0 || limit > C.GOTEL_SQL_TEXT_MAX
+	options := C.gotel_sql_options_t{dialect: nativeDialect(policy.Dialect),
+		omit_query_text: C.bool(policy.OmitQueryText || largeLimit),
+		keep_in_lists:   C.bool(!policy.CollapseInLists)}
+	if !largeLimit {
+		options.max_query_text_bytes = C.size_t(limit)
+	}
 	var metadata C.gotel_sql_metadata_t
 	if C.gotel_sql_inspect(sql, &options, &metadata) != C.OTLP_OK {
-		return "", "", false
+		return "", "", SanitizedQuery{}, 0, false
 	}
-	return C.GoString(&metadata.summary[0]), C.GoString(&metadata.operation[0]), true
+	safe := SanitizedQuery{Text: C.GoString(&metadata.text[0]), Truncated: bool(metadata.truncated)}
+	if largeLimit && !policy.OmitQueryText {
+		var ok bool
+		safe, ok = sanitizeNative(query, policy)
+		if !ok {
+			return "", "", SanitizedQuery{}, 0, false
+		}
+	}
+	return C.GoString(&metadata.summary[0]), C.GoString(&metadata.operation[0]), safe, int(metadata.statement_count), true
+}
+
+func sanitizeNative(query string, policy SanitizeOptions) (SanitizedQuery, bool) {
+	if strings.IndexByte(query, 0) >= 0 || len(query) > 1024*1024 {
+		return SanitizedQuery{}, false
+	}
+	limit := policy.MaxQueryTextBytes
+	if limit == 0 {
+		limit = DefaultMaxQueryTextBytes
+	}
+	if limit < 0 || limit > len(query) {
+		limit = len(query)
+	}
+	if limit == 0 {
+		limit = 1
+	}
+	buf := make([]byte, limit+1)
+	sql := C.CString(query)
+	defer C.free(unsafe.Pointer(sql))
+	var truncated C.bool
+	status := C.gotel_sql_sanitize(sql, nativeDialect(policy.Dialect), C.bool(policy.CollapseInLists),
+		C.size_t(limit), (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)), &truncated)
+	if status != C.OTLP_OK {
+		return SanitizedQuery{}, false
+	}
+	return SanitizedQuery{Text: C.GoString((*C.char)(unsafe.Pointer(&buf[0]))), Truncated: bool(truncated)}, true
 }
 
 // Summary returns a bounded SQL skeleton from the shared c-gotel parser.

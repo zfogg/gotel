@@ -55,6 +55,8 @@ func TestNativeSummaryHistoricalParity(t *testing.T) {
 		var cases []struct {
 			Query     string `json:"query"`
 			Dialect   int    `json:"dialect"`
+			Safe      bool   `json:"safe"`
+			Text      string `json:"text"`
 			Summary   string `json:"summary"`
 			Operation string `json:"operation"`
 		}
@@ -72,6 +74,9 @@ func TestNativeSummaryHistoricalParity(t *testing.T) {
 			}
 			if got := statementOperation(d, tc.Query); got != tc.Operation {
 				t.Errorf("%s[%d]: operation = %q, want %q", path, i, got, tc.Operation)
+			}
+			if safe, ok := SanitizeDialect(d, tc.Query); ok != tc.Safe || safe.Text != tc.Text {
+				t.Errorf("%s[%d]: text = %q, safe = %v; want %q, %v", path, i, safe.Text, ok, tc.Text, tc.Safe)
 			}
 		}
 	}
