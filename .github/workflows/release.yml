@@ -45,7 +45,7 @@ jobs:
         include:
           - { runner: ubuntu-24.04, os: linux, arch: x64 }
           - { runner: ubuntu-24.04-arm, os: linux, arch: arm64 }
-          - { runner: macos-15-intel, os: macos, arch: x64 }
+          - { runner: macos-26-intel, os: macos, arch: x64 }
           - { runner: macos-26, os: macos, arch: arm64 }
           - { runner: windows-2025, os: windows, arch: x64, triplet: x64-windows, msvc_arch: amd64 }
           - { runner: windows-11-arm, os: windows, arch: arm64, triplet: arm64-windows, msvc_arch: amd64_arm64 }
@@ -56,11 +56,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
       - name: Install macOS dependencies
         if: matrix.os == 'macos'
-        run: |
-          brew update
-          brew install llvm ninja openssl@3 sqlite
-          brew upgrade openssl@3
-          "$(brew --prefix openssl@3)/bin/openssl" version
+        run: brew install llvm ninja openssl@3 sqlite
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows'
         with:
@@ -76,14 +72,16 @@ jobs:
         if: matrix.os != 'windows'
         shell: bash
         run: |
+          osx_args=()
           if [[ '${{ matrix.os }}' == macos ]]; then
             export PATH="$(brew --prefix llvm)/bin:$PATH"
             export OPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
+            osx_args=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0)
           fi
           cmake -S c-gotel -B c-gotel/build -G Ninja \
             -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_EXTENSIONS=OFF -DBUILD_SHARED_LIBS=OFF \
-            -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON
+            -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON "${osx_args[@]}"
       - name: Configure on Windows
         if: matrix.os == 'windows'
         shell: pwsh
