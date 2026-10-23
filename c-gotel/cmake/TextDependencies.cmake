@@ -15,7 +15,11 @@ if(NOT CGOTEL_UTF8PROC_TARGET)
     FetchContent_Declare(cgotel_utf8proc
       GIT_REPOSITORY https://github.com/JuliaStrings/utf8proc.git
       GIT_TAG e5e799221b45bbb90f5fdc5c69b6b8dfbf017e78)
+    set(_cgotel_shared "${BUILD_SHARED_LIBS}")
+    set(BUILD_SHARED_LIBS OFF)
     FetchContent_MakeAvailable(cgotel_utf8proc)
+    set(BUILD_SHARED_LIBS "${_cgotel_shared}")
+    set_target_properties(utf8proc PROPERTIES POSITION_INDEPENDENT_CODE ON)
     set(CGOTEL_UTF8PROC_TARGET utf8proc)
   endif()
 endif()

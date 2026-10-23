@@ -22,6 +22,7 @@ FetchContent_Declare(otlp_c
 set(_gotel_disable_doxygen "${CMAKE_DISABLE_FIND_PACKAGE_Doxygen}")
 set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen TRUE)
 FetchContent_MakeAvailable(otlp_c)
+set_target_properties(otlp_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS ${_gotel_shared})
 set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen "${_gotel_disable_doxygen}")
 
