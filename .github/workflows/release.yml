@@ -46,7 +46,7 @@ jobs:
           - { runner: ubuntu-24.04, os: linux, arch: x64 }
           - { runner: ubuntu-24.04-arm, os: linux, arch: arm64 }
           - { runner: macos-15-intel, os: macos, arch: x64 }
-          - { runner: macos-15, os: macos, arch: arm64 }
+          - { runner: macos-26, os: macos, arch: arm64 }
           - { runner: windows-2025, os: windows, arch: x64, triplet: x64-windows, msvc_arch: amd64 }
           - { runner: windows-11-arm, os: windows, arch: arm64, triplet: arm64-windows, msvc_arch: amd64_arm64 }
     steps:
