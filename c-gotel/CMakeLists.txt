@@ -60,6 +60,7 @@ if(WIN32)
 endif()
 
 include(cmake/TLS.cmake)
+include(cmake/GRPC.cmake)
 add_subdirectory(src)
 
 option(CGOTEL_BUILD_TEST_SUPPORT "Build framework-independent test helpers" ${CGOTEL_BUILD_TESTS})

@@ -10,6 +10,7 @@ otlp_status_t gotel_tls_store_create(const char *file, gotel_tls_store **out);
 void gotel_tls_store_free(gotel_tls_store *store);
 gotel_tls_store *gotel_tls_select(gotel_tls_store *store);
 gotel_tls *gotel_tls_create(const char *hostname);
+int gotel_tls_enable_h2(gotel_tls *tls);
 void gotel_tls_free(gotel_tls *tls);
 otlp_status_t gotel_tls_write(gotel_tls *tls, otlp_socket_t *socket, const uint8_t *data, size_t len, size_t *written);
 otlp_status_t gotel_tls_read(gotel_tls *tls, otlp_socket_t *socket, uint8_t *data, size_t cap, size_t *read);

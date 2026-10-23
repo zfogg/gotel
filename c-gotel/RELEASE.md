@@ -4,6 +4,11 @@ Choose the static or shared section to match the release ZIP you downloaded.
 Each ZIP is named for its operating system, CPU architecture, and linkage type.
 Both contain public headers, licenses, and this guide.
 
+Native gRPC is an opt-in source-build feature (`CGOTEL_WITH_GRPC=ON`); the
+default release ZIPs use HTTP/protobuf. A custom static gRPC build additionally
+needs nghttp2 at final link. Linking the CMake target propagates that dependency.
+Rebuild consumers against the matching headers when changing c-gotel versions.
+
 ## Static libraries
 
 This archive contains the Release-build static `c-gotel` and `otlp-c` libraries,

@@ -20,6 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         library: [static, shared]
+        grpc: ['OFF', 'ON']
         sqlite: ['ON']
         config: [Debug]
         include:
@@ -27,16 +28,25 @@ jobs:
             library: static
             sqlite: 'ON'
             config: Release
+            grpc: 'OFF'
           - os: ubuntu-latest
             library: static
             sqlite: 'OFF'
             config: Debug
+            grpc: 'OFF'
           - os: ubuntu-latest
             library: shared
             sqlite: 'OFF'
             config: Debug
+            grpc: 'OFF'
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install gRPC test peers
+        if: matrix.grpc == 'ON'
+        run: python -m pip install -r c-gotel/tests/requirements-grpc.txt
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
@@ -62,7 +72,8 @@ jobs:
           cmake -S c-gotel -B c-gotel/build -G Ninja \
             -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE="$config" \
             -DCMAKE_C_EXTENSIONS=OFF -DBUILD_SHARED_LIBS="$shared" \
-            -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
+            -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }} \
+            -DCGOTEL_WITH_GRPC=${{ matrix.grpc }}
       - name: Configure on Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -72,7 +83,7 @@ jobs:
             -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Debug `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DBUILD_SHARED_LIBS=$shared -DCGOTEL_BUILD_TESTS=ON `
-            -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
+            -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }} -DCGOTEL_WITH_GRPC=${{ matrix.grpc }}
       - run: cmake --build c-gotel/build --parallel 4
       - run: ctest --test-dir c-gotel/build --output-on-failure --parallel 4
 
@@ -84,12 +95,17 @@ jobs:
         sqlite: ['ON', 'OFF']
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r c-gotel/tests/requirements-grpc.txt
       - run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
       - run: >-
           cmake -S c-gotel -B c-gotel/build -G Ninja
           -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug
           -DCMAKE_C_EXTENSIONS=OFF -DCGOTEL_BUILD_TESTS=ON
           -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
+          -DCGOTEL_WITH_GRPC=ON
           -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
           -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
       - run: cmake --build c-gotel/build --parallel 4

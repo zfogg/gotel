@@ -25,3 +25,4 @@ struct gotel_host {
 void gotel_emit_span(gotel_host_t *host, otlp_span_t *span);
 otlp_status_t gotel_resource_detect(gotel_host_t *host);
 otlp_status_t gotel_signal_headers(gotel_host_t *host);
+otlp_status_t gotel_protocol_configure(gotel_host_t *host);
