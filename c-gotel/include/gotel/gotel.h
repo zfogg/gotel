@@ -24,6 +24,15 @@ typedef struct {
   bool valid, sampled, realtime;
 } gotel_context_t;
 
+/* Immutable metadata copied by the owning thread before it blocks. Contains no
+ * live span pointers; publishing it never ends or mutates the original scope. */
+typedef struct {
+  gotel_context_t context;
+  uint8_t parent_span_id[8];
+  uint64_t start_unix_ns;
+  char name[224];
+} gotel_span_snapshot_t;
+
 /* Optional lock-cycle watchdog, polled by the single tick owner on its own thread.
  * Snapshot must be bounded, nonblocking, and release all application locks before
  * returning. False means unavailable, not healthy. No signal-handler use. */
@@ -32,6 +41,7 @@ typedef struct {
   uint64_t wait_ns;
   bool limited;
   gotel_context_t parent; /* Copied context of a blocked operation, or zero for root. */
+  gotel_span_snapshot_t parent_snapshot;
 } gotel_watchdog_snapshot_t;
 typedef struct {
   bool (*snapshot)(void *context, gotel_watchdog_snapshot_t *output);
@@ -105,6 +115,8 @@ typedef struct gotel_scope {
   gotel_context_t context;
   struct gotel_scope *previous;
   uint64_t started_ns;
+  uint64_t started_unix_ns;
+  uint8_t parent_span_id[8];
   size_t operation;
   bool active, attached, failed;
 } gotel_scope_t;
@@ -115,6 +127,11 @@ void gotel_end(gotel_scope_t *scope);
 void gotel_current_error(const char *type, const char *message);
 void gotel_error(gotel_scope_t *scope, const char *type, const char *message);
 gotel_context_t gotel_current_context(void);
+gotel_span_snapshot_t gotel_current_span_snapshot(void);
+/* Publishes an explicitly marked partial observation with the original IDs and
+ * observation time as its end. A later normal completion may update that span.
+ * No attributes are read from the live span on another thread. */
+otlp_status_t gotel_publish_span_snapshot(gotel_host_t *host, const gotel_span_snapshot_t *snapshot);
 void gotel_attr_string(gotel_scope_t *scope, const char *key, const char *value);
 void gotel_attr_int(gotel_scope_t *scope, const char *key, int64_t value);
 void gotel_log(gotel_host_t *host, otlp_severity_t severity, const char *body, const char *file, int line,

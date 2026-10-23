@@ -1,5 +1,14 @@
 # c-gotel
 
+The optional watchdog exports a copied parent metadata snapshot alongside its
+deadlock error child. Producers capture `gotel_current_span_snapshot()` before
+blocking and return it in `gotel_watchdog_snapshot_t.parent_snapshot` together
+with the matching parent context. No live span pointer crosses threads. The
+snapshot retains the original IDs, name, ancestor and start time, uses observation
+time as its end, and is marked `gotel.span.snapshot` and `gotel.span.incomplete`.
+It is a partial observation, not a forced completion; the owner may still finish
+normally. Collectors determine how later exports with the same span ID are stored.
+
 Pure-C OpenTelemetry policy and instrumentation, backed by pinned otlp-c.
 No Go runtime, C++ SDK, background threads, or SQLite replacement calls.
 

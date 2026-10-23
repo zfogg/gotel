@@ -179,6 +179,46 @@ static bool sample(gotel_host_t *h, uint64_t now) {
   }
 }
 gotel_context_t gotel_current_context(void) { return current ? current->context : (gotel_context_t){0}; }
+gotel_span_snapshot_t gotel_current_span_snapshot(void) {
+  gotel_span_snapshot_t snapshot = {0};
+  if (!current || !current->active)
+    return snapshot;
+  snapshot.context = current->context;
+  snapshot.start_unix_ns = current->started_unix_ns;
+  memcpy(snapshot.parent_span_id, current->parent_span_id, sizeof(snapshot.parent_span_id));
+  snprintf(snapshot.name, sizeof(snapshot.name), "%s", current->host->options.operations[current->operation].name);
+  return snapshot;
+}
+otlp_status_t gotel_publish_span_snapshot(gotel_host_t *h, const gotel_span_snapshot_t *snapshot) {
+  if (!h || !snapshot)
+    return OTLP_ERR_NULL;
+  if (!(h->options.signals & GOTEL_TRACES) || !snapshot->context.valid || !snapshot->context.sampled)
+    return OTLP_OK;
+  if (!snapshot->name[0] || !memchr(snapshot->name, 0, sizeof(snapshot->name)))
+    return OTLP_ERR_INVALID_ARGUMENT;
+  otlp_span_t *span = otlp_span_create(snapshot->name);
+  if (!span)
+    return OTLP_ERR_NOMEM;
+  otlp_status_t status = OTLP_OK;
+#define SNAPSHOT_SET(call) do { status = (call); if (status != OTLP_OK) goto done; } while (0)
+  SNAPSHOT_SET(otlp_span_set_trace_id(span, snapshot->context.trace_id));
+  SNAPSHOT_SET(otlp_span_set_span_id(span, snapshot->context.span_id));
+  static const uint8_t zero[8] = {0};
+  if (memcmp(snapshot->parent_span_id, zero, sizeof(zero)))
+    SNAPSHOT_SET(otlp_span_set_parent_span_id(span, snapshot->parent_span_id));
+  SNAPSHOT_SET(otlp_span_set_start_time(span, snapshot->start_unix_ns));
+  uint64_t observed = h->options.realtime_ns();
+  SNAPSHOT_SET(otlp_span_set_end_time(span, observed < snapshot->start_unix_ns ? snapshot->start_unix_ns : observed));
+  SNAPSHOT_SET(otlp_span_set_attribute_bool(span, "gotel.span.snapshot", true));
+  SNAPSHOT_SET(otlp_span_set_attribute_bool(span, "gotel.span.incomplete", true));
+  SNAPSHOT_SET(otlp_span_set_attribute_string(span, "gotel.span.snapshot.reason", "thread.deadlock"));
+  SNAPSHOT_SET(otlp_span_set_status(span, OTLP_STATUS_CODE_ERROR, "Unfinished operation observed during deadlock"));
+  SNAPSHOT_SET(otlp_exporter_emit(h->exporter, span));
+done:
+#undef SNAPSHOT_SET
+  otlp_span_free(span);
+  return status;
+}
 void gotel_begin(gotel_host_t *h, gotel_scope_t *s, size_t op, const gotel_context_t *explicit_parent) {
   memset(s, 0, sizeof(*s));
   if (!h || op >= h->options.operation_count)
@@ -187,11 +227,14 @@ void gotel_begin(gotel_host_t *h, gotel_scope_t *s, size_t op, const gotel_conte
   s->operation = op;
   s->active = true;
   s->started_ns = h->options.monotonic_ns();
+  s->started_unix_ns = h->options.realtime_ns();
   s->previous = current;
   s->attached = true;
   gotel_context_t parent = explicit_parent ? *explicit_parent : gotel_current_context();
   bool realtime = h->options.operations[op].realtime;
   bool inherited = parent.valid && (!realtime || parent.realtime);
+  if (inherited)
+    memcpy(s->parent_span_id, parent.span_id, sizeof(s->parent_span_id));
   bool sampled = inherited ? parent.sampled : (!realtime || sample(h, s->started_ns));
   s->context.valid = true;
   s->context.sampled = sampled;
@@ -317,18 +360,18 @@ static void export_metrics(gotel_host_t *h) {
       }
   }
 }
-static void watchdog_poll(gotel_host_t *h, uint64_t now) {
+static otlp_status_t watchdog_poll(gotel_host_t *h, uint64_t now) {
   const gotel_watchdog_options_t *w = &h->options.watchdog;
   if (!w->snapshot || (h->watchdog_poll_ns && now - h->watchdog_poll_ns < 1000000000ULL))
-    return;
+    return OTLP_OK;
   h->watchdog_poll_ns = now;
   gotel_watchdog_snapshot_t snapshot = {0};
   if (!w->snapshot(w->context, &snapshot))
-    return;
+    return OTLP_OK;
   size_t blocked = snapshot.wait_ns >= 2000000000ULL ? snapshot.blocked_threads : 0;
   (void)gotel_metric_record(h, w->metric, (double)blocked);
   if (!blocked || (h->watchdog_report_ns && now - h->watchdog_report_ns < 30000000000ULL))
-    return;
+    return OTLP_OK;
   h->watchdog_report_ns = now;
   gotel_scope_t scope = {0};
   gotel_begin(h, &scope, w->operation, &snapshot.parent);
@@ -340,13 +383,20 @@ static void watchdog_poll(gotel_host_t *h, uint64_t now) {
     w->decorate(w->context, &scope);
   gotel_error(&scope, "thread.deadlock", "Mutex wait cycle persisted for at least two seconds");
   gotel_end(&scope);
+  if (snapshot.parent_snapshot.context.valid &&
+      !memcmp(snapshot.parent.trace_id, snapshot.parent_snapshot.context.trace_id, 16) &&
+      !memcmp(snapshot.parent.span_id, snapshot.parent_snapshot.context.span_id, 8))
+    return gotel_publish_span_snapshot(h, &snapshot.parent_snapshot);
+  return OTLP_OK;
 }
 
 otlp_status_t gotel_tick(gotel_host_t *h) {
   if (!h)
     return OTLP_ERR_NULL;
   uint64_t now = h->options.monotonic_ns();
-  watchdog_poll(h, now);
+  otlp_status_t watchdog_status = watchdog_poll(h, now);
+  if (watchdog_status != OTLP_OK)
+    return watchdog_status;
   uint64_t interval = (uint64_t)(h->options.metrics_interval_ms ? h->options.metrics_interval_ms : 10000) * 1000000;
   if (now - h->last_metrics_ns >= interval) {
     export_metrics(h);
