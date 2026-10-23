@@ -12,6 +12,5 @@ define `CGOTEL_WITH_SQLITE=1` when using it. On Windows, the archive is built
 with the MSVC-compatible Clang toolchain and vcpkg's `x64-windows` libraries.
 
 For the easiest dependency setup, build the matching Git tag from source with
-`add_subdirectory(c-gotel)` and link `gotel::c-gotel`. The repository's
-[`c-gotel/README.md`](https://github.com/zfogg/gotel/blob/main/c-gotel/README.md)
+`add_subdirectory(c-gotel)` and link `gotel::c-gotel`. The included `README.md`
 documents that route and the API.
