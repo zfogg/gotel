@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.8.5
+
+- Add native OTLP/gRPC export for traces, metrics, and logs with HTTP/2 flow control, verified TLS, trailer statuses, and RetryInfo backpressure.
+- Enable gRPC support by default and include it in static/shared releases; static ZIPs include the nghttp2 archive and all ZIPs include its license.
+- Normalize pinned dependency checks across Git line endings and use the configured Python interpreter for gRPC test peers.
+
 ## v0.7.0
 
 - Add the shared `Application` facade, resource builder, HTTP client/server bundle, background and cleanup contexts, safe error recording, and trace test kit.
