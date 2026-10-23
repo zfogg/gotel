@@ -91,5 +91,8 @@ func countWords(w http.ResponseWriter, r *http.Request) {
 	}
 	span.SetAttributes(attribute.Int("demo.word_count", count))
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]int{"words": count})
+	_ = json.NewEncoder(w).Encode(struct {
+		Words   int    `json:"words"`
+		TraceID string `json:"trace_id"`
+	}{Words: count, TraceID: parent.TraceID().String()})
 }

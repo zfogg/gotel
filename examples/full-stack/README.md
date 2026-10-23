@@ -17,7 +17,9 @@ Compose builds the Go and C binaries and the TypeScript page, starts Spaniel,
 then runs a headless browser that clicks **Count words**. A separate verifier
 container queries Spaniel and succeeds only when it finds the browser, Go HTTP
 handler, Go worker-call, and C worker spans connected by parent IDs in one
-trace. Its output includes a direct link to that trace. The example page is at
+trace. The runner passes the current request's trace ID to the verifier, so a
+trace from an earlier run cannot satisfy the check. Its output includes a
+direct link to that trace. The example page is at
 <http://localhost:18081/> and the Spaniel UI is at
 <http://localhost:18080/>.
 

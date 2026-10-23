@@ -47,11 +47,17 @@ services:
       dockerfile: examples/full-stack/Dockerfile.runner
     depends_on:
       browser: { condition: service_healthy }
+    volumes:
+      - trace-result:/shared
 
   verify:
     image: python:3.12-alpine
     volumes:
       - ./verify.py:/verify.py:ro
+      - trace-result:/shared:ro
     command: ["python", "/verify.py"]
     depends_on:
       runner: { condition: service_completed_successfully }
+
+volumes:
+  trace-result:
