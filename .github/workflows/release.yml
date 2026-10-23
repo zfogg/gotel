@@ -1,0 +1,151 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        name: Validate tag and package versions
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release tag: $tag"; exit 1; }
+          version="${tag#v}"
+          grep -Fq "project(c-gotel VERSION $version LANGUAGES C)" c-gotel/CMakeLists.txt
+          node -e 'if (require("./package.json").version !== process.argv[1]) process.exit(1)' "$version"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  c-static:
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install llvm ninja openssl@3 sqlite
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - name: Install Windows native dependencies
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: vcpkg install openssl:x64-windows sqlite3:x64-windows pcre2:x64-windows utf8proc:x64-windows
+      - name: Configure on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          if [[ '${{ runner.os }}' == macOS ]]; then
+            export PATH="$(brew --prefix llvm)/bin:$PATH"
+            export OPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
+          fi
+          cmake -S c-gotel -B c-gotel/build -G Ninja \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_EXTENSIONS=OFF -DBUILD_SHARED_LIBS=OFF \
+            -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON
+      - name: Configure on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cmake -S c-gotel -B c-gotel/build -G Ninja `
+            -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DBUILD_SHARED_LIBS=OFF -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON
+      - run: cmake --build c-gotel/build --parallel 4
+      - run: ctest --test-dir c-gotel/build --output-on-failure --parallel 4
+      - name: Package static libraries and headers
+        shell: bash
+        run: >-
+          python scripts/package_release.py c
+          --tag '${{ needs.validate.outputs.tag }}'
+          --build c-gotel/build
+          --otlp-source c-gotel/build/_deps/otlp_c-src
+          --output release-assets
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-c-${{ matrix.os }}
+          path: release-assets/*.zip
+          if-no-files-found: error
+
+  typescript:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: corepack enable && corepack prepare pnpm@10.20.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - name: Pack and zip the compiled package
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          mkdir -p release-assets
+          npm pack --pack-destination release-assets
+          python scripts/package_release.py typescript \
+            --tag "$RELEASE_TAG" \
+            --tarball "release-assets/zfogg-gotel-${RELEASE_TAG#v}.tgz" \
+            --output release-assets
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-typescript
+          path: release-assets/*
+          if-no-files-found: error
+
+  go-source:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go test ./...
+
+  publish:
+    needs: [validate, c-static, typescript, go-source]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Publish GitHub Release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          cd release-assets
+          sha256sum *.zip *.tgz > SHA256SUMS
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes
+          fi
+          gh release upload "$RELEASE_TAG" *.zip *.tgz SHA256SUMS --clobber

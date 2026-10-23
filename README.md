@@ -1,5 +1,8 @@
 # gotel
 
+[Latest release](https://github.com/zfogg/gotel/releases/latest) ·
+[All releases](https://github.com/zfogg/gotel/releases)
+
 When a request crosses a browser, an HTTP service, a database, and a native
 process, “how long did it take?” is only the first question. You also need to
 know which operation ran, where it spent time, and whether its trace, logs, and
@@ -256,3 +259,22 @@ names. The example shows trace context passing through HTTP and a process
 boundary, and gives you a local waterfall to inspect. See the
 [C library guide](c-gotel/README.md), the [SQL fixtures](sqltrace/testdata/),
 and [LICENSE](LICENSE) for further detail.
+
+## Releases
+
+Push a `vMAJOR.MINOR.PATCH` tag to run the
+[release workflow](.github/workflows/release.yml) and build a GitHub Release.
+The tag must match the CMake and TypeScript package versions. The release
+contains tested C static archives for Linux, macOS, and Windows with public
+headers and linking notes; an installable TypeScript npm `.tgz`; a ZIP of the
+same compiled TypeScript package for inspection; and SHA-256 checksums.
+The C archives retain external dependencies such as OpenSSL, SQLite, PCRE2,
+and utf8proc. See [C release linking notes](c-gotel/RELEASE.md).
+
+For Go, the Git tag **is** the release artifact:
+`go get github.com/zfogg/gotel@vMAJOR.MINOR.PATCH` retrieves the matching source and
+builds it with the consumer's toolchain. A compiled Go `.a` would be tied to
+a toolchain and is not useful as a normal Go module distribution. For
+TypeScript installation, prefer npm registry publication when configured, or
+install the release `.tgz` by URL or local file. The ZIP is for browsing and archival use;
+it is not the preferred npm installation format.

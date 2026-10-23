@@ -57,6 +57,10 @@ fetches utf8proc and PCRE2. ascii-chat passes its existing targets and chooses
 the static form for release builds. `FETCHCONTENT_SOURCE_DIR_OTLP_C` supports
 offline caches.
 
+Tagged releases also provide platform-specific static-library ZIPs with
+`c-gotel`, `otlp-c`, and their public headers. Read the included `LINKING.md`
+for the external dependencies and toolchain requirements before linking one.
+
 ## Host and operation scopes
 
 Host creation detects resource identity once, using the same categories as Go
