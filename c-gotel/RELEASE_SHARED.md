@@ -73,20 +73,9 @@ libraries available through the platform loader's normal search paths or
 configure an appropriate runpath. The archive's versioned shared-library
 names must stay in `lib/` alongside the unversioned linker name.
 
-## GNU Make on Linux
+## GNU Make on Unix
 
-```make
-CGOTEL_ROOT ?= /path/to/extracted/c-gotel-directory
-CC = clang
-CFLAGS += -I$(CGOTEL_ROOT)/include -DCGOTEL_WITH_SQLITE=1
-LDFLAGS += -L$(CGOTEL_ROOT)/lib -Wl,-rpath,$(CGOTEL_ROOT)/lib
-LDLIBS += -lc-gotel
-
-example: example.c
-	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS) $(LDLIBS)
-```
-
-## GNU Make on macOS
+This Makefile works on Linux and macOS.
 
 ```make
 CGOTEL_ROOT ?= /path/to/extracted/c-gotel-directory
