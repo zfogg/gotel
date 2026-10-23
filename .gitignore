@@ -1,4 +1,5 @@
 /node_modules/
+/dist/
 examples/full-stack/browser/node_modules/
 examples/full-stack/browser/dist/
 examples/full-stack/compose-test.log

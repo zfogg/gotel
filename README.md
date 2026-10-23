@@ -234,7 +234,9 @@ tears down the provider.
 
 ## Development and reference
 
-Run Go tests with `go test ./...` and browser tests with `pnpm test`. For C,
+Run Go tests with `go test ./...` and browser tests with `pnpm test`.
+`pnpm build` generates the ignored TypeScript `dist/` directory; package
+packing builds it automatically and includes the compiled files. For C,
 enable `CGOTEL_BUILD_TESTS=ON` during configure and run
 `ctest --test-dir c-gotel/build --output-on-failure`. CI builds and tests the
 C library as both static and shared on Windows, Linux, and macOS, with an
