@@ -390,9 +390,19 @@ only; summaries and span names remain concise. The SQLite adapter preserves its
 custom collection limit. Direct callers with custom limits can use
 `gotel_sql_attributes_with_limit`; formatting failures retain sanitized text.
 
-`testdata/sql_format.json` contains 694 cases, including named statements from
+`testdata/sql_format.json` contains 714 cases, including named statements from
 50 stonkpile SQL files with their source revision, Spaniel dashboard queries,
 and synthetic dialect/comment/placeholder regressions. The C test suite uses
 SQLGlot and sqlparse as independent lexical checks, 1000 deterministic mutations,
 and SQLite/DuckDB execution comparisons. Install test dependencies with
 `python -m pip install -r c-gotel/tests/requirements-format.txt`.
+
+The canonical SQL style uses two-space indentation, one projection/assignment
+per line, aligned clause headers, indented WHERE/HAVING/QUALIFY predicates,
+complete JOIN headers with aligned ON predicates, and separate nested CASE,
+CTE and subquery blocks. Short function calls remain inline; long/nested
+argument lists wrap. Twenty exact-output fixtures lock down the layout.
+
+After changing shared SQL C sources, run `python scripts/sync_sql_engine.py`.
+The generated fingerprint invalidates cgo's cache for sources included from
+outside its package directory; release CI verifies it is current.

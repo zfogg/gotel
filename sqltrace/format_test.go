@@ -19,7 +19,7 @@ func TestFormatSQLPreservesContents(t *testing.T) {
 		{DialectPostgreSQL, "select $$a; -- b$$,$tag$x ' y$tag$,E'it\\'s' from t", []string{"$$a; -- b$$", "$tag$x ' y$tag$", "E'it\\'s'"}},
 		{DialectMySQL, "select `id`,'a  b',? from users where id=?; # trailing", []string{"`id`", "'a  b'", "?", "# trailing"}},
 		{DialectSQLite, "select [name],?1,:name,@name,$scope::name(suffix) from t", []string{"[name]", "?1", ":name", "@name", "$scope::name(suffix)"}},
-		{DialectDuckDB, "select * exclude(secret),[1,2,3],{'x':1},9//2 from t qualify row_number() over(partition by team order by id)=1", []string{"exclude(secret)", "[1,2,3]", "{'x':1}", "9//2", "row_number()"}},
+		{DialectDuckDB, "select * exclude(secret),[1,2,3],{'x':1},9//2 from t qualify row_number() over(partition by team order by id)=1", []string{"exclude(secret)", "[1, 2, 3]", "{'x':1}", "9 // 2", "row_number()"}},
 		{DialectPostgreSQL, "/* outer /* nested */ done */ select a,b from t -- don't lose me\nwhere id=$1", []string{"/* outer /* nested */ done */", "-- don't lose me\n", "$1"}},
 		{DialectPostgreSQL, "select 'one'\n 'two'", []string{"'one'\n", "'two'"}},
 	}
@@ -49,10 +49,11 @@ func TestFormatSQLSharedJSONCorpus(t *testing.T) {
 	}
 	var fixture struct {
 		Cases []struct {
-			Name    string
-			Dialect Dialect
-			SQL     string
-			Valid   bool
+			Name     string
+			Dialect  Dialect
+			SQL      string
+			Valid    bool
+			Expected string
 		}
 	}
 	if err = json.Unmarshal(data, &fixture); err != nil {
@@ -83,6 +84,9 @@ func TestFormatSQLSharedJSONCorpus(t *testing.T) {
 			}
 			if compact(out) != compact(c.SQL) {
 				t.Fatal("non-whitespace contents changed")
+			}
+			if c.Expected != "" && out != c.Expected {
+				t.Fatalf("layout mismatch\nwant:\n%s\ngot:\n%s", c.Expected, out)
 			}
 			again, err := FormatSQL(c.Dialect, out)
 			if err != nil || again != out {
@@ -125,7 +129,7 @@ func FuzzFormatSQL(f *testing.F) {
 
 func TestFormatSQLLayout(t *testing.T) {
 	got, err := FormatSQL(DialectDuckDB, "select id,name from users where id=? and active=?")
-	want := "select\n  id,\n  name\nfrom users\nwhere id=?\n  and active=?"
+	want := "select\n  id,\n  name\nfrom users\nwhere\n  id = ?\n  and active = ?"
 	if err != nil || got != want {
 		t.Fatalf("got %q (%v), want %q", got, err, want)
 	}

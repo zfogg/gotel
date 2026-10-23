@@ -4747,6 +4747,146 @@
       "dialect": "sqlite",
       "sql": "select $scope::name(or) as x from t",
       "valid": true
+    },
+    {
+      "name": "layout/projection",
+      "dialect": "postgresql",
+      "sql": "SELECT a,b FROM t WHERE id=$1 AND active=true",
+      "expected": "SELECT\n  a,\n  b\nFROM t\nWHERE\n  id = $1\n  AND active = true",
+      "valid": true
+    },
+    {
+      "name": "layout/cte",
+      "dialect": "postgresql",
+      "sql": "WITH a AS (SELECT id,team FROM users WHERE active=1), b AS (SELECT team,count(*) AS n FROM a GROUP BY team) SELECT team,n FROM b ORDER BY n DESC,team",
+      "expected": "WITH a AS (\n  SELECT\n    id,\n    team\n  FROM users\n  WHERE\n    active = 1\n),\nb AS (\n  SELECT\n    team,\n    count(*) AS n\n  FROM a\n  GROUP BY\n    team\n)\nSELECT\n  team,\n  n\nFROM b\nORDER BY\n  n DESC,\n  team",
+      "valid": true
+    },
+    {
+      "name": "layout/boolean-groups",
+      "dialect": "postgresql",
+      "sql": "SELECT id FROM t WHERE (x=$1 OR x=$2) AND (active=1 AND score>10)",
+      "expected": "SELECT\n  id\nFROM t\nWHERE\n  (\n    x = $1\n    OR x = $2\n  )\n  AND (\n    active = 1\n    AND score > 10\n  )",
+      "valid": true
+    },
+    {
+      "name": "layout/case",
+      "dialect": "postgresql",
+      "sql": "SELECT CASE WHEN active=1 THEN 'yes' ELSE 'no' END AS status FROM t",
+      "expected": "SELECT\n  CASE\n    WHEN active = 1 THEN 'yes'\n    ELSE 'no'\n  END AS status\nFROM t",
+      "valid": true
+    },
+    {
+      "name": "layout/nested-case",
+      "dialect": "postgresql",
+      "sql": "SELECT CASE WHEN active=1 THEN CASE WHEN score>10 THEN 'high' ELSE 'low' END ELSE 'off' END AS status FROM t",
+      "expected": "SELECT\n  CASE\n    WHEN active = 1 THEN\n      CASE\n        WHEN score > 10 THEN 'high'\n        ELSE 'low'\n      END\n    ELSE 'off'\n  END AS status\nFROM t",
+      "valid": true
+    },
+    {
+      "name": "layout/joins",
+      "dialect": "postgresql",
+      "sql": "SELECT u.id,e.name FROM users u LEFT OUTER JOIN events e ON e.user_id=u.id AND e.active=1 INNER JOIN teams t ON t.id=u.team_id WHERE u.active=1",
+      "expected": "SELECT\n  u.id,\n  e.name\nFROM users u\nLEFT OUTER JOIN events e\n  ON e.user_id = u.id\n  AND e.active = 1\nINNER JOIN teams t\n  ON t.id = u.team_id\nWHERE\n  u.active = 1",
+      "valid": true
+    },
+    {
+      "name": "layout/group-having",
+      "dialect": "postgresql",
+      "sql": "SELECT team,count(*) AS n FROM users GROUP BY team HAVING count(*)>1 AND sum(score)>10 ORDER BY n DESC,team LIMIT 20",
+      "expected": "SELECT\n  team,\n  count(*) AS n\nFROM users\nGROUP BY\n  team\nHAVING\n  count(*) > 1\n  AND sum(score) > 10\nORDER BY\n  n DESC,\n  team\nLIMIT 20",
+      "valid": true
+    },
+    {
+      "name": "layout/union",
+      "dialect": "postgresql",
+      "sql": "SELECT id FROM current_users UNION ALL SELECT id FROM old_users",
+      "expected": "SELECT\n  id\nFROM current_users\nUNION ALL\nSELECT\n  id\nFROM old_users",
+      "valid": true
+    },
+    {
+      "name": "layout/update",
+      "dialect": "postgresql",
+      "sql": "UPDATE users SET active=1,score=COALESCE(score,0)+1 WHERE id=$1 AND team=$2 RETURNING id,score",
+      "expected": "UPDATE users\nSET\n  active = 1,\n  score = COALESCE(score, 0) + 1\nWHERE\n  id = $1\n  AND team = $2\nRETURNING\n  id,\n  score",
+      "valid": true
+    },
+    {
+      "name": "layout/insert",
+      "dialect": "postgresql",
+      "sql": "INSERT INTO users(id,name) VALUES ($1,$2),($3,$4) RETURNING id,name",
+      "expected": "INSERT INTO users(id, name)\nVALUES\n  ($1, $2),\n  ($3, $4)\nRETURNING\n  id,\n  name",
+      "valid": true
+    },
+    {
+      "name": "layout/distinct-on",
+      "dialect": "postgresql",
+      "sql": "SELECT DISTINCT ON (team) id,name FROM users WHERE active=1 ORDER BY team,id",
+      "expected": "SELECT DISTINCT ON (team)\n  id,\n  name\nFROM users\nWHERE\n  active = 1\nORDER BY\n  team,\n  id",
+      "valid": true
+    },
+    {
+      "name": "layout/between",
+      "dialect": "postgresql",
+      "sql": "SELECT id FROM users WHERE score BETWEEN 1 AND 10 AND active=1",
+      "expected": "SELECT\n  id\nFROM users\nWHERE\n  score BETWEEN 1 AND 10\n  AND active = 1",
+      "valid": true
+    },
+    {
+      "name": "layout/correlated-subquery",
+      "dialect": "postgresql",
+      "sql": "SELECT u.id,(SELECT max(score) FROM events e WHERE e.user_id=u.id) AS score FROM users u",
+      "expected": "SELECT\n  u.id,\n  (\n    SELECT\n      max(score)\n    FROM events e\n    WHERE\n      e.user_id = u.id\n  ) AS score\nFROM users u",
+      "valid": true
+    },
+    {
+      "name": "layout/case-function",
+      "dialect": "postgresql",
+      "sql": "SELECT COALESCE(SUM(CASE WHEN active=1 THEN score ELSE 0 END),0) AS total FROM users",
+      "expected": "SELECT\n  COALESCE(\n    SUM(\n      CASE\n        WHEN active = 1 THEN score\n        ELSE 0\n      END\n    ),\n    0\n  ) AS total\nFROM users",
+      "valid": true
+    },
+    {
+      "name": "layout/comments",
+      "dialect": "postgresql",
+      "sql": "-- name: Find :many\nSELECT a,b FROM t WHERE id=$1; -- trailing  ",
+      "expected": "-- name: Find :many\nSELECT\n  a,\n  b\nFROM t\nWHERE\n  id = $1; -- trailing  ",
+      "valid": true
+    },
+    {
+      "name": "layout/sqlite-parameters",
+      "dialect": "sqlite",
+      "sql": "SELECT ?1,:name,@name,$scope::name(select) FROM [table name]",
+      "expected": "SELECT\n  ?1,\n  :name,\n  @name,\n  $scope::name(select)\nFROM [table name]",
+      "valid": true
+    },
+    {
+      "name": "layout/mysql-upsert",
+      "dialect": "mysql",
+      "sql": "INSERT INTO `users`(id,name) VALUES (?,?) ON DUPLICATE KEY UPDATE name=VALUES(name)",
+      "expected": "INSERT INTO `users`(id, name)\nVALUES\n  (?, ?)\nON DUPLICATE KEY UPDATE name = VALUES(name)",
+      "valid": true
+    },
+    {
+      "name": "layout/duckdb-qualify",
+      "dialect": "duckdb",
+      "sql": "SELECT * EXCLUDE(secret) FROM users QUALIFY row_number() OVER(PARTITION BY team ORDER BY id)=1",
+      "expected": "SELECT\n  * EXCLUDE(secret)\nFROM users\nQUALIFY\n  row_number() OVER (PARTITION BY team ORDER BY id) = 1",
+      "valid": true
+    },
+    {
+      "name": "layout/function-space",
+      "dialect": "postgresql",
+      "sql": "SELECT COALESCE( score,0 ),count( * ) FROM users",
+      "expected": "SELECT\n  COALESCE(score, 0),\n  count(*)\nFROM users",
+      "valid": true
+    },
+    {
+      "name": "layout/arithmetic",
+      "dialect": "postgresql",
+      "sql": "SELECT -1 AS negative,1e-3 AS tiny,a+b AS sum,a/b AS ratio FROM t WHERE value>=-1",
+      "expected": "SELECT\n  -1 AS negative,\n  1e-3 AS tiny,\n  a + b AS sum,\n  a / b AS ratio\nFROM t\nWHERE\n  value >= -1",
+      "valid": true
     }
   ]
 }

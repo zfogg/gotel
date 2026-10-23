@@ -41,7 +41,7 @@ func TestQueryTracerUsesSQLCNameAndSafeAttributes(t *testing.T) {
 			attrs[string(attr.Key)] = attr.Value.AsInt64()
 		}
 	}
-	if attrs["db.query.text"] != "SELECT\n  *\nFROM widgets\nWHERE token = ?\n  AND attempts > ?" {
+	if attrs["db.query.text"] != "SELECT\n  *\nFROM widgets\nWHERE\n  token = ?\n  AND attempts > ?" {
 		t.Fatalf("query text = %#v", attrs["db.query.text"])
 	}
 	if attrs["gotel.db.query.bind_count"] != int64(1) {

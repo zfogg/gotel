@@ -183,6 +183,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - run: python scripts/sync_sql_engine.py --check
       - run: go test ./...
 
   publish:

@@ -68,6 +68,8 @@ for c, (status, length, out) in zip(cases, outputs):
         assert status != 0 and out == '', c['name']
         continue
     assert status == 0 and length == len(out.encode()), (c['name'], status)
+    if 'expected' in c:
+        assert out == c['expected'], (c['name'], 'layout', c['expected'], out)
     preserved(c['sql'], out, c['dialect'], c['name'])
     valid_cases.append({**c, 'sql': out})
 for c, (status, _, out) in zip(valid_cases, format_many(valid_cases)):
