@@ -440,11 +440,211 @@
     "operation": "COPY"
   },
   {
+    "query": "CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))",
+    "summary": "CREATE INDEX \"Index Name\" ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))",
+    "summary": "CREATE INDEX \"Index Name\" ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))",
+    "summary": "CREATE INDEX \"Index Name\" ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))",
+    "summary": "CREATE INDEX \"Index Name\" ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE INDEX ? ON ? ((lower(email)))",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX \"Index Name\" ON ...",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE INDEX \"Index Name\" ON ...",
+    "summary": "CREATE INDEX \"Index Name\" ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX \"Index Name\" ON ...",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE INDEX \"Index Name\" ON ...",
+    "summary": "CREATE INDEX \"Index Name\" ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX \"Index Name\" ON ...",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE INDEX \"Index Name\" ON ...",
+    "summary": "CREATE INDEX \"Index Name\" ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX \"Index Name\" ON ...",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE INDEX \"Index Name\" ON ...",
+    "summary": "CREATE INDEX \"Index Name\" ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX \"Index Name\" ON ...",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE INDEX ? ON ...",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX 'SECRET' ON accounts(id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE INDEX ? ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX 'SECRET' ON accounts(id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE INDEX ? ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX 'SECRET' ON accounts(id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE INDEX ? ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX 'SECRET' ON accounts(id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE INDEX ? ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX 'SECRET' ON accounts(id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE INDEX ? ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX ON accounts(id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE INDEX ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX ON accounts(id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE INDEX ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX ON accounts(id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE INDEX ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX ON accounts(id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE INDEX ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX ON accounts(id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE INDEX ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
     "query": "CREATE INDEX account_id ON accounts(id)",
     "dialect": 0,
     "safe": true,
     "text": "CREATE INDEX account_id ON accounts(id)",
-    "summary": "CREATE",
+    "summary": "CREATE INDEX account_id ON ...",
     "operation": "CREATE"
   },
   {
@@ -452,7 +652,7 @@
     "dialect": 1,
     "safe": true,
     "text": "CREATE INDEX account_id ON accounts(id)",
-    "summary": "CREATE",
+    "summary": "CREATE INDEX account_id ON ...",
     "operation": "CREATE"
   },
   {
@@ -460,7 +660,7 @@
     "dialect": 2,
     "safe": true,
     "text": "CREATE INDEX account_id ON accounts(id)",
-    "summary": "CREATE",
+    "summary": "CREATE INDEX account_id ON ...",
     "operation": "CREATE"
   },
   {
@@ -468,7 +668,7 @@
     "dialect": 3,
     "safe": true,
     "text": "CREATE INDEX account_id ON accounts(id)",
-    "summary": "CREATE",
+    "summary": "CREATE INDEX account_id ON ...",
     "operation": "CREATE"
   },
   {
@@ -476,7 +676,47 @@
     "dialect": 4,
     "safe": true,
     "text": "CREATE INDEX account_id ON accounts(id)",
-    "summary": "CREATE",
+    "summary": "CREATE INDEX account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX idx_participants_session ON ...",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE INDEX idx_participants_session ON ...",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX idx_participants_session ON ...",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE INDEX idx_participants_session ON ...",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX idx_participants_session ON ...",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE INDEX idx_participants_session ON ...",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX idx_participants_session ON ...",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE INDEX idx_participants_session ON ...",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX idx_participants_session ON ...",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE INDEX idx_participants_session ON ...",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
     "operation": "CREATE"
   },
   {
@@ -517,6 +757,86 @@
     "safe": true,
     "text": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT ?)",
     "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token='SECRET'",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token=?",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token='SECRET'",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token=?",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token='SECRET'",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token=?",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token='SECRET'",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token=?",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token='SECRET'",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token=?",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE UNIQUE INDEX public.account_id ON ...",
+    "summary": "CREATE UNIQUE INDEX public.account_id ON ...",
     "operation": "CREATE"
   },
   {
@@ -5318,5 +5638,45 @@
     "text": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON ?",
     "summary": "WITH x AS (SELECT … FROM public.accounts) SELECT … FROM (WITH x AS (SELECT … FROM holdings) SELECT … FROM x) AS q JOIN x ON ?",
     "operation": "SELECT"
+  },
+  {
+    "query": "create index idx_participants_session on session_participants(session_id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "create index idx_participants_session on session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "create index idx_participants_session on session_participants(session_id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "create index idx_participants_session on session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "create index idx_participants_session on session_participants(session_id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "create index idx_participants_session on session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "create index idx_participants_session on session_participants(session_id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "create index idx_participants_session on session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
+  },
+  {
+    "query": "create index idx_participants_session on session_participants(session_id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "create index idx_participants_session on session_participants(session_id)",
+    "summary": "CREATE INDEX idx_participants_session ON ...",
+    "operation": "CREATE"
   }
 ]

@@ -1,3 +1,4 @@
+#include "utf8.h"
 #include <ctype.h>
 #include <gotel/sql.h>
 #include <stdio.h>
@@ -620,6 +621,30 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
       return;
     }
     upper(b, op);
+    if (kw(op, "CREATE")) {
+      size_t j = i;
+      bool unique = j < n && kw(t[j], "UNIQUE");
+      if (unique)
+        ++j;
+      if (j < n && kw(t[j], "INDEX")) {
+        ++j;
+        if (j < n && kw(t[j], "CONCURRENTLY"))
+          ++j;
+        if (j + 2 < n && kw(t[j], "IF") && kw(t[j + 1], "NOT") && kw(t[j + 2], "EXISTS"))
+          j += 3;
+        char index_name[4097] = {0};
+        output index = {index_name, 0, sizeof(index_name)};
+        size_t next = name(&index, t, n, j);
+        if (next > j && next < n && kw(t[next], "ON")) {
+          item(b, unique ? "UNIQUE INDEX" : "INDEX");
+          item(b, index_name);
+          item(b, "ON ...");
+          if (index.overflow)
+            b->overflow = true;
+          return;
+        }
+      }
+    }
     if (kw(op, "SELECT")) {
       if (i < n && (kw(t[i], "DISTINCT") || kw(t[i], "ALL"))) {
         text(b, " ");
@@ -833,8 +858,7 @@ static void utf8_cut(char *s, size_t limit) {
   size_t n = strlen(s);
   if (n <= limit)
     return;
-  while (limit && ((unsigned char)s[limit] & 0xc0) == 0x80)
-    --limit;
+  limit = gotel_utf8_prefix(s, n, limit);
   s[limit] = 0;
   while (limit && isspace((unsigned char)s[limit - 1]))
     s[--limit] = 0;
@@ -890,6 +914,8 @@ otlp_status_t gotel_sql_inspect(const char *sql, const gotel_sql_options_t *opti
     ++n;
   if (n > INPUT_MAX)
     return OTLP_ERR_OVERFLOW;
+  if (!gotel_utf8_valid(sql, n))
+    return OTLP_ERR_INVALID_ARGUMENT;
   char *safe = calloc(n + 1, 1), *shape = calloc(n + 1, 1);
   token *tokens = calloc(n < TOKEN_MAX ? n + 1 : TOKEN_MAX, sizeof(*tokens));
   if (!safe || !shape || !tokens) {

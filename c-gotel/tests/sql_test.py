@@ -10,7 +10,7 @@ for c in production:
     assert c['trace_url'].startswith('http://pi5:8345/traces/')
 cases+=production
 def inspect(cases):
-    data=''.join(f"{c['dialect']} {c.get('limit',0)} {int(c.get('omit',False))} {int(c.get('keep',False))} {c['query'].encode().hex()}\n" for c in cases)
+    data=''.join(f"{c['dialect']} {c.get('limit',0)} {int(c.get('omit',False))} {int(c.get('keep',False))} {(c['raw'] if 'raw' in c else c['query'].encode()).hex()}\n" for c in cases)
     result=subprocess.run([sys.argv[1]],input=data,text=True,capture_output=True,check=True,timeout=60)
     lines=result.stdout.splitlines(); assert len(lines)==len(cases),(len(lines),len(cases),result.stderr)
     out=[]
@@ -20,6 +20,11 @@ def inspect(cases):
                         text=bytes.fromhex(text).decode(),summary=bytes.fromhex(summary).decode()))
     return out
 errors=[]
+index_query='CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)'
+index_result=inspect([dict(query=index_query,dialect=1)])[0]
+assert index_result['status']==0
+assert index_result['summary']=='CREATE INDEX idx_participants_session ON ...'
+assert index_result['text']==index_query
 for c,r in zip(cases,inspect(cases)):
     if (r['status']==0)!=c['safe'] or r['text']!=c['text'] or r['summary']!=c['summary'] or r['operation']!=c['operation']:
         errors.append((c,r))
@@ -40,6 +45,15 @@ for c,r in zip(limits,inspect(limits)):
     assert len(r['text'].encode())<=c['limit']
     assert r['truncated']==(len(c['query'].encode())>c['limit'])
     assert r['summary']=='SELECT … FROM accounts'
+
+for query in ('SELECT "日本😀é" FROM accounts', 'SELECT "𐀀é" FROM accounts'):
+    boundaries=[dict(dialect=1,query=query,limit=i) for i in range(1,len(query.encode())+1)]
+    for c,r in zip(boundaries,inspect(boundaries)):
+        assert r['status']==0 and len(r['text'].encode())<=c['limit']
+        assert query.startswith(r['text'])
+invalid_utf8=[b'\xc0\xaf',b'\xed\xa0\x80',b'\xf4\x90\x80\x80',b'\xe2\x82',b'\x80']
+for r in inspect([dict(dialect=1,raw=b'SELECT "'+bad+b'"',limit=1) for bad in invalid_utf8]):
+    assert r['status']!=0 and r['text']=='' and r['summary']=='SQL'
 
 malformed=["SELECT 'SECRET",'SELECT /* SECRET','SELECT $tag$SECRET$wrong$', 'SELECT "SECRET', 'SELECT E\'SECRET\\']
 for r in inspect([dict(query=q,dialect=d) for q in malformed for d in range(5)]):

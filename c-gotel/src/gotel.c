@@ -69,7 +69,7 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
   }
   h->measurements = calloc(o->operation_count, sizeof(*h->measurements));
   h->exporter = otlp_exporter_create(&o->exporter);
-  h->tracer = otlp_tracer_create(o->exporter.service_name, "c-gotel", "0.1.0");
+  h->tracer = otlp_tracer_create(o->exporter.service_name, "c-gotel", CGOTEL_VERSION);
   if (!h->measurements || !h->exporter || !h->tracer) {
     gotel_destroy(h);
     return OTLP_ERR_NOMEM;

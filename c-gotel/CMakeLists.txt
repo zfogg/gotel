@@ -1,15 +1,29 @@
-cmake_minimum_required(VERSION 3.21)
-project(c-gotel VERSION 0.1.0 LANGUAGES C)
+cmake_minimum_required(VERSION 3.24)
+project(c-gotel VERSION 0.7.3 LANGUAGES C)
+
 include(FetchContent)
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(CGOTEL_BUILD_TESTS "Build c-gotel unit and wire tests" OFF)
 option(CGOTEL_WITH_SQLITE "Build SQLite trace adapter" ON)
-FetchContent_Declare(otlp_c GIT_REPOSITORY https://github.com/riboseinc/otlp-c.git
-  GIT_TAG 0798449d66331c3953b8ba9354164cfbf2f3bdaf)
+
+include(cmake/TextDependencies.cmake)
+
+# c-gotel uses otlp-c's internal attribute and TLS helpers. Keep otlp-c in
+# the same link image even when c-gotel itself is a shared library.
+set(_gotel_shared ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
+FetchContent_Declare(otlp_c
+  GIT_REPOSITORY https://github.com/riboseinc/otlp-c.git
+  GIT_TAG 0798449d66331c3953b8ba9354164cfbf2f3bdaf
+)
+
 # Do not let the dependency define a generic docs target in its consumer.
 set(_gotel_disable_doxygen "${CMAKE_DISABLE_FIND_PACKAGE_Doxygen}")
 set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen TRUE)
 FetchContent_MakeAvailable(otlp_c)
+set(BUILD_SHARED_LIBS ${_gotel_shared})
 set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen "${_gotel_disable_doxygen}")
+
 # otlp-c v1.1.19 calls Sleep in exporter translation units without
 # including its declaration. Supply the Windows headers for that pinned version.
 if(WIN32)
@@ -42,17 +56,36 @@ if(WIN32)
     target_compile_options(otlp_c PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/src/otlp_windows.h)
   endif()
 endif()
+
 include(cmake/TLS.cmake)
-add_library(c-gotel STATIC src/gotel.c src/http.c src/sql.c src/resource.c)
+
+set(_gotel_sources src/gotel.c src/http.c src/sql.c src/resource.c src/utf8.c)
+if(BUILD_SHARED_LIBS)
+  add_library(c-gotel SHARED ${_gotel_sources})
+else()
+  add_library(c-gotel STATIC ${_gotel_sources})
+endif()
+
 add_library(gotel::c-gotel ALIAS c-gotel)
 target_compile_features(c-gotel PUBLIC c_std_11)
-set_target_properties(c-gotel PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_include_directories(c-gotel PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/otlp-tls ${otlp_c_SOURCE_DIR}/src)
+set_target_properties(c-gotel PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+  WINDOWS_EXPORT_ALL_SYMBOLS ON
+  VERSION ${PROJECT_VERSION}
+  SOVERSION 0
+)
+target_compile_definitions(c-gotel PRIVATE CGOTEL_VERSION="${PROJECT_VERSION}")
+target_link_libraries(c-gotel PRIVATE ${CGOTEL_UTF8PROC_TARGET} ${CGOTEL_PCRE2_TARGET})
+target_include_directories(c-gotel PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}/otlp-tls
+  ${otlp_c_SOURCE_DIR}/src
+)
 if(WIN32)
   target_link_libraries(c-gotel PRIVATE shell32 advapi32)
 endif()
 target_include_directories(c-gotel PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(c-gotel PUBLIC otlp-c::otlp_c)
+
 if(CGOTEL_WITH_SQLITE)
   find_package(SQLite3 REQUIRED)
   target_sources(c-gotel PRIVATE src/sqlite.c src/named.c)
@@ -63,6 +96,7 @@ if(CGOTEL_WITH_SQLITE)
   endif()
   target_compile_definitions(c-gotel PUBLIC CGOTEL_WITH_SQLITE=1)
 endif()
+
 option(CGOTEL_BUILD_TEST_SUPPORT "Build framework-independent test helpers" ${CGOTEL_BUILD_TESTS})
 if(CGOTEL_BUILD_TEST_SUPPORT)
   add_library(c-gotel-testing STATIC src/testing.c)
@@ -70,33 +104,39 @@ if(CGOTEL_BUILD_TEST_SUPPORT)
   target_link_libraries(c-gotel-testing PUBLIC gotel::c-gotel)
   set_target_properties(c-gotel-testing PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+
 if(CGOTEL_BUILD_TESTS)
   if(NOT CGOTEL_BUILD_TEST_SUPPORT)
     message(FATAL_ERROR "CGOTEL_BUILD_TESTS requires CGOTEL_BUILD_TEST_SUPPORT")
   endif()
   find_package(Threads REQUIRED)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
   enable_testing()
+
   add_executable(c-gotel-test tests/test.c)
   target_link_libraries(c-gotel-test PRIVATE gotel::testing Threads::Threads)
   add_test(NAME c-gotel-unit COMMAND c-gotel-test)
   foreach(case http validation sampling context registry concurrency testing)
     add_test(NAME c-gotel-${case} COMMAND c-gotel-test --case ${case})
   endforeach()
-  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
   add_executable(c-gotel-sql-probe tests/sql_probe.c)
   target_link_libraries(c-gotel-sql-probe PRIVATE gotel::c-gotel)
   add_test(NAME c-gotel-sql COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/sql_test.py $<TARGET_FILE:c-gotel-sql-probe>)
+
   add_executable(c-gotel-resource-probe tests/resource_probe.c)
   target_link_libraries(c-gotel-resource-probe PRIVATE gotel::testing)
   add_test(NAME c-gotel-resource COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_test.py $<TARGET_FILE:c-gotel-resource-probe>)
+
   if(CGOTEL_WITH_SQLITE)
     add_executable(c-gotel-sqlite-probe tests/sqlite_probe.c)
     target_link_libraries(c-gotel-sqlite-probe PRIVATE gotel::testing)
     add_test(NAME c-gotel-sqlite COMMAND ${Python3_EXECUTABLE}
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/sqlite_test.py $<TARGET_FILE:c-gotel-sqlite-probe>)
   endif()
+
   add_executable(c-gotel-tls-probe tests/tls_probe.c)
   target_include_directories(c-gotel-tls-probe PRIVATE ${otlp_c_SOURCE_DIR}/src)
   target_link_libraries(c-gotel-tls-probe PRIVATE gotel::c-gotel)
@@ -106,4 +146,15 @@ if(CGOTEL_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_testing.py)
   add_test(NAME c-gotel-wire COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/wire.py $<TARGET_FILE:c-gotel-test> ${CGOTEL_WITH_SQLITE})
+
+  if(WIN32)
+    get_property(_gotel_tests DIRECTORY PROPERTY TESTS)
+    foreach(_test IN LISTS _gotel_tests)
+      set_property(TEST ${_test} APPEND PROPERTY ENVIRONMENT_MODIFICATION
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:c-gotel>"
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:otlp_c>"
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:${CGOTEL_UTF8PROC_TARGET}>"
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:${CGOTEL_PCRE2_TARGET}>")
+    endforeach()
+  endif()
 endif()

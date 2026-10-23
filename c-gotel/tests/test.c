@@ -55,6 +55,23 @@ static void names(void) {
   CHECK(!*b);
   CHECK(gotel_http_name(b, sizeof(b), "app", false, "GET", "secret") == OTLP_ERR_INVALID_ARGUMENT);
   CHECK(gotel_http_name(b, sizeof(b), "app", true, "GET", "/path?secret") == OTLP_ERR_INVALID_ARGUMENT);
+  const char *ids[] = {"123", "ABCDEF1234567890abcdef12", "550e8400-e29b-41d4-a716-446655440000"};
+  for (size_t i = 0; i < sizeof(ids) / sizeof(*ids); ++i) {
+    char url[256];
+    snprintf(url, sizeof(url), "https://example.com/items/%s", ids[i]);
+    CHECK(gotel_http_name(b, sizeof(b), "app", false, "GET", url) == OTLP_OK);
+    CHECK(!strcmp(b, "app.http.client.GET example.com/items/{id}"));
+  }
+  CHECK(gotel_http_name(b, sizeof(b), "app", false, "GET",
+                        "https://example.com/550e8400-e29b-01d4-a716-446655440000") == OTLP_OK);
+  CHECK(strstr(b, "550e8400-e29b-01d4-a716-446655440000"));
+  CHECK(gotel_http_name(b, sizeof(b), "app", false, "GET",
+                        "https://example.com/550e8400-e29b-41d4-0716-446655440000") == OTLP_OK);
+  CHECK(strstr(b, "550e8400-e29b-41d4-0716-446655440000"));
+  CHECK(gotel_http_name(b, sizeof(b), "app", false, "GET", "https://example.com/日本/１２３/42") == OTLP_OK);
+  CHECK(!strcmp(b, "app.http.client.GET example.com/日本/１２３/{id}"));
+  CHECK(gotel_http_name(b, sizeof(b), "app", true, "GET", "/\xc0\xaf") == OTLP_ERR_INVALID_ARGUMENT);
+  CHECK(!*b);
 }
 static void validation(void) {
   unsigned signals = 99;
