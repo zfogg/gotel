@@ -31,6 +31,11 @@ jobs:
             grpc: 'OFF'
           - os: ubuntu-latest
             library: static
+            sqlite: 'ON'
+            config: Release
+            grpc: 'ON'
+          - os: ubuntu-latest
+            library: static
             sqlite: 'OFF'
             config: Debug
             grpc: 'OFF'
@@ -88,6 +93,9 @@ jobs:
             -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }} -DCGOTEL_WITH_GRPC=${{ matrix.grpc }}
       - run: cmake --build c-gotel/build --parallel 4
       - run: ctest --test-dir c-gotel/build --output-on-failure --parallel 4
+      - name: Verify gRPC release ZIP contents
+        if: matrix.grpc == 'ON'
+        run: python scripts/test_package_release.py c-gotel/build ${{ matrix.library }}
 
   c-gotel-sanitizer:
     runs-on: ubuntu-latest

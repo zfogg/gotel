@@ -41,6 +41,7 @@ timeouts, and invalid protocol/certificate configuration using synthetic media.
 ## Build and test
 
 ```sh
+python -m pip install -r c-gotel/tests/requirements-grpc.txt
 cmake -S c-gotel -B c-gotel/build -G Ninja -DCMAKE_C_COMPILER=clang -DCGOTEL_BUILD_TESTS=ON
 cmake --build c-gotel/build
 ctest --test-dir c-gotel/build --output-on-failure
@@ -60,7 +61,7 @@ the static form for release builds. `FETCHCONTENT_SOURCE_DIR_OTLP_C` supports
 offline caches.
 
 Tagged releases provide separate platform-specific static and shared library
-ZIPs. Both contain public headers; static ZIPs include `c-gotel` and `otlp-c`
+ZIPs. Both contain public headers; static ZIPs include `c-gotel`, `otlp-c`, and `nghttp2`
 archives, while shared ZIPs contain `c-gotel` plus any platform import library.
 Read each ZIP's `README.md` for external dependencies, toolchain requirements,
 and the runtime libraries needed by shared builds.
@@ -135,9 +136,9 @@ host creation.
 
 ## Native OTLP/gRPC
 
-Build with `-DCGOTEL_WITH_GRPC=ON` to enable an optional pure-C nghttp2 transport.
-HTTP/protobuf remains the default, and builds with this option off do not acquire
-an HTTP/2 dependency. Set `options.protocol = "grpc"`, or opt into environment
+Native gRPC support is built by default using pure-C nghttp2. Disable it with
+`-DCGOTEL_WITH_GRPC=OFF` to omit the HTTP/2 dependency. HTTP/protobuf remains the
+default export protocol. Set `options.protocol = "grpc"`, or opt into environment
 configuration with `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`. A build without gRPC
 rejects that selection. No upstream checkout is changed: the build stages and
 checks the pinned otlp-c sources, retaining its queues, protobuf encoding,

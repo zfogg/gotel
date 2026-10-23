@@ -4,14 +4,16 @@ Choose the static or shared section to match the release ZIP you downloaded.
 Each ZIP is named for its operating system, CPU architecture, and linkage type.
 Both contain public headers, licenses, and this guide.
 
-Native gRPC is an opt-in source-build feature (`CGOTEL_WITH_GRPC=ON`); the
-default release ZIPs use HTTP/protobuf. A custom static gRPC build additionally
-needs nghttp2 at final link. Linking the CMake target propagates that dependency.
+Native gRPC support is enabled by default and included in every release ZIP.
+Select it with `options.protocol = "grpc"`; HTTP/protobuf remains the default
+export protocol. Static ZIPs include nghttp2 for final linking; shared libraries
+link nghttp2 statically and need no separate nghttp2 runtime. Source builds can
+disable gRPC support with `CGOTEL_WITH_GRPC=OFF`.
 Rebuild consumers against the matching headers when changing c-gotel versions.
 
 ## Static libraries
 
-This archive contains the Release-build static `c-gotel` and `otlp-c` libraries,
+This archive contains the Release-build static `c-gotel`, `otlp-c`, and `nghttp2` libraries,
 their public headers, and their licenses. The archive name identifies the
 operating system and CPU architecture. Use a compatible C toolchain and point
 its include path at `include/`.
@@ -29,7 +31,7 @@ The system libraries used by this build are:
 
 On Windows, use the MSVC-compatible Clang toolchain and matching vcpkg libraries
 for the archive's architecture (`x64-windows` or `arm64-windows`). Link the
-`c-gotel` archive before `otlp-c` and the dependency libraries. The examples
+`c-gotel` archive before `otlp-c`, then the bundled `nghttp2` and external dependency libraries. The examples
 below assume your application source is `example.c`; replace it with your own.
 
 ### CMake on Linux, macOS, and Windows
@@ -49,9 +51,11 @@ endif()
 if(WIN32)
   set(CGOTEL_LIB "${CGOTEL_ROOT}/lib/c-gotel.lib")
   set(OTLP_LIB "${CGOTEL_ROOT}/lib/otlp_c.lib")
+  set(NGHTTP2_LIB "${CGOTEL_ROOT}/lib/nghttp2.lib")
 else()
   set(CGOTEL_LIB "${CGOTEL_ROOT}/lib/libc-gotel.a")
   set(OTLP_LIB "${CGOTEL_ROOT}/lib/libotlp_c.a")
+  set(NGHTTP2_LIB "${CGOTEL_ROOT}/lib/libnghttp2.a")
 endif()
 
 add_library(gotel_prebuilt STATIC IMPORTED)
@@ -68,7 +72,7 @@ add_executable(example example.c)
 target_include_directories(example PRIVATE "${CGOTEL_ROOT}/include")
 target_compile_definitions(example PRIVATE CGOTEL_WITH_SQLITE=1)
 target_link_libraries(example PRIVATE
-  gotel_prebuilt otlp_prebuilt
+  gotel_prebuilt otlp_prebuilt "${NGHTTP2_LIB}"
   "${PCRE2_8_LIBRARY}" "${UTF8PROC_LIBRARY}"
   ${SQLite3_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto
 )
@@ -123,6 +127,7 @@ CGOTEL_ROOT ?= /path/to/extracted/c-gotel-directory
 CC = clang
 CFLAGS += -I$(CGOTEL_ROOT)/include -DCGOTEL_WITH_SQLITE=1
 LDLIBS = $(CGOTEL_ROOT)/lib/libc-gotel.a $(CGOTEL_ROOT)/lib/libotlp_c.a \
+  $(CGOTEL_ROOT)/lib/libnghttp2.a \
   -lpcre2-8 -lutf8proc -lsqlite3 -lssl -lcrypto -pthread -ldl
 
 example: example.c
@@ -139,6 +144,7 @@ LDFLAGS += -L$(shell brew --prefix openssl@3)/lib \
   -L$(shell brew --prefix sqlite)/lib -L$(shell brew --prefix pcre2)/lib \
   -L$(shell brew --prefix utf8proc)/lib
 LDLIBS = $(CGOTEL_ROOT)/lib/libc-gotel.a $(CGOTEL_ROOT)/lib/libotlp_c.a \
+  $(CGOTEL_ROOT)/lib/libnghttp2.a \
   -lpcre2-8 -lutf8proc -lsqlite3 -lssl -lcrypto \
   -framework Security -framework CoreFoundation
 
@@ -160,7 +166,7 @@ VCPKG_LIB = $(VCPKG_ROOT)/installed/$(TRIPLET)/lib
 example.exe: example.c
 	clang-cl /nologo /I"$(CGOTEL_ROOT)/include" /DCGOTEL_WITH_SQLITE=1 $< \
   /link /OUT:$@ /LIBPATH:"$(VCPKG_LIB)" \
-  "$(CGOTEL_ROOT)/lib/c-gotel.lib" "$(CGOTEL_ROOT)/lib/otlp_c.lib" \
+  "$(CGOTEL_ROOT)/lib/c-gotel.lib" "$(CGOTEL_ROOT)/lib/otlp_c.lib" "$(CGOTEL_ROOT)/lib/nghttp2.lib" \
   pcre2-8.lib utf8proc.lib sqlite3.lib libssl.lib libcrypto.lib \
   shell32.lib advapi32.lib crypt32.lib ws2_32.lib user32.lib
 ```

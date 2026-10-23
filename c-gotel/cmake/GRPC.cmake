@@ -1,4 +1,4 @@
-option(CGOTEL_WITH_GRPC "Enable native OTLP/gRPC (nghttp2)" OFF)
+option(CGOTEL_WITH_GRPC "Enable native OTLP/gRPC (nghttp2)" ON)
 set(CGOTEL_NGHTTP2_TARGET "" CACHE STRING "Existing nghttp2 CMake target")
 if(CGOTEL_WITH_GRPC)
   if(NOT CGOTEL_NGHTTP2_TARGET)
