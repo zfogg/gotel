@@ -90,8 +90,7 @@ int main(void) {
     }
   }
   gotel_attr_int(&scope, "demo.word_count", (int64_t)words);
-  gotel_log(host, OTLP_SEVERITY_INFO, "word count complete", __FILE__, __LINE__,
-            __func__);
+  gotel_log(host, OTLP_SEVERITY_INFO, "word count complete");
   gotel_end(&scope);
   gotel_tick(host);
   otlp_status_t status = gotel_drain(host);

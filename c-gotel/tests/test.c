@@ -191,7 +191,7 @@ static void context_and_signals(void) {
   gotel_begin(h, &root, 0, NULL);
   CHECK(!root.span);
   gotel_end(&root);
-  gotel_log(h, OTLP_SEVERITY_INFO, "not exported", NULL, 0, NULL);
+  gotel_log_at(h, OTLP_SEVERITY_INFO, "not exported", NULL, 0, NULL);
   otlp_exporter_stats_t stats;
   CHECK(gotel_stats(h, &stats) == OTLP_OK);
   CHECK(stats.emitted == 0);
@@ -312,13 +312,13 @@ static void wire(const char *endpoint, unsigned signals) {
   CHECK(gotel_metric_record(h, 1, NAN) == OTLP_ERR_INVALID_ARGUMENT);
   gotel_scope_t root;
   gotel_begin(h, &root, 0, NULL);
-  gotel_log(h, OTLP_SEVERITY_INFO, "wire message", __FILE__, __LINE__, __func__);
+  gotel_log(h, OTLP_SEVERITY_INFO, "wire message");
   CHECK(gotel_test_clock_advance(5000000) == OTLP_OK);
   gotel_error(&root, "fixture.error", "wire failure");
   gotel_end(&root);
   gotel_log(h, OTLP_SEVERITY_INFO, "wire outside", __FILE__, __LINE__, __func__);
   for (int severity = OTLP_SEVERITY_TRACE; severity <= OTLP_SEVERITY_FATAL4; ++severity)
-    gotel_log(h, (otlp_severity_t)severity, "wire severity", __FILE__, __LINE__, __func__);
+    gotel_log(h, (otlp_severity_t)severity, "wire severity");
 #ifdef CGOTEL_WITH_SQLITE
   sqlite_test(h);
 #endif

@@ -49,7 +49,7 @@ SQLite headers/libraries are required by default. Disable the adapter with
 `-DCGOTEL_WITH_SQLITE=OFF` for consumers without SQLite. A consumer can use
 `add_subdirectory(gotel/c-gotel)` and link `gotel::c-gotel`. `BUILD_SHARED_LIBS=ON`
 builds a shared c-gotel library; the default builds a static library. Both
-forms are tested on Windows and Linux. The library keeps the pinned otlp-c
+forms are tested on Windows, Linux, and macOS. The library keeps the pinned otlp-c
 implementation in its own link image because it uses otlp-c's internal TLS and
 resource helpers. CMake accepts existing dependency targets through
 `CGOTEL_UTF8PROC_TARGET` and `CGOTEL_PCRE2_TARGET`; otherwise it discovers or
@@ -94,6 +94,21 @@ Each catalog operation exports cumulative `<operation>.count`,
 `<operation>.errors`, and `<operation>.duration.sum` (seconds). These are
 counts and total duration, not percentile histograms. Cardinality is bounded
 by the catalog, not user URLs, query parameters or client identifiers.
+
+## Logs and source locations
+
+Call `gotel_log(host, severity, message)` to emit a log. In Debug builds, the
+macro records its file, line, and function automatically. The existing
+six-argument form remains source-compatible for adapters that already have
+that information. In Release builds (or whenever `NDEBUG` is defined), both
+forms omit source locations so these calls do not compile file paths into the
+application or send them to the collector. Other application code may still
+contain its own file paths.
+
+Use `gotel_log_at(host, severity, message, file, line, function)` when source
+metadata is intentionally needed regardless of build type. Define
+`CGOTEL_LOG_SOURCE_ENABLED` as `0` or `1` before including the header to
+override the default for the macro forms.
 
 ## Export ownership
 

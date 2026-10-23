@@ -197,6 +197,9 @@ and SDK information to traces, logs, and metrics;
 `OTEL_*` service, resource, endpoint, header, timeout, and enablement settings.
 Applications can supply redacted command arguments or omit them. For a remote
 HTTPS backend, use a local OpenTelemetry Collector to handle TLS forwarding.
+The C `gotel_log(host, severity, message)` macro captures source locations in
+Debug builds and omits them in Release builds. Existing six-argument calls
+also omit source locations in Release builds; `gotel_log_at` explicitly opts in.
 
 ## TypeScript browser applications
 

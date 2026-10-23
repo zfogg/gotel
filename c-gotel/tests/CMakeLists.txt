@@ -54,7 +54,7 @@ if(CGOTEL_BUILD_TESTS)
   add_test(NAME c-gotel-python-testing COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/test_testing.py)
   add_test(NAME c-gotel-wire COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/wire.py $<TARGET_FILE:c-gotel-test> ${CGOTEL_WITH_SQLITE})
+    ${CMAKE_CURRENT_SOURCE_DIR}/wire.py $<TARGET_FILE:c-gotel-test> ${CGOTEL_WITH_SQLITE} ${CMAKE_BUILD_TYPE})
 
   if(WIN32)
     get_property(_gotel_tests DIRECTORY PROPERTY TESTS)

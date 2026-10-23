@@ -21,13 +21,20 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         library: [static, shared]
         sqlite: ['ON']
+        config: [Debug]
         include:
           - os: ubuntu-latest
             library: static
+            sqlite: 'ON'
+            config: Release
+          - os: ubuntu-latest
+            library: static
             sqlite: 'OFF'
+            config: Debug
           - os: ubuntu-latest
             library: shared
             sqlite: 'OFF'
+            config: Debug
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux dependencies
@@ -51,8 +58,9 @@ jobs:
             export PATH="$(brew --prefix llvm)/bin:$PATH"
             export OPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
           fi
+          config='${{ matrix.config }}'
           cmake -S c-gotel -B c-gotel/build -G Ninja \
-            -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE="$config" \
             -DCMAKE_C_EXTENSIONS=OFF -DBUILD_SHARED_LIBS="$shared" \
             -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
       - name: Configure on Windows

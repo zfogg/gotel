@@ -200,7 +200,12 @@ otlp_status_t gotel_publish_span_snapshot(gotel_host_t *h, const gotel_span_snap
   if (!span)
     return OTLP_ERR_NOMEM;
   otlp_status_t status = OTLP_OK;
-#define SNAPSHOT_SET(call) do { status = (call); if (status != OTLP_OK) goto done; } while (0)
+#define SNAPSHOT_SET(call)                                                                                             \
+  do {                                                                                                                 \
+    status = (call);                                                                                                   \
+    if (status != OTLP_OK)                                                                                             \
+      goto done;                                                                                                       \
+  } while (0)
   SNAPSHOT_SET(otlp_span_set_trace_id(span, snapshot->context.trace_id));
   SNAPSHOT_SET(otlp_span_set_span_id(span, snapshot->context.span_id));
   static const uint8_t zero[8] = {0};
@@ -297,8 +302,8 @@ void gotel_attr_int(gotel_scope_t *s, const char *k, int64_t v) {
   if (s && s->span && k)
     otlp_span_set_attribute_int(s->span, k, v);
 }
-void gotel_log(gotel_host_t *h, otlp_severity_t severity, const char *body, const char *file, int line,
-               const char *function) {
+void gotel_log_at(gotel_host_t *h, otlp_severity_t severity, const char *body, const char *file, int line,
+                  const char *function) {
   if (!h || !(h->options.signals & GOTEL_LOGS) || !body)
     return;
   otlp_log_record_t *r = otlp_log_record_create(severity, body);
@@ -317,9 +322,16 @@ void gotel_log(gotel_host_t *h, otlp_severity_t severity, const char *body, cons
     otlp_log_record_set_attribute_string(r, "code.file.path", file);
   if (function)
     otlp_log_record_set_attribute_string(r, "code.function.name", function);
-  otlp_log_record_set_attribute_int(r, "code.line.number", line);
+  if (line > 0)
+    otlp_log_record_set_attribute_int(r, "code.line.number", line);
   otlp_exporter_emit_log(h->exporter, r);
   otlp_log_record_free(r);
+}
+/* Keep the pre-macro symbol available to already-linked applications. */
+#undef gotel_log
+void gotel_log(gotel_host_t *h, otlp_severity_t severity, const char *body, const char *file, int line,
+               const char *function) {
+  gotel_log_at(h, severity, body, file, line, function);
 }
 static void export_metrics(gotel_host_t *h) {
   if (!(h->options.signals & GOTEL_METRICS))
