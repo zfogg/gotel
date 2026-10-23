@@ -56,7 +56,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
       - name: Install macOS dependencies
         if: matrix.os == 'macos'
-        run: brew install llvm ninja openssl@3 sqlite
+        run: |
+          brew update
+          brew install llvm ninja openssl@3 sqlite
+          brew upgrade openssl@3
+          "$(brew --prefix openssl@3)/bin/openssl" version
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows'
         with:
