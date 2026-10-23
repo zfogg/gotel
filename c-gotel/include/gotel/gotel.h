@@ -44,6 +44,8 @@ typedef struct {
   const char *const *argv;
   bool omit_command_args;
   bool disable_resource_detection;
+  /* Set by gotel_options_apply_env; enables signal-specific header overrides. */
+  bool use_environment;
 } gotel_options_t;
 /* Options are copied; exporter strings/resources are copied during create.
  * The operation catalog and its names must remain alive until destroy. No internal threads.

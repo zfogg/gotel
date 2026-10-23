@@ -1,5 +1,7 @@
-#include <gotel/gotel.h>
+#include "internal.h"
+#include "exporter_internal.h"
 #include "env_config.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,8 +14,12 @@ static const char *env(const char *name) {
 otlp_status_t gotel_options_set_endpoint(gotel_options_t *o, gotel_env_storage_t *s, const char *base) {
   if (!o || !s)
     return OTLP_ERR_NULL;
-  if (!base || !*base)
+  if (!base || !*base) {
+    o->exporter.endpoint = NULL;
+    o->exporter.metrics_endpoint = NULL;
+    o->exporter.logs_endpoint = NULL;
     return OTLP_OK;
+  }
   if ((strncmp(base, "http://", 7) && strncmp(base, "https://", 8)) || strpbrk(base, "?#@"))
     return OTLP_ERR_INVALID_ARGUMENT;
   size_t n = strlen(base);
@@ -25,9 +31,10 @@ otlp_status_t gotel_options_set_endpoint(gotel_options_t *o, gotel_env_storage_t
   for (size_t i = 0; i < 3; ++i) {
     if (n + strlen(paths[i]) >= sizeof(s->exporter.endpoint))
       return OTLP_ERR_OVERFLOW;
-    memcpy(buffers[i], base, n);
-    strcpy(buffers[i] + n, paths[i]);
-    otlp_status_t status = otlp_env_apply_signal_endpoint(&o->exporter, buffers[i], buffers[i], fields[i]);
+    char endpoint[sizeof(s->exporter.endpoint)];
+    memcpy(endpoint, base, n);
+    strcpy(endpoint + n, paths[i]);
+    otlp_status_t status = otlp_env_apply_signal_endpoint(&o->exporter, endpoint, buffers[i], fields[i]);
     if (status != OTLP_OK)
       return status;
   }
@@ -38,8 +45,11 @@ otlp_status_t gotel_options_apply_env(gotel_options_t *o, gotel_env_storage_t *s
   if (!o || !s)
     return OTLP_ERR_NULL;
   memset(s, 0, sizeof(*s));
+  o->use_environment = true;
   const char *disabled = env("OTEL_SDK_DISABLED");
-  if (disabled && (!strcmp(disabled, "true") || !strcmp(disabled, "TRUE") || !strcmp(disabled, "True"))) {
+  if (disabled && strlen(disabled) == 4 && tolower((unsigned char)disabled[0]) == 't' &&
+      tolower((unsigned char)disabled[1]) == 'r' && tolower((unsigned char)disabled[2]) == 'u' &&
+      tolower((unsigned char)disabled[3]) == 'e') {
     o->signals = 0;
     return OTLP_OK;
   }
@@ -90,5 +100,31 @@ otlp_status_t gotel_options_apply_env(gotel_options_t *o, gotel_env_storage_t *s
     o->exporter.flush_timeout_ms = o->exporter.read_timeout_ms;
   if (env("OTEL_EXPORTER_OTLP_CERTIFICATE"))
     o->tls_ca_file = env("OTEL_EXPORTER_OTLP_CERTIFICATE");
+  return OTLP_OK;
+}
+
+otlp_status_t gotel_signal_headers(gotel_host_t *h) {
+  if (!h->options.use_environment)
+    return OTLP_OK;
+  h->signal_env = calloc(3, sizeof(*h->signal_env));
+  if (!h->signal_env)
+    return OTLP_ERR_NOMEM;
+  const char *names[] = {"OTEL_EXPORTER_OTLP_TRACES_HEADERS", "OTEL_EXPORTER_OTLP_METRICS_HEADERS",
+                         "OTEL_EXPORTER_OTLP_LOGS_HEADERS"};
+  for (size_t i = 0; i < 3; ++i) {
+    const char *value = env(names[i]);
+    if (!value)
+      continue;
+    otlp_exporter_opts_t opts = {0};
+    otlp_status_t status = otlp_env_apply_otlp_headers(&opts, value, &h->signal_env[i]);
+    if (status != OTLP_OK)
+      return status;
+    for (size_t j = 0; j < opts.n_http_headers; ++j)
+      if (strpbrk(opts.http_headers[j].name, "\r\n") || strpbrk(opts.http_headers[j].value, "\r\n"))
+        return OTLP_ERR_INVALID_ARGUMENT;
+    h->exporter->sig[i].gotel_headers = opts.http_headers;
+    h->exporter->sig[i].gotel_header_count = opts.n_http_headers;
+    h->exporter->sig[i].gotel_headers_set = true;
+  }
   return OTLP_OK;
 }

@@ -74,6 +74,11 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
     gotel_destroy(h);
     return OTLP_ERR_NOMEM;
   }
+  otlp_status_t header_status = gotel_signal_headers(h);
+  if (header_status != OTLP_OK) {
+    gotel_destroy(h);
+    return header_status;
+  }
   otlp_status_t resource_status = gotel_resource_detect(h);
   if (resource_status != OTLP_OK) {
     gotel_destroy(h);
@@ -123,6 +128,7 @@ void gotel_destroy(gotel_host_t *h) {
     return;
   otlp_tracer_free(h->tracer);
   otlp_exporter_free(h->exporter);
+  free(h->signal_env);
   if (h->instruments) {
     for (size_t i = 0; i < h->instrument_count; ++i)
       otlp_metric_free(h->instruments[i].value);
