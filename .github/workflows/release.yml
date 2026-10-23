@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version to validate without publishing
+        required: true
+        type: string
 
 concurrency:
   group: release-${{ github.ref }}
@@ -23,7 +29,7 @@ jobs:
         name: Validate tag and package versions
         shell: bash
         run: |
-          tag="${GITHUB_REF_NAME}"
+          tag="${{ inputs.tag || github.ref_name }}"
           [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release tag: $tag"; exit 1; }
           version="${tag#v}"
           grep -Fq "project(c-gotel VERSION $version LANGUAGES C)" c-gotel/CMakeLists.txt
@@ -127,6 +133,7 @@ jobs:
 
   publish:
     needs: [validate, c-static, typescript, go-source]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -264,6 +264,8 @@ and [LICENSE](LICENSE) for further detail.
 
 Push a `vMAJOR.MINOR.PATCH` tag to run the
 [release workflow](.github/workflows/release.yml) and build a GitHub Release.
+Run that workflow manually with the intended tag first to build and test its
+assets without publishing them.
 The tag must match the CMake and TypeScript package versions. The release
 contains tested C static archives for Linux, macOS, and Windows with public
 headers and linking notes; an installable TypeScript npm `.tgz`; a ZIP of the
