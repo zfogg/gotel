@@ -21,6 +21,7 @@ jobs:
         run: >-
           cmake -S c-gotel -B c-gotel/build -G Ninja
           -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_EXTENSIONS=OFF
           -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
           -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
           -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"

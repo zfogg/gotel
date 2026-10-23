@@ -122,9 +122,11 @@ sqlite3_close(db);
 
 The immutable query registry in `src/named.c` resolves original SQL templates
 by text, so separate prepared instances share stable operation names. No bind
-values, expanded SQL, raw SQL text, or connection file paths are exported.
-Unknown SQL uses `UnknownQuery`. SQLite PROFILE supplies actual duration at
-completion, reset or early finalize; the adapter emits a completed span and a
+values, expanded SQL, unsanitized SQL text, or connection file paths are exported.
+Unknown SQL uses `UnknownQuery`. The adapter measures STMT-to-PROFILE elapsed
+time with the host's monotonic clock, preserving sub-millisecond queries that
+SQLite's built-in PROFILE timer rounds to zero. Statement starts retain their
+parent context through reset or early finalize; the adapter emits a completed span and a
 `db.client.operation.duration` histogram observation. Parent sampling is honored.
 Prepare failures do not produce PROFILE callbacks; record these at existing
 application error checks. The adapter does not infer execution errors from
