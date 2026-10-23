@@ -1,0 +1,5 @@
+FROM mcr.microsoft.com/playwright:v1.55.1-noble
+WORKDIR /test
+RUN npm install --no-audit --no-fund playwright@1.55.1
+COPY examples/full-stack/run.mjs ./run.mjs
+CMD ["node", "run.mjs"]

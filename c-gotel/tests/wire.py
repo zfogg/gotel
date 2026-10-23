@@ -38,6 +38,20 @@ try:
                 assert log[9] == root[1] and log[10] == root[2]
                 outside = next(r for r in records(server.records, '/v1/logs') if b'wire outside' in r[5][0])
                 assert 9 not in outside and 10 not in outside
+                def source_attributes(record):
+                    return {entry[1][0]: fields(entry[2][0])
+                            for raw in record.get(6, []) for entry in [fields(raw)]}
+                expect_source = len(sys.argv) < 4 or sys.argv[3] not in ('Release', 'RelWithDebInfo', 'MinSizeRel')
+                for record in (log, outside):
+                    attributes = source_attributes(record)
+                    keys = {b'code.file.path', b'code.function.name', b'code.line.number'}
+                    if expect_source:
+                        assert keys <= attributes.keys(), attributes
+                        assert attributes[b'code.file.path'][1][0].endswith(b'test.c')
+                        assert attributes[b'code.function.name'][1] == [b'wire']
+                        assert attributes[b'code.line.number'][3][0] > 0
+                    else:
+                        assert not keys & attributes.keys(), attributes
         if signals & 2:
             assert b'wire message' in payload
             logs = records(server.records, '/v1/logs')

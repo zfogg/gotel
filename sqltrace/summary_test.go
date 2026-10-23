@@ -81,7 +81,7 @@ func TestSummaryPoliciesAndBounds(t *testing.T) {
 	if m := InspectWithOptions(MustNamer("example.storage"), "", query, nil, options); m.Summary != meta.Summary {
 		t.Fatalf("summary depends on query text truncation: %+v", m)
 	}
-	summary := Summary(DialectPostgreSQL, "SELECT * FROM "+strings.Repeat("表", 2000))
+	summary := Summary(DialectPostgreSQL, "SELECT * FROM "+strings.Repeat("表", 12000))
 	if len(summary) > DefaultMaxSummaryBytes || !utf8.ValidString(summary) || !strings.HasSuffix(summary, "…") {
 		t.Fatalf("unbounded/invalid summary: %q", summary)
 	}

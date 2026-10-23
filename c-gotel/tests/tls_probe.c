@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     return 5;
   memset(large, 'x', 70000);
   large[70000] = 0;
-  gotel_log(host, OTLP_SEVERITY_INFO, large, __FILE__, __LINE__, __func__);
+  gotel_log(host, OTLP_SEVERITY_INFO, large);
   free(large);
   gotel_end(&scope);
   (void)gotel_drain(host);

@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
   gotel_scope_t s;
   gotel_begin(h, &s, 0, NULL);
   gotel_end(&s);
-  gotel_log(h, OTLP_SEVERITY_INFO, "resource log", NULL, 0, NULL);
+  gotel_log_at(h, OTLP_SEVERITY_INFO, "resource log", NULL, 0, NULL);
   status = gotel_drain(h);
   gotel_destroy(h);
   return status == OTLP_OK ? 0 : 4;

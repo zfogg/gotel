@@ -105,9 +105,9 @@ typedef struct {
  * A base URL keeps its path prefix and gains /v1/<signal>. Apply explicit
  * application overrides after this call. Empty environment values are unset. */
 otlp_status_t gotel_options_apply_env(gotel_options_t *options, gotel_env_storage_t *storage,
-                                     const char *default_base_endpoint);
+                                      const char *default_base_endpoint);
 otlp_status_t gotel_options_set_endpoint(gotel_options_t *options, gotel_env_storage_t *storage,
-                                        const char *base_endpoint);
+                                         const char *base_endpoint);
 
 typedef struct gotel_scope {
   gotel_host_t *host;
@@ -134,8 +134,38 @@ gotel_span_snapshot_t gotel_current_span_snapshot(void);
 otlp_status_t gotel_publish_span_snapshot(gotel_host_t *host, const gotel_span_snapshot_t *snapshot);
 void gotel_attr_string(gotel_scope_t *scope, const char *key, const char *value);
 void gotel_attr_int(gotel_scope_t *scope, const char *key, int64_t value);
+/* Explicit source metadata is available to adapters that already capture the
+ * original call site. The old six-argument symbol remains for existing binaries. */
+void gotel_log_at(gotel_host_t *host, otlp_severity_t severity, const char *body, const char *file, int line,
+                  const char *function);
 void gotel_log(gotel_host_t *host, otlp_severity_t severity, const char *body, const char *file, int line,
                const char *function);
+
+/* Three arguments capture the call site in development builds. The legacy
+ * six-argument form accepts an existing location. Optimized builds omit both
+ * forms' source locations so __FILE__ paths are not embedded by these calls.
+ * Define CGOTEL_LOG_SOURCE_ENABLED explicitly to override the NDEBUG default. */
+#ifndef CGOTEL_LOG_SOURCE_ENABLED
+#ifdef NDEBUG
+#define CGOTEL_LOG_SOURCE_ENABLED 0
+#else
+#define CGOTEL_LOG_SOURCE_ENABLED 1
+#endif
+#endif
+
+#if CGOTEL_LOG_SOURCE_ENABLED
+#define CGOTEL_LOG_AUTO(host, severity, body) gotel_log_at((host), (severity), (body), __FILE__, __LINE__, __func__)
+#define CGOTEL_LOG_EXPLICIT(host, severity, body, file, line, function)                                                \
+  gotel_log_at((host), (severity), (body), (file), (line), (function))
+#else
+#define CGOTEL_LOG_AUTO(host, severity, body) gotel_log_at((host), (severity), (body), NULL, 0, NULL)
+#define CGOTEL_LOG_EXPLICIT(host, severity, body, file, line, function)                                                \
+  gotel_log_at((host), (severity), (body), NULL, 0, NULL)
+#endif
+#define CGOTEL_LOG_DISPATCH(_1, _2, _3, _4, _5, _6, selected, ...) selected
+#define gotel_log(...)                                                                                                 \
+  CGOTEL_LOG_DISPATCH(__VA_ARGS__, CGOTEL_LOG_EXPLICIT, CGOTEL_LOG_INVALID, CGOTEL_LOG_INVALID, CGOTEL_LOG_AUTO)       \
+  (__VA_ARGS__)
 /* Safe bounded HTTP naming. Returns overflow rather than truncating identities.
  * Client URL excludes userinfo/query/fragment and normalizes common ID segments.
  * Server target is a caller-supplied route template, never a raw request path. */

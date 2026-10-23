@@ -111,8 +111,8 @@ quoting and placeholder forms, including multiple statements and comments
 between them. Malformed quoting fails closed. Query text defaults to a **32 KiB
 UTF-8-safe cap**; applications can choose a smaller cap, omit the text, or use
 the Go API's uncapped option within the 1 MiB input limit. Omission still
-leaves operation names, summaries, and counts available. The separate 4 KiB
-summary shows SQL shape: CTEs, joins, nested selects, writes, grouping,
+leaves operation names, summaries, and counts available. Summaries also have a
+**32 KiB UTF-8-safe cap** and show SQL shape: CTEs, joins, nested selects, writes, grouping,
 ordering, and row bounds. It is a structural description, not a query plan.
 Identifiers can appear in summaries, so avoid putting secrets in identifier
 names.
@@ -197,6 +197,9 @@ and SDK information to traces, logs, and metrics;
 `OTEL_*` service, resource, endpoint, header, timeout, and enablement settings.
 Applications can supply redacted command arguments or omit them. For a remote
 HTTPS backend, use a local OpenTelemetry Collector to handle TLS forwarding.
+The C `gotel_log(host, severity, message)` macro captures source locations in
+Debug builds and omits them in Release builds. Existing six-argument calls
+also omit source locations in Release builds; `gotel_log_at` explicitly opts in.
 
 ## TypeScript browser applications
 
@@ -234,8 +237,22 @@ tears down the provider.
 
 ## Development and reference
 
-Run Go tests with `go test ./...` and browser tests with `pnpm test`. For C,
+Run Go tests with `go test ./...` and browser tests with `pnpm test`.
+`pnpm build` generates the ignored TypeScript `dist/` directory; package
+packing builds it automatically and includes the compiled files. For C,
 enable `CGOTEL_BUILD_TESTS=ON` during configure and run
-`ctest --test-dir c-gotel/build --output-on-failure`. See the
+`ctest --test-dir c-gotel/build --output-on-failure`. CI builds and tests the
+C library as both static and shared on Windows, Linux, and macOS, with an
+additional Linux build without the SQLite adapter. The Go and TypeScript tests
+also run in CI. The [shared HTTP naming cases](testdata/http_names.tsv) run
+against all three implementations so route naming stays consistent.
+
+For an end-to-end starting point, run the
+[full-stack example](examples/full-stack/README.md). Docker Compose starts a
+Spaniel collector, a browser app instrumented with TypeScript, a Go HTTP API,
+and a C worker process. A browser runner makes a real request; a verifier then
+checks Spaniel for a connected trace containing spans from all three service
+names. The example shows trace context passing through HTTP and a process
+boundary, and gives you a local waterfall to inspect. See the
 [C library guide](c-gotel/README.md), the [SQL fixtures](sqltrace/testdata/),
 and [LICENSE](LICENSE) for further detail.
