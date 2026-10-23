@@ -58,103 +58,15 @@ if(WIN32)
 endif()
 
 include(cmake/TLS.cmake)
-
-set(_gotel_sources src/gotel.c src/http.c src/sql.c src/resource.c src/utf8.c)
-if(BUILD_SHARED_LIBS)
-  add_library(c-gotel SHARED ${_gotel_sources})
-else()
-  add_library(c-gotel STATIC ${_gotel_sources})
-endif()
-
-add_library(gotel::c-gotel ALIAS c-gotel)
-target_compile_features(c-gotel PUBLIC c_std_11)
-set_target_properties(c-gotel PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  WINDOWS_EXPORT_ALL_SYMBOLS ON
-  VERSION ${PROJECT_VERSION}
-  SOVERSION 0
-)
-target_compile_definitions(c-gotel PRIVATE CGOTEL_VERSION="${PROJECT_VERSION}")
-target_link_libraries(c-gotel PRIVATE ${CGOTEL_UTF8PROC_TARGET} ${CGOTEL_PCRE2_TARGET})
-target_include_directories(c-gotel PRIVATE
-  ${CMAKE_CURRENT_BINARY_DIR}/otlp-tls
-  ${otlp_c_SOURCE_DIR}/src
-)
-if(WIN32)
-  target_link_libraries(c-gotel PRIVATE shell32 advapi32)
-endif()
-target_include_directories(c-gotel PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(c-gotel PUBLIC otlp-c::otlp_c)
-
-if(CGOTEL_WITH_SQLITE)
-  find_package(SQLite3 REQUIRED)
-  target_sources(c-gotel PRIVATE src/sqlite.c src/named.c)
-  if(TARGET SQLite3::SQLite3)
-    target_link_libraries(c-gotel PUBLIC SQLite3::SQLite3)
-  else()
-    target_link_libraries(c-gotel PUBLIC SQLite::SQLite3)
-  endif()
-  target_compile_definitions(c-gotel PUBLIC CGOTEL_WITH_SQLITE=1)
-endif()
+add_subdirectory(src)
 
 option(CGOTEL_BUILD_TEST_SUPPORT "Build framework-independent test helpers" ${CGOTEL_BUILD_TESTS})
-if(CGOTEL_BUILD_TEST_SUPPORT)
-  add_library(c-gotel-testing STATIC src/testing.c)
-  add_library(gotel::testing ALIAS c-gotel-testing)
-  target_link_libraries(c-gotel-testing PUBLIC gotel::c-gotel)
-  set_target_properties(c-gotel-testing PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
-
 if(CGOTEL_BUILD_TESTS)
   if(NOT CGOTEL_BUILD_TEST_SUPPORT)
     message(FATAL_ERROR "CGOTEL_BUILD_TESTS requires CGOTEL_BUILD_TEST_SUPPORT")
   endif()
-  find_package(Threads REQUIRED)
-  find_package(Python3 REQUIRED COMPONENTS Interpreter)
   enable_testing()
-
-  add_executable(c-gotel-test tests/test.c)
-  target_link_libraries(c-gotel-test PRIVATE gotel::testing Threads::Threads)
-  add_test(NAME c-gotel-unit COMMAND c-gotel-test)
-  foreach(case http validation sampling context registry concurrency testing)
-    add_test(NAME c-gotel-${case} COMMAND c-gotel-test --case ${case})
-  endforeach()
-
-  add_executable(c-gotel-sql-probe tests/sql_probe.c)
-  target_link_libraries(c-gotel-sql-probe PRIVATE gotel::c-gotel)
-  add_test(NAME c-gotel-sql COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/sql_test.py $<TARGET_FILE:c-gotel-sql-probe>)
-
-  add_executable(c-gotel-resource-probe tests/resource_probe.c)
-  target_link_libraries(c-gotel-resource-probe PRIVATE gotel::testing)
-  add_test(NAME c-gotel-resource COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/resource_test.py $<TARGET_FILE:c-gotel-resource-probe>)
-
-  if(CGOTEL_WITH_SQLITE)
-    add_executable(c-gotel-sqlite-probe tests/sqlite_probe.c)
-    target_link_libraries(c-gotel-sqlite-probe PRIVATE gotel::testing)
-    add_test(NAME c-gotel-sqlite COMMAND ${Python3_EXECUTABLE}
-      ${CMAKE_CURRENT_SOURCE_DIR}/tests/sqlite_test.py $<TARGET_FILE:c-gotel-sqlite-probe>)
-  endif()
-
-  add_executable(c-gotel-tls-probe tests/tls_probe.c)
-  target_include_directories(c-gotel-tls-probe PRIVATE ${otlp_c_SOURCE_DIR}/src)
-  target_link_libraries(c-gotel-tls-probe PRIVATE gotel::c-gotel)
-  add_test(NAME c-gotel-tls COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/tls.py $<TARGET_FILE:c-gotel-tls-probe>)
-  add_test(NAME c-gotel-python-testing COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_testing.py)
-  add_test(NAME c-gotel-wire COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/wire.py $<TARGET_FILE:c-gotel-test> ${CGOTEL_WITH_SQLITE})
-
-  if(WIN32)
-    get_property(_gotel_tests DIRECTORY PROPERTY TESTS)
-    foreach(_test IN LISTS _gotel_tests)
-      set_property(TEST ${_test} APPEND PROPERTY ENVIRONMENT_MODIFICATION
-        "PATH=path_list_prepend:$<TARGET_FILE_DIR:c-gotel>"
-        "PATH=path_list_prepend:$<TARGET_FILE_DIR:otlp_c>"
-        "PATH=path_list_prepend:$<TARGET_FILE_DIR:${CGOTEL_UTF8PROC_TARGET}>"
-        "PATH=path_list_prepend:$<TARGET_FILE_DIR:${CGOTEL_PCRE2_TARGET}>")
-    endforeach()
-  endif()
+endif()
+if(CGOTEL_BUILD_TEST_SUPPORT)
+  add_subdirectory(tests)
 endif()

@@ -1,0 +1,54 @@
+add_library(c-gotel-testing STATIC ${PROJECT_SOURCE_DIR}/src/testing.c)
+add_library(gotel::testing ALIAS c-gotel-testing)
+target_link_libraries(c-gotel-testing PUBLIC gotel::c-gotel)
+set_target_properties(c-gotel-testing PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+if(CGOTEL_BUILD_TESTS)
+  find_package(Threads REQUIRED)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+  add_executable(c-gotel-test test.c)
+  target_link_libraries(c-gotel-test PRIVATE gotel::testing Threads::Threads)
+  add_test(NAME c-gotel-unit COMMAND c-gotel-test)
+  foreach(case http validation sampling context registry concurrency testing)
+    add_test(NAME c-gotel-${case} COMMAND c-gotel-test --case ${case})
+  endforeach()
+
+  add_executable(c-gotel-sql-probe sql_probe.c)
+  target_link_libraries(c-gotel-sql-probe PRIVATE gotel::c-gotel)
+  add_test(NAME c-gotel-sql COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/sql_test.py $<TARGET_FILE:c-gotel-sql-probe>)
+
+  add_executable(c-gotel-resource-probe resource_probe.c)
+  target_link_libraries(c-gotel-resource-probe PRIVATE gotel::testing)
+  add_test(NAME c-gotel-resource COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/resource_test.py $<TARGET_FILE:c-gotel-resource-probe>)
+
+  if(CGOTEL_WITH_SQLITE)
+    add_executable(c-gotel-sqlite-probe sqlite_probe.c)
+    target_link_libraries(c-gotel-sqlite-probe PRIVATE gotel::testing)
+    add_test(NAME c-gotel-sqlite COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/sqlite_test.py $<TARGET_FILE:c-gotel-sqlite-probe>)
+  endif()
+
+  add_executable(c-gotel-tls-probe tls_probe.c)
+  target_include_directories(c-gotel-tls-probe PRIVATE ${otlp_c_SOURCE_DIR}/src)
+  target_link_libraries(c-gotel-tls-probe PRIVATE gotel::c-gotel)
+  add_test(NAME c-gotel-tls COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tls.py $<TARGET_FILE:c-gotel-tls-probe>)
+  add_test(NAME c-gotel-python-testing COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_testing.py)
+  add_test(NAME c-gotel-wire COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/wire.py $<TARGET_FILE:c-gotel-test> ${CGOTEL_WITH_SQLITE})
+
+  if(WIN32)
+    get_property(_gotel_tests DIRECTORY PROPERTY TESTS)
+    foreach(_test IN LISTS _gotel_tests)
+      set_property(TEST ${_test} APPEND PROPERTY ENVIRONMENT_MODIFICATION
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:c-gotel>"
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:otlp_c>"
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:${CGOTEL_UTF8PROC_TARGET}>"
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:${CGOTEL_PCRE2_TARGET}>")
+    endforeach()
+  endif()
+endif()
