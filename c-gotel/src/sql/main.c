@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <gotel/sql.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -22,5 +23,6 @@ typedef struct {
 #include "common.c"
 #include "scanner.c"
 #include "summary.c"
+#include "format.c"
 #include "api.c"
 // clang-format on

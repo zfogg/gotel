@@ -48,6 +48,11 @@ if(CGOTEL_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/sql_test.py $<TARGET_FILE:c-gotel-sql-probe>)
   add_test(NAME c-gotel-sanitize COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/sql_sanitize_test.py $<TARGET_FILE:c-gotel-sql-probe>)
+  add_test(NAME c-gotel-format COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/sql_format_test.py $<TARGET_FILE:c-gotel-sql-probe>)
+  add_executable(c-gotel-format-api-test sql_format_api_test.c)
+  target_link_libraries(c-gotel-format-api-test PRIVATE gotel::c-gotel)
+  add_test(NAME c-gotel-format-api COMMAND c-gotel-format-api-test)
 
   add_executable(c-gotel-resource-probe resource_probe.c)
   target_link_libraries(c-gotel-resource-probe PRIVATE gotel::testing)

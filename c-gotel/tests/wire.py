@@ -26,7 +26,7 @@ try:
                 assert b'test.storage.SelectSecret' in payload
                 assert b'test.storage.UnknownQuery' in payload
                 assert b'db.query.text' in payload
-                assert b'SELECT ? UNION ALL SELECT ?' in payload
+                assert b'SELECT\n  ?\nUNION ALL\nSELECT\n  ?' in payload
                 assert b'db.operation.name' in payload
             spans = records(server.records, '/v1/traces')
             root = next(s for s in spans if s[5] == [b'test.cli'])

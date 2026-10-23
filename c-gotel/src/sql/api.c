@@ -185,11 +185,31 @@ done:
 #ifndef CGOTEL_SQL_STANDALONE
 void gotel_sql_attributes(otlp_span_t *span, const gotel_sql_metadata_t *m, const char *system, const char *ns,
                           size_t binds) {
+  gotel_sql_attributes_with_limit(span, m, system, ns, binds, GOTEL_SQL_TEXT_MAX);
+}
+void gotel_sql_attributes_with_limit(otlp_span_t *span, const gotel_sql_metadata_t *m, const char *system,
+                                     const char *ns, size_t binds, size_t max_text_bytes) {
   if (!span || !m)
     return;
   otlp_span_set_attribute_string(span, "db.query.summary", m->summary);
-  if (*m->text)
-    otlp_span_set_attribute_string(span, "db.query.text", m->text);
+  if (*m->text) {
+    char formatted[GOTEL_SQL_TEXT_MAX + 1];
+    size_t length;
+    const char *query = m->text;
+    gotel_sql_dialect_t dialect = GOTEL_SQL_GENERIC;
+    if (system && !strcmp(system, "postgresql"))
+      dialect = GOTEL_SQL_POSTGRESQL;
+    else if (system && !strcmp(system, "duckdb"))
+      dialect = GOTEL_SQL_DUCKDB;
+    else if (system && !strcmp(system, "mysql"))
+      dialect = GOTEL_SQL_MYSQL;
+    else if (system && !strcmp(system, "sqlite"))
+      dialect = GOTEL_SQL_SQLITE;
+    size_t limit = max_text_bytes && max_text_bytes < GOTEL_SQL_TEXT_MAX ? max_text_bytes : GOTEL_SQL_TEXT_MAX;
+    if (!m->truncated && gotel_sql_format(query, dialect, formatted, limit + 1, &length) == OTLP_OK)
+      query = formatted;
+    otlp_span_set_attribute_string(span, "db.query.text", query);
+  }
   if (*m->operation)
     otlp_span_set_attribute_string(span, "db.operation.name", m->operation);
   if (m->truncated)

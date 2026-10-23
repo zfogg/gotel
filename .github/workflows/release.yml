@@ -63,6 +63,8 @@ jobs:
           architecture: ${{ matrix.os == 'windows' && 'x64' || matrix.arch }}
       - name: Install gRPC test peers
         run: python -m pip install -r c-gotel/tests/requirements-grpc.txt
+      - name: Install independent SQL formatting test engines
+        run: python -m pip install -r c-gotel/tests/requirements-format.txt
       - name: Install Linux dependencies
         if: matrix.os == 'linux'
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3

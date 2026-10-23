@@ -31,7 +31,7 @@ with Collector() as receiver:
             assert a['gotel.db.query.statement_count']==1
             if mode=='omit':assert 'db.query.text' not in a and 'gotel.db.query.truncated' not in a
             elif mode=='truncate':assert len(a['db.query.text'])<=12 and a['gotel.db.query.truncated']==1
-            else:assert a['db.query.text']==b'SELECT id FROM accounts WHERE token=? AND id=?'
+            else:assert a['db.query.text']==b'SELECT\n  id\nFROM accounts\nWHERE token=?\n  AND id=?'
         unnamed=next(s for s in spans if s[5]==[b'test.storage.UnknownQuery'])
         assert attrs(unnamed)['db.query.summary']=='SELECT …'.encode()
         assert b'db.client.operation.duration' in payload
