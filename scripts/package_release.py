@@ -20,13 +20,13 @@ def require_tag(tag: str) -> str:
     return tag
 
 
-def archive_name(tag: str, expected_arch: str | None = None) -> str:
+def archive_name(tag: str, linkage: str, expected_arch: str | None = None) -> str:
     system = {"Linux": "linux", "Darwin": "macos", "Windows": "windows"}[platform.system()]
     machine = platform.machine().lower()
     arch = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "arm64": "arm64"}.get(machine, machine)
     if expected_arch is not None and arch != expected_arch:
         raise ValueError(f"runner architecture {arch} does not match requested {expected_arch}")
-    return f"c-gotel-{tag}-{system}-{arch}-static"
+    return f"c-gotel-{tag}-{system}-{arch}-{linkage}"
 
 
 def add_file(archive: zipfile.ZipFile, source: Path, destination: str) -> None:
@@ -35,22 +35,36 @@ def add_file(archive: zipfile.ZipFile, source: Path, destination: str) -> None:
     archive.write(source, destination)
 
 
-def package_c(tag: str, build: Path, otlp_source: Path, output: Path, expected_arch: str | None = None) -> Path:
-    name = archive_name(tag, expected_arch)
+def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
+              linkage: str, expected_arch: str | None = None) -> Path:
+    name = archive_name(tag, linkage, expected_arch)
     path = output / f"{name}.zip"
-    suffix = ".lib" if platform.system() == "Windows" else ".a"
-    gotel_lib = build / "src" / ("c-gotel.lib" if suffix == ".lib" else "libc-gotel.a")
-    otlp_lib = build / "_deps" / "otlp_c-build" / ("otlp_c.lib" if suffix == ".lib" else "libotlp_c.a")
+    system = platform.system()
+    if linkage == "static":
+        suffix = ".lib" if system == "Windows" else ".a"
+        gotel_libs = [build / "src" / ("c-gotel.lib" if system == "Windows" else "libc-gotel.a")]
+        gotel_libs.append(build / "_deps" / "otlp_c-build" / ("otlp_c.lib" if system == "Windows" else "libotlp_c.a"))
+        readme = ROOT / "c-gotel" / "RELEASE.md"
+    elif system == "Windows":
+        gotel_libs = [build / "src" / "c-gotel.dll", build / "src" / "c-gotel.lib"]
+        readme = ROOT / "c-gotel" / "RELEASE_SHARED.md"
+    else:
+        extension = ".dylib" if system == "Darwin" else ".so"
+        pattern = "libc-gotel*.dylib" if system == "Darwin" else "libc-gotel.so*"
+        gotel_libs = sorted((build / "src").glob(pattern))
+        if not gotel_libs:
+            raise FileNotFoundError(build / "src" / f"libc-gotel{extension}")
+        readme = ROOT / "c-gotel" / "RELEASE_SHARED.md"
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
         for source, destination in (
-            (gotel_lib, f"lib/{gotel_lib.name}"),
-            (otlp_lib, f"lib/{otlp_lib.name}"),
             (ROOT / "LICENSE", "LICENSE"),
-            (ROOT / "c-gotel" / "RELEASE.md", "README.md"),
+            (readme, "README.md"),
             (ROOT / "c-gotel" / "README.md", "API.md"),
             (otlp_source / "LICENSE", "third-party/otlp-c-LICENSE"),
         ):
             add_file(archive, source, f"{name}/{destination}")
+        for source in gotel_libs:
+            add_file(archive, source, f"{name}/lib/{source.name}")
         for prefix, directory in (
             ("include/gotel", ROOT / "c-gotel" / "include" / "gotel"),
             ("include/otlp-c", otlp_source / "include" / "otlp-c"),
@@ -98,13 +112,15 @@ def main() -> None:
     parser.add_argument("--otlp-source", type=Path)
     parser.add_argument("--tarball", type=Path)
     parser.add_argument("--expected-arch", choices=("x64", "arm64"))
+    parser.add_argument("--linkage", choices=("static", "shared"), default="static")
     args = parser.parse_args()
     tag = require_tag(args.tag)
     args.output.mkdir(parents=True, exist_ok=True)
     if args.kind == "c":
         if not args.build or not args.otlp_source:
             parser.error("C packaging needs --build and --otlp-source")
-        path = package_c(tag, args.build, args.otlp_source, args.output, args.expected_arch)
+        path = package_c(tag, args.build, args.otlp_source, args.output,
+                         args.linkage, args.expected_arch)
     else:
         if not args.tarball:
             parser.error("TypeScript packaging needs --tarball")

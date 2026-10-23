@@ -1,12 +1,22 @@
-## C static libraries
+## C libraries
 
-The six C ZIPs contain Release-build static `c-gotel` and `otlp-c` libraries,
-their public headers, and their licenses for x64 and ARM64 on Linux, macOS,
-and Windows. Each archive name identifies its operating system and CPU
-architecture. Use a compatible C toolchain and point its include path at
-`include/`.
+The 12 C ZIPs cover static and shared `c-gotel` builds for x64 and ARM64 on
+Linux, macOS, and Windows. Each ZIP contains public headers, licenses, and a
+`README.md` specific to its linkage type. Archive names identify the OS, CPU,
+and `static` or `shared` linkage. Use a compatible C toolchain and point its
+include path at `include/`.
 
-These archives do **not** combine all third-party dependencies. Link PCRE2
+Static ZIPs contain `c-gotel` and `otlp-c` archives. Shared ZIPs contain the
+`c-gotel` `.so`/`.dylib` and its versioned names, or on Windows `c-gotel.dll`
+and its `.lib` import library. `otlp-c` is linked into the shared library.
+The shared ZIPs do not bundle third-party runtime libraries: install matching
+PCRE2, utf8proc, OpenSSL, and SQLite libraries and make their `.so`, `.dylib`,
+or `.dll` files available to the system loader. On Windows, place the DLLs
+beside the application or on `PATH`; on Linux and macOS, configure the normal
+loader paths or runpath. The included shared `README.md` gives CMake and Make
+examples and commands to inspect exact binary dependencies.
+
+The static archives do **not** combine all third-party dependencies. Link PCRE2
 8-bit, utf8proc, OpenSSL SSL/Crypto, and SQLite3. The SQLite adapter is enabled;
 define `CGOTEL_WITH_SQLITE=1` when compiling your application. Linux may need
 `-pthread` and, with static OpenSSL, `-ldl` or other libraries reported by

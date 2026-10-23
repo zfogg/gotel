@@ -58,9 +58,11 @@ ascii-chat passes its existing targets and chooses
 the static form for release builds. `FETCHCONTENT_SOURCE_DIR_OTLP_C` supports
 offline caches.
 
-Tagged releases also provide platform-specific static-library ZIPs with
-`c-gotel`, `otlp-c`, and their public headers. Read the included `README.md`
-for the external dependencies and toolchain requirements before linking one.
+Tagged releases provide separate platform-specific static and shared library
+ZIPs. Both contain public headers; static ZIPs include `c-gotel` and `otlp-c`
+archives, while shared ZIPs contain `c-gotel` plus any platform import library.
+Read each ZIP's `README.md` for external dependencies, toolchain requirements,
+and the runtime libraries needed by shared builds.
 
 ## Host and operation scopes
 

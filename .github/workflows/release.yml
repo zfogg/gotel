@@ -36,7 +36,7 @@ jobs:
           node -e 'if (require("./package.json").version !== process.argv[1]) process.exit(1)' "$version"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-  c-static:
+  c-libraries:
     needs: validate
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -68,7 +68,7 @@ jobs:
           VCPKG_TRIPLET: ${{ matrix.triplet }}
         run: |
           vcpkg install "openssl:$env:VCPKG_TRIPLET" "sqlite3:$env:VCPKG_TRIPLET" "pcre2:$env:VCPKG_TRIPLET" "utf8proc:$env:VCPKG_TRIPLET"
-      - name: Configure on Unix
+      - name: Build, test, and package static and shared libraries on Unix
         if: matrix.os != 'windows'
         shell: bash
         run: |
@@ -78,32 +78,50 @@ jobs:
             export OPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
             osx_args=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0)
           fi
-          cmake -S c-gotel -B c-gotel/build -G Ninja \
-            -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_EXTENSIONS=OFF -DBUILD_SHARED_LIBS=OFF \
-            -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON "${osx_args[@]}"
-      - name: Configure on Windows
+          for linkage in static shared; do
+            shared=OFF
+            if [[ "$linkage" == shared ]]; then shared=ON; fi
+            cmake -S c-gotel -B "c-gotel/build-$linkage" -G Ninja \
+              -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_C_EXTENSIONS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+              -DBUILD_SHARED_LIBS="$shared" \
+              -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON "${osx_args[@]}"
+            cmake --build "c-gotel/build-$linkage" --parallel 4
+            ctest --test-dir "c-gotel/build-$linkage" --output-on-failure --parallel 4
+            python scripts/package_release.py c \
+              --tag '${{ needs.validate.outputs.tag }}' \
+              --build "c-gotel/build-$linkage" \
+              --otlp-source "c-gotel/build-$linkage/_deps/otlp_c-src" \
+              --expected-arch '${{ matrix.arch }}' \
+              --linkage "$linkage" --output release-assets
+          done
+      - name: Build, test, and package static and shared libraries on Windows
         if: matrix.os == 'windows'
         shell: pwsh
         env:
           VCPKG_TRIPLET: ${{ matrix.triplet }}
         run: |
-          cmake -S c-gotel -B c-gotel/build -G Ninja `
-            -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET="$env:VCPKG_TRIPLET" `
-            -DBUILD_SHARED_LIBS=OFF -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON
-      - run: cmake --build c-gotel/build --parallel 4
-      - run: ctest --test-dir c-gotel/build --output-on-failure --parallel 4
-      - name: Package static libraries and headers
-        shell: bash
-        run: >-
-          python scripts/package_release.py c
-          --tag '${{ needs.validate.outputs.tag }}'
-          --build c-gotel/build
-          --otlp-source c-gotel/build/_deps/otlp_c-src
-          --expected-arch '${{ matrix.arch }}'
-          --output release-assets
+          foreach ($linkage in @('static', 'shared')) {
+            $shared = if ($linkage -eq 'shared') { 'ON' } else { 'OFF' }
+            $build = "c-gotel/build-$linkage"
+            cmake -S c-gotel -B $build -G Ninja `
+              -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release `
+              -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+              -DVCPKG_TARGET_TRIPLET="$env:VCPKG_TRIPLET" `
+              -DBUILD_SHARED_LIBS=$shared -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            cmake --build $build --parallel 4
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            ctest --test-dir $build --output-on-failure --parallel 4
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            python scripts/package_release.py c `
+              --tag '${{ needs.validate.outputs.tag }}' `
+              --build $build `
+              --otlp-source "$build/_deps/otlp_c-src" `
+              --expected-arch '${{ matrix.arch }}' `
+              --linkage $linkage --output release-assets
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: release-c-${{ matrix.os }}-${{ matrix.arch }}
@@ -149,7 +167,7 @@ jobs:
       - run: go test ./...
 
   publish:
-    needs: [validate, c-static, typescript, go-source]
+    needs: [validate, c-libraries, typescript, go-source]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:

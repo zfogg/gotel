@@ -267,13 +267,16 @@ Push a `vMAJOR.MINOR.PATCH` tag to run the
 Run that workflow manually with the intended tag first to build and test its
 assets without publishing them.
 The tag must match the CMake and TypeScript package versions. The release
-contains tested C static archives for x64 and ARM64 on Linux, macOS, and
-Windows, with public headers and linking notes; one ZIP of the compiled
+contains tested C static and shared libraries for x64 and ARM64 on Linux,
+macOS, and Windows, with public headers and linking notes in separate ZIPs;
+one ZIP of the compiled
 TypeScript package; and SHA-256 checksums.
 Each ZIP has a use-focused `README.md`; the GitHub Release notes summarize
 the C linking requirements and TypeScript installation steps.
 The C archives retain external dependencies such as OpenSSL, SQLite, PCRE2,
-and utf8proc. See [C release linking notes](c-gotel/RELEASE.md).
+and utf8proc. Read the [static linking notes](c-gotel/RELEASE.md) or
+[shared linking and runtime notes](c-gotel/RELEASE_SHARED.md), including the
+platform libraries and DLL, dylib, or `.so` placement required at run time.
 
 For Go, the Git tag **is** the release artifact:
 `go get github.com/zfogg/gotel@vMAJOR.MINOR.PATCH` retrieves the matching source and
