@@ -274,9 +274,9 @@ TypeScript package; and SHA-256 checksums.
 Each ZIP has a use-focused `README.md`; the GitHub Release notes summarize
 the C linking requirements and TypeScript installation steps.
 The C archives retain external dependencies such as OpenSSL, SQLite, PCRE2,
-and utf8proc. Read the [static linking notes](c-gotel/RELEASE.md) or
-[shared linking and runtime notes](c-gotel/RELEASE_SHARED.md), including the
-platform libraries and DLL, dylib, or `.so` placement required at run time.
+and utf8proc. Read the [C linking guide](c-gotel/RELEASE.md) for static and
+shared libraries, including platform libraries and DLL, dylib, or `.so`
+placement required at run time.
 
 For Go, the Git tag **is** the release artifact:
 `go get github.com/zfogg/gotel@vMAJOR.MINOR.PATCH` retrieves the matching source and

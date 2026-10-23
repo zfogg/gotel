@@ -40,21 +40,19 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
     name = archive_name(tag, linkage, expected_arch)
     path = output / f"{name}.zip"
     system = platform.system()
+    readme = ROOT / "c-gotel" / "RELEASE.md"
     if linkage == "static":
         suffix = ".lib" if system == "Windows" else ".a"
         gotel_libs = [build / "src" / ("c-gotel.lib" if system == "Windows" else "libc-gotel.a")]
         gotel_libs.append(build / "_deps" / "otlp_c-build" / ("otlp_c.lib" if system == "Windows" else "libotlp_c.a"))
-        readme = ROOT / "c-gotel" / "RELEASE.md"
     elif system == "Windows":
         gotel_libs = [build / "src" / "c-gotel.dll", build / "src" / "c-gotel.lib"]
-        readme = ROOT / "c-gotel" / "RELEASE_SHARED.md"
     else:
         extension = ".dylib" if system == "Darwin" else ".so"
         pattern = "libc-gotel*.dylib" if system == "Darwin" else "libc-gotel.so*"
         gotel_libs = sorted((build / "src").glob(pattern))
         if not gotel_libs:
             raise FileNotFoundError(build / "src" / f"libc-gotel{extension}")
-        readme = ROOT / "c-gotel" / "RELEASE_SHARED.md"
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
         for source, destination in (
             (ROOT / "LICENSE", "LICENSE"),
