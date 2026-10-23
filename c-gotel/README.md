@@ -258,3 +258,21 @@ source hash checks, leaving shared dependency caches untouched.
 70KB records across TLS records, transient failures, default/custom roots,
 expired/untrusted/wrong-identity certificates, malformed bundles, and a stalled
 handshake. Run `ctest --test-dir build --output-on-failure` after building tests.
+
+
+## Watchdog callbacks
+
+Set `options.watchdog.snapshot` to opt in to mutex-cycle monitoring. The callback
+copies a bounded observation (cycle thread count, minimum wait age, and snapshot
+limits); returning false skips an unavailable snapshot. It must never block or
+retain application locks. Supply non-realtime operation and GAUGE metric catalog
+indices. An optional `decorate` callback adds application-owned diagnostic
+attributes to the watchdog span; it runs only after snapshot locks are released.
+Callbacks and context must outlive the host.
+
+Call `gotel_tick` from a worker independent of the threads being monitored. The
+watchdog polls once per second, requires two seconds of wait age, records the
+current blocked count, and emits a completed ERROR child span when a copied parent is available (otherwise a root span) with
+`error.type=thread.deadlock` at most once every 30 seconds. No internal threads or
+OS-specific APIs are introduced. It does not mutate another thread's active
+scope, recover deadlocks, handle fatal signals, or survive a blocked tick owner.

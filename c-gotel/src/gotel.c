@@ -56,6 +56,10 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
       if (!strcmp(m->name, o->metrics[j].name))
         return OTLP_ERR_INVALID_ARGUMENT;
   }
+  if (o->watchdog.snapshot &&
+      (o->watchdog.operation >= o->operation_count || o->watchdog.metric >= o->metric_count ||
+       o->operations[o->watchdog.operation].realtime || o->metrics[o->watchdog.metric].type != OTLP_METRIC_GAUGE))
+    return OTLP_ERR_INVALID_ARGUMENT;
   gotel_host_t *h = calloc(1, sizeof(*h));
   if (!h)
     return OTLP_ERR_NOMEM;
@@ -313,10 +317,36 @@ static void export_metrics(gotel_host_t *h) {
       }
   }
 }
+static void watchdog_poll(gotel_host_t *h, uint64_t now) {
+  const gotel_watchdog_options_t *w = &h->options.watchdog;
+  if (!w->snapshot || (h->watchdog_poll_ns && now - h->watchdog_poll_ns < 1000000000ULL))
+    return;
+  h->watchdog_poll_ns = now;
+  gotel_watchdog_snapshot_t snapshot = {0};
+  if (!w->snapshot(w->context, &snapshot))
+    return;
+  size_t blocked = snapshot.wait_ns >= 2000000000ULL ? snapshot.blocked_threads : 0;
+  (void)gotel_metric_record(h, w->metric, (double)blocked);
+  if (!blocked || (h->watchdog_report_ns && now - h->watchdog_report_ns < 30000000000ULL))
+    return;
+  h->watchdog_report_ns = now;
+  gotel_scope_t scope = {0};
+  gotel_begin(h, &scope, w->operation, &snapshot.parent);
+  gotel_attr_int(&scope, "thread.deadlock.count", (int64_t)blocked);
+  gotel_attr_int(&scope, "thread.deadlock.wait_ns", (int64_t)snapshot.wait_ns);
+  gotel_attr_int(&scope, "thread.deadlock.snapshot_limited", snapshot.limited);
+  gotel_attr_string(&scope, "thread.deadlock.detector", "mutex_wait_cycle");
+  if (w->decorate)
+    w->decorate(w->context, &scope);
+  gotel_error(&scope, "thread.deadlock", "Mutex wait cycle persisted for at least two seconds");
+  gotel_end(&scope);
+}
+
 otlp_status_t gotel_tick(gotel_host_t *h) {
   if (!h)
     return OTLP_ERR_NULL;
   uint64_t now = h->options.monotonic_ns();
+  watchdog_poll(h, now);
   uint64_t interval = (uint64_t)(h->options.metrics_interval_ms ? h->options.metrics_interval_ms : 10000) * 1000000;
   if (now - h->last_metrics_ns >= interval) {
     export_metrics(h);

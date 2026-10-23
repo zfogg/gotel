@@ -20,6 +20,7 @@ struct gotel_host {
   size_t instrument_count;
   atomic_uint_fast64_t sequence, rate_window;
   uint64_t last_metrics_ns, epoch_ns;
+  uint64_t watchdog_poll_ns, watchdog_report_ns;
 };
 void gotel_emit_span(gotel_host_t *host, otlp_span_t *span);
 otlp_status_t gotel_resource_detect(gotel_host_t *host);

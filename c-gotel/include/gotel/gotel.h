@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 typedef struct gotel_host gotel_host_t;
+typedef struct gotel_scope gotel_scope_t;
 enum { GOTEL_TRACES = 1, GOTEL_LOGS = 2, GOTEL_METRICS = 4, GOTEL_ALL = 7 };
 typedef struct {
   const char *name;
@@ -17,6 +18,28 @@ typedef struct {
   const double *bounds;
   size_t bound_count;
 } gotel_metric_t;
+
+typedef struct {
+  uint8_t trace_id[16], span_id[8];
+  bool valid, sampled, realtime;
+} gotel_context_t;
+
+/* Optional lock-cycle watchdog, polled by the single tick owner on its own thread.
+ * Snapshot must be bounded, nonblocking, and release all application locks before
+ * returning. False means unavailable, not healthy. No signal-handler use. */
+typedef struct {
+  size_t blocked_threads;
+  uint64_t wait_ns;
+  bool limited;
+  gotel_context_t parent; /* Copied context of a blocked operation, or zero for root. */
+} gotel_watchdog_snapshot_t;
+typedef struct {
+  bool (*snapshot)(void *context, gotel_watchdog_snapshot_t *output);
+  void *context;
+  /* Runs on the tick owner after snapshot; must also be bounded/nonblocking. */
+  void (*decorate)(void *context, gotel_scope_t *scope);
+  size_t operation, metric; /* Non-realtime operation and GAUGE catalog indices. */
+} gotel_watchdog_options_t;
 
 typedef struct {
   otlp_exporter_opts_t exporter;
@@ -46,6 +69,7 @@ typedef struct {
   bool disable_resource_detection;
   /* Set by gotel_options_apply_env; enables signal-specific header overrides. */
   bool use_environment;
+  gotel_watchdog_options_t watchdog;
 } gotel_options_t;
 /* Options are copied; exporter strings/resources are copied during create.
  * The operation catalog and its names must remain alive until destroy. No internal threads.
@@ -75,10 +99,6 @@ otlp_status_t gotel_options_apply_env(gotel_options_t *options, gotel_env_storag
 otlp_status_t gotel_options_set_endpoint(gotel_options_t *options, gotel_env_storage_t *storage,
                                         const char *base_endpoint);
 
-typedef struct {
-  uint8_t trace_id[16], span_id[8];
-  bool valid, sampled, realtime;
-} gotel_context_t;
 typedef struct gotel_scope {
   gotel_host_t *host;
   otlp_span_t *span;
