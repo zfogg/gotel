@@ -68,7 +68,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
       - name: Install macOS dependencies
         if: matrix.os == 'macos'
-        run: brew install llvm ninja openssl@3 sqlite
+        run: brew install ninja openssl@3 sqlite
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows'
         with:
@@ -85,8 +85,9 @@ jobs:
         shell: bash
         run: |
           osx_args=()
+          compiler=clang
           if [[ '${{ matrix.os }}' == macos ]]; then
-            export PATH="$(brew --prefix llvm)/bin:$PATH"
+            compiler="$(xcrun --find clang)"
             export OPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
             osx_args=(-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0)
           fi
@@ -94,7 +95,7 @@ jobs:
             shared=OFF
             if [[ "$linkage" == shared ]]; then shared=ON; fi
             cmake -S c-gotel -B "c-gotel/build-$linkage" -G Ninja \
-              -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_C_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
               -DPython3_EXECUTABLE="$(command -v python)" \
               -DCMAKE_C_EXTENSIONS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
               -DBUILD_SHARED_LIBS="$shared" \
