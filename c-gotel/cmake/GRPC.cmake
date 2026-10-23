@@ -35,9 +35,10 @@ if(CGOTEL_WITH_GRPC)
   string(REPLACE "int tls;" "int tls;\n int grpc;" _api "${_api}")
   file(WRITE "${_stage}/http_client.h" "${_api}")
   file(READ "${_stage}/env_config.c" _env)
-  file(SHA256 "${otlp_c_SOURCE_DIR}/src/env_config.c" _env_hash)
-  if(NOT _env_hash STREQUAL "2e3d5fa9910b4e351f9d502f02acc0fb8e6d4f9d6da3f0d98a5ba697fbe9e5c8" AND
-     NOT _env_hash STREQUAL "45589571dccbdf79d4b07a95240332301835ce61429a14e6a2024a8b7fc2a80d")
+  # Git may check out CRLF on Windows. Compare the pinned LF content on every host.
+  string(REPLACE "\r\n" "\n" _env "${_env}")
+  string(SHA256 _env_hash "${_env}")
+  if(NOT _env_hash STREQUAL "dc8de0df1b5535d27c3854d7bd838bf80c64b1b0b7c9131212ec379214443db0")
     message(FATAL_ERROR "Pinned otlp-c environment implementation changed; review the gRPC adapter")
   endif()
   string(REPLACE "strcmp(value, \"http/protobuf\") != 0"

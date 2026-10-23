@@ -71,6 +71,7 @@ jobs:
           config='${{ matrix.config }}'
           cmake -S c-gotel -B c-gotel/build -G Ninja \
             -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE="$config" \
+            -DPython3_EXECUTABLE="$(command -v python)" \
             -DCMAKE_C_EXTENSIONS=OFF -DBUILD_SHARED_LIBS="$shared" \
             -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }} \
             -DCGOTEL_WITH_GRPC=${{ matrix.grpc }}
@@ -81,6 +82,7 @@ jobs:
           $shared = if ('${{ matrix.library }}' -eq 'shared') { 'ON' } else { 'OFF' }
           cmake -S c-gotel -B c-gotel/build -G Ninja `
             -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Debug `
+            -DPython3_EXECUTABLE="$((Get-Command python).Source)" `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DBUILD_SHARED_LIBS=$shared -DCGOTEL_BUILD_TESTS=ON `
             -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }} -DCGOTEL_WITH_GRPC=${{ matrix.grpc }}
@@ -103,6 +105,7 @@ jobs:
       - run: >-
           cmake -S c-gotel -B c-gotel/build -G Ninja
           -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug
+          -DPython3_EXECUTABLE="$(command -v python)"
           -DCMAKE_C_EXTENSIONS=OFF -DCGOTEL_BUILD_TESTS=ON
           -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
           -DCGOTEL_WITH_GRPC=ON
