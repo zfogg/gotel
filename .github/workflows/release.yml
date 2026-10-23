@@ -38,30 +38,41 @@ jobs:
 
   c-static:
     needs: validate
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - { runner: ubuntu-24.04, os: linux, arch: x64 }
+          - { runner: ubuntu-24.04-arm, os: linux, arch: arm64 }
+          - { runner: macos-15-intel, os: macos, arch: x64 }
+          - { runner: macos-15, os: macos, arch: arm64 }
+          - { runner: windows-2025, os: windows, arch: x64, triplet: x64-windows, msvc_arch: amd64 }
+          - { runner: windows-11-arm, os: windows, arch: arm64, triplet: arm64-windows, msvc_arch: amd64_arm64 }
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux dependencies
-        if: runner.os == 'Linux'
+        if: matrix.os == 'linux'
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
       - name: Install macOS dependencies
-        if: runner.os == 'macOS'
+        if: matrix.os == 'macos'
         run: brew install llvm ninja openssl@3 sqlite
       - uses: ilammy/msvc-dev-cmd@v1
-        if: runner.os == 'Windows'
+        if: matrix.os == 'windows'
+        with:
+          arch: ${{ matrix.msvc_arch }}
       - name: Install Windows native dependencies
-        if: runner.os == 'Windows'
+        if: matrix.os == 'windows'
         shell: pwsh
-        run: vcpkg install openssl:x64-windows sqlite3:x64-windows pcre2:x64-windows utf8proc:x64-windows
+        env:
+          VCPKG_TRIPLET: ${{ matrix.triplet }}
+        run: |
+          vcpkg install "openssl:$env:VCPKG_TRIPLET" "sqlite3:$env:VCPKG_TRIPLET" "pcre2:$env:VCPKG_TRIPLET" "utf8proc:$env:VCPKG_TRIPLET"
       - name: Configure on Unix
-        if: runner.os != 'Windows'
+        if: matrix.os != 'windows'
         shell: bash
         run: |
-          if [[ '${{ runner.os }}' == macOS ]]; then
+          if [[ '${{ matrix.os }}' == macos ]]; then
             export PATH="$(brew --prefix llvm)/bin:$PATH"
             export OPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
           fi
@@ -70,12 +81,15 @@ jobs:
             -DCMAKE_C_EXTENSIONS=OFF -DBUILD_SHARED_LIBS=OFF \
             -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON
       - name: Configure on Windows
-        if: runner.os == 'Windows'
+        if: matrix.os == 'windows'
         shell: pwsh
+        env:
+          VCPKG_TRIPLET: ${{ matrix.triplet }}
         run: |
           cmake -S c-gotel -B c-gotel/build -G Ninja `
             -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET="$env:VCPKG_TRIPLET" `
             -DBUILD_SHARED_LIBS=OFF -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON
       - run: cmake --build c-gotel/build --parallel 4
       - run: ctest --test-dir c-gotel/build --output-on-failure --parallel 4
@@ -86,10 +100,11 @@ jobs:
           --tag '${{ needs.validate.outputs.tag }}'
           --build c-gotel/build
           --otlp-source c-gotel/build/_deps/otlp_c-src
+          --expected-arch '${{ matrix.arch }}'
           --output release-assets
       - uses: actions/upload-artifact@v4
         with:
-          name: release-c-${{ matrix.os }}
+          name: release-c-${{ matrix.os }}-${{ matrix.arch }}
           path: release-assets/*.zip
           if-no-files-found: error
 
@@ -104,21 +119,21 @@ jobs:
       - run: corepack enable && corepack prepare pnpm@10.20.0 --activate
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - name: Pack and zip the compiled package
+      - name: Package compiled TypeScript as one ZIP
         shell: bash
         env:
           RELEASE_TAG: ${{ needs.validate.outputs.tag }}
         run: |
-          mkdir -p release-assets
-          npm pack --pack-destination release-assets
+          mkdir -p release-assets package-tmp
+          npm pack --pack-destination package-tmp
           python scripts/package_release.py typescript \
             --tag "$RELEASE_TAG" \
-            --tarball "release-assets/zfogg-gotel-${RELEASE_TAG#v}.tgz" \
+            --tarball "package-tmp/zfogg-gotel-${RELEASE_TAG#v}.tgz" \
             --output release-assets
       - uses: actions/upload-artifact@v4
         with:
           name: release-typescript
-          path: release-assets/*
+          path: release-assets/*.zip
           if-no-files-found: error
 
   go-source:
@@ -151,8 +166,8 @@ jobs:
           RELEASE_TAG: ${{ needs.validate.outputs.tag }}
         run: |
           cd release-assets
-          sha256sum *.zip *.tgz > SHA256SUMS
+          sha256sum *.zip > SHA256SUMS
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes
           fi
-          gh release upload "$RELEASE_TAG" *.zip *.tgz SHA256SUMS --clobber
+          gh release upload "$RELEASE_TAG" *.zip SHA256SUMS --clobber

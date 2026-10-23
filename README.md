@@ -267,9 +267,9 @@ Push a `vMAJOR.MINOR.PATCH` tag to run the
 Run that workflow manually with the intended tag first to build and test its
 assets without publishing them.
 The tag must match the CMake and TypeScript package versions. The release
-contains tested C static archives for Linux, macOS, and Windows with public
-headers and linking notes; an installable TypeScript npm `.tgz`; a ZIP of the
-same compiled TypeScript package for inspection; and SHA-256 checksums.
+contains tested C static archives for x64 and ARM64 on Linux, macOS, and
+Windows, with public headers and linking notes; one ZIP of the compiled
+TypeScript package; and SHA-256 checksums.
 The C archives retain external dependencies such as OpenSSL, SQLite, PCRE2,
 and utf8proc. See [C release linking notes](c-gotel/RELEASE.md).
 
@@ -277,6 +277,7 @@ For Go, the Git tag **is** the release artifact:
 `go get github.com/zfogg/gotel@vMAJOR.MINOR.PATCH` retrieves the matching source and
 builds it with the consumer's toolchain. A compiled Go `.a` would be tied to
 a toolchain and is not useful as a normal Go module distribution. For
-TypeScript installation, prefer npm registry publication when configured, or
-install the release `.tgz` by URL or local file. The ZIP is for browsing and archival use;
-it is not the preferred npm installation format.
+TypeScript installation, prefer npm registry publication when configured or a
+Git dependency. The release ZIP contains `dist/`, `package.json`, the README,
+and the license for direct inspection or unpacking. CI uses `npm pack` while
+assembling the ZIP, but does not upload the intermediate `.tgz`.
