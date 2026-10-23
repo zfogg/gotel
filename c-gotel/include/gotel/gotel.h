@@ -61,6 +61,19 @@ otlp_status_t gotel_stats(gotel_host_t *host, otlp_exporter_stats_t *stats);
 otlp_status_t gotel_parse_signals(const char *text, unsigned *signals);
 
 typedef struct {
+  otlp_env_storage_t exporter;
+  otlp_resource_attr_t resources[64];
+} gotel_env_storage_t;
+/* Apply standard OTEL environment variables over caller defaults. Storage must
+ * live through gotel_create; create copies exporter strings and resources.
+ * A base URL keeps its path prefix and gains /v1/<signal>. Apply explicit
+ * application overrides after this call. Empty environment values are unset. */
+otlp_status_t gotel_options_apply_env(gotel_options_t *options, gotel_env_storage_t *storage,
+                                     const char *default_base_endpoint);
+otlp_status_t gotel_options_set_endpoint(gotel_options_t *options, gotel_env_storage_t *storage,
+                                        const char *base_endpoint);
+
+typedef struct {
   uint8_t trace_id[16], span_id[8];
   bool valid, sampled, realtime;
 } gotel_context_t;
