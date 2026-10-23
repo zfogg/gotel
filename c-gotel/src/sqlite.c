@@ -1,4 +1,5 @@
 #include "internal.h"
+#include <gotel/sql.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,7 @@ struct gotel_sqlite {
   const char *prefix;
   const gotel_query_t *queries;
   size_t count;
+  gotel_sqlite_options_t options;
 };
 static int traced(unsigned event, void *data, void *statement, void *extra) {
   gotel_sqlite_t *a = data;
@@ -22,6 +24,8 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
   const gotel_query_t *query = gotel_query_find(a->queries, a->count, sql);
   if (query)
     name = query->name;
+  gotel_sql_metadata_t metadata;
+  gotel_sql_inspect(sql, &a->options.sql, &metadata);
   char span_name[256];
   int n = snprintf(span_name, sizeof(span_name), "%s.%s", a->prefix, name);
   if (n < 0 || (size_t)n >= sizeof(span_name))
@@ -34,9 +38,8 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
   if (span) {
     uint64_t duration = extra ? *(sqlite3_uint64 *)extra : 0;
     otlp_span_set_kind(span, OTLP_SPAN_KIND_CLIENT);
-    otlp_span_set_attribute_string(span, "db.system.name", "sqlite");
-    otlp_span_set_attribute_string(span, "db.query.summary", name);
-    otlp_span_set_attribute_int(span, "gotel.db.query.bind_count", sqlite3_bind_parameter_count(statement));
+    gotel_sql_attributes(span, &metadata, "sqlite", a->options.namespace_name,
+                         (size_t)sqlite3_bind_parameter_count(statement));
     gotel_context_t parent = gotel_current_context();
     if (parent.valid && parent.sampled) {
       otlp_span_set_trace_id(span, parent.trace_id);
@@ -57,7 +60,8 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
                                           sizeof(bounds) / sizeof(bounds[0]));
     if (m) {
       otlp_metric_set_attribute_string(m, "db.system.name", "sqlite");
-      otlp_metric_set_attribute_string(m, "db.query.summary", span_name);
+      otlp_metric_set_attribute_string(m, "db.query.summary", metadata.summary);
+      otlp_metric_set_attribute_string(m, "gotel.db.query.name", span_name);
       uint64_t end = h->options.realtime_ns();
       uint64_t duration = extra ? *(sqlite3_uint64 *)extra : 0;
       otlp_metric_set_aggregation_temporality(m, OTLP_AGG_TEMP_DELTA);
@@ -72,10 +76,17 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
 }
 otlp_status_t gotel_sqlite_attach(gotel_host_t *h, sqlite3 *db, const char *prefix, const gotel_query_t *queries,
                                   size_t count, gotel_sqlite_t **out) {
+  return gotel_sqlite_attach_with_options(h, db, prefix, queries, count, NULL, out);
+}
+otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *h, sqlite3 *db, const char *prefix,
+                                               const gotel_query_t *queries, size_t count,
+                                               const gotel_sqlite_options_t *options, gotel_sqlite_t **out) {
   if (!out)
     return OTLP_ERR_NULL;
   *out = NULL;
   if (!h || !db || !prefix || !*prefix || (!queries && count))
+    return OTLP_ERR_INVALID_ARGUMENT;
+  if (options && options->sql.max_query_text_bytes > GOTEL_SQL_TEXT_MAX)
     return OTLP_ERR_INVALID_ARGUMENT;
   for (size_t i = 0; i < count; ++i) {
     if (!queries[i].name || !*queries[i].name || !queries[i].sql)
@@ -88,6 +99,9 @@ otlp_status_t gotel_sqlite_attach(gotel_host_t *h, sqlite3 *db, const char *pref
   if (!a)
     return OTLP_ERR_NOMEM;
   *a = (gotel_sqlite_t){h, db, prefix, queries, count};
+  if (options)
+    a->options = *options;
+  a->options.sql.dialect = GOTEL_SQL_SQLITE;
   if (sqlite3_trace_v2(db, SQLITE_TRACE_PROFILE | SQLITE_TRACE_CLOSE, traced, a) != SQLITE_OK) {
     free(a);
     return OTLP_ERR_INVALID_ARGUMENT;

@@ -18,6 +18,21 @@ otlp-c to a commit; `FETCHCONTENT_SOURCE_DIR_OTLP_C` supports offline caches.
 
 ## Host and operation scopes
 
+Host creation detects resource identity once, using the same categories as Go
+`otelhost.NewResource`: SDK, hostname, OS description/type, process PID, owner,
+executable path/name, command arguments, and compiler/runtime description.
+These attributes are resources on **every** trace, log, and metric envelope.
+`process.command_args` is an OTLP string array. Explicit scalar
+`exporter.resource_attributes` override detected values; environment resource
+overrides remain opt-in through the existing exporter environment helper.
+
+Set `argc`/`argv` to supply application-redacted command arguments; their values
+are deep-copied during `gotel_create`. NULL `argv` discovers native arguments
+on Windows, Linux, and macOS. `omit_command_args` suppresses detection of command
+arguments, and `disable_resource_detection` disables all default detectors.
+Service version and deployment environment remain caller-supplied attributes,
+as in Go. C reports its actual compiler rather than claiming a Go runtime.
+
 Declare a bounded array of `gotel_operation_t` identities, then initialize
 `gotel_options_t` with exporter options, signal mask, sampling probability,
 operation catalog, monotonic/realtime clock callbacks and metrics interval.
@@ -64,6 +79,35 @@ The caller times its existing HTTP operation and sets the returned name on
 its scope. `gotel_http_attributes` records method/status and client errors.
 
 ## Named SQLite queries
+
+`gotel/sql.h` provides SQL inspection independently of the SQLite adapter and
+does not require linking SQLite. It supports common SQL plus PostgreSQL,
+DuckDB, SQLite, and MySQL quoting/placeholder rules. Its scanner removes comments
+and replaces string/blob/numeric/boolean/null literals and bind placeholders.
+It never uses expanded SQL or reads bind values. Malformed quoting fails closed.
+
+`gotel_sql_inspect` returns distinct fields: `text` is the sanitized SQL template,
+`summary` is a structural skeleton of CTEs, sources, aliases, joins, nested
+queries, clauses and row bounds, and `operation` is the outer SQL verb. Text
+defaults to 4096 bytes, independently of the 4096-byte summary budget; both stay
+on UTF-8 boundaries. Static integer row bounds may appear in the summary but
+are sanitized in query text. Input is limited to 1 MiB and structural recursion
+to 64 levels. This is a telemetry parser, not SQL syntax validation or execution.
+
+The SQLite adapter exports `db.query.text`, `db.query.summary`,
+`db.operation.name`, `db.system.name`, and the bind count while retaining the
+application-owned span name. The summary is SQL structure, never the query's
+application name. `gotel_sqlite_attach_with_options` additionally accepts a
+logical database namespace, text omission, a smaller text budget and IN-list
+policy. Existing `gotel_sqlite_attach` calls use the safe default policy.
+
+SQL regression tests include 665 cases generated from Go's tests and SQL command checks, 24 production
+query examples from pi5 Spaniel/stonkpile (eight each short, medium and long),
+2,000 secret-payload mutations, malformed grammar, and size/UTF-8 boundaries.
+The checked-in JSON fixtures need no Go installation or live service at test
+time. Regenerate the Go corpus with `go run ./c-gotel/tests/sql_reference`;
+the same generator accepts input/output JSON paths for inspecting other queries.
+Resource and SQLite tests decode real protobuf envelopes from local collectors.
 
 ```c
 static const gotel_query_t queries[] = {

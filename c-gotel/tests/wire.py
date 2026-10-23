@@ -19,12 +19,15 @@ try:
         assert {p for p, _ in server.records} == paths, [p for p, _ in server.records]
         payload = b''.join(body for _, body in server.records)
         assert b'BOUND_SECRET' not in payload
-        assert b'SELECT ? UNION ALL SELECT ?' not in payload
+        assert b'SELECT 42' not in payload
         if signals & 1:
             assert b'test.cli' in payload
             if len(sys.argv) < 3 or sys.argv[2] == 'ON':
                 assert b'test.storage.SelectSecret' in payload
                 assert b'test.storage.UnknownQuery' in payload
+                assert b'db.query.text' in payload
+                assert b'SELECT ? UNION ALL SELECT ?' in payload
+                assert b'db.operation.name' in payload
             spans = records(server.records, '/v1/traces')
             root = next(s for s in spans if s[5] == [b'test.cli'])
             assert fields(root[15][0])[3] == [2]

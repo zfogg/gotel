@@ -74,6 +74,11 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
     gotel_destroy(h);
     return OTLP_ERR_NOMEM;
   }
+  otlp_status_t resource_status = gotel_resource_detect(h);
+  if (resource_status != OTLP_OK) {
+    gotel_destroy(h);
+    return resource_status;
+  }
   h->instrument_count = o->operation_count + o->metric_count;
   h->instruments = calloc(h->instrument_count, sizeof(*h->instruments));
   if (!h->instruments) {

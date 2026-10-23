@@ -8,6 +8,25 @@ permissions:
   contents: read
 
 jobs:
+  c-gotel:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sqlite: ['ON', 'OFF']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native test dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
+      - name: Configure C adapter with sanitizers
+        run: >-
+          cmake -S c-gotel -B c-gotel/build -G Ninja
+          -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug
+          -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
+          -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - run: cmake --build c-gotel/build --parallel 4
+      - run: ctest --test-dir c-gotel/build --output-on-failure
+
   test:
     strategy:
       matrix:
