@@ -20,7 +20,7 @@ def inspect(cases):
                         text=bytes.fromhex(text).decode(),summary=bytes.fromhex(summary).decode()))
     return out
 errors=[]
-index_query='CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)'
+index_query='CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);'
 index_result=inspect([dict(query=index_query,dialect=1)])[0]
 assert index_result['status']==0
 assert index_result['summary']=='CREATE INDEX idx_participants_session ON ...'

@@ -560,42 +560,42 @@
     "operation": "CREATE"
   },
   {
-    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "dialect": 0,
     "safe": true,
-    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "summary": "CREATE INDEX idx_participants_session ON ...",
     "operation": "CREATE"
   },
   {
-    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "dialect": 1,
     "safe": true,
-    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "summary": "CREATE INDEX idx_participants_session ON ...",
     "operation": "CREATE"
   },
   {
-    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "dialect": 2,
     "safe": true,
-    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "summary": "CREATE INDEX idx_participants_session ON ...",
     "operation": "CREATE"
   },
   {
-    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "dialect": 3,
     "safe": true,
-    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "summary": "CREATE INDEX idx_participants_session ON ...",
     "operation": "CREATE"
   },
   {
-    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "query": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "dialect": 4,
     "safe": true,
-    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)",
+    "text": "CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);",
     "summary": "CREATE INDEX idx_participants_session ON ...",
     "operation": "CREATE"
   },

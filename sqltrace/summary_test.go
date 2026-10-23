@@ -14,7 +14,7 @@ var updateSummaries = flag.Bool("update-summaries", false, "regenerate the revie
 
 func TestSummary(t *testing.T) {
 	cases := []struct{ query, want string }{
-		{"CREATE INDEX IF NOT EXISTS idx_participants_session ON session_participants(session_id)", "CREATE INDEX idx_participants_session ON ..."},
+		{"CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);", "CREATE INDEX idx_participants_session ON ..."},
 		{"create index idx_participants_session on session_participants(session_id)", "CREATE INDEX idx_participants_session ON ..."},
 		{"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token='SECRET'", "CREATE UNIQUE INDEX public.account_id ON ..."},
 		{"CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))", "CREATE INDEX \"Index Name\" ON ..."},
