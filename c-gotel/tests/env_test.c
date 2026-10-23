@@ -23,6 +23,9 @@ static const char *variables[] = {"OTEL_SDK_DISABLED",
                                   "OTEL_EXPORTER_OTLP_TIMEOUT",
                                   "OTEL_EXPORTER_OTLP_CERTIFICATE",
                                   "OTEL_EXPORTER_OTLP_PROTOCOL",
+                                  "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL",
+                                  "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
+                                  "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL",
                                   "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
                                   "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
                                   "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
@@ -172,7 +175,12 @@ static void validation(void) {
   }
   clear();
   environment("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
+#ifdef CGOTEL_WITH_GRPC
+  CHECK(gotel_options_apply_env(&o, &s, NULL) == OTLP_OK);
+  SAME(o.protocol, "grpc");
+#else
   CHECK(gotel_options_apply_env(&o, &s, NULL) == OTLP_ERR_INVALID_ARGUMENT);
+#endif
   clear();
   environment("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "not-a-url");
   CHECK(gotel_options_apply_env(&o, &s, NULL) == OTLP_ERR_INVALID_ARGUMENT);
@@ -227,6 +235,45 @@ static void headers(void) {
   h = NULL;
   CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT && !h);
 }
+static void grpc_options(void) {
+  gotel_env_storage_t s;
+  gotel_options_t o = options();
+  gotel_host_t *h = NULL;
+  o.protocol = "unknown";
+  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT && !h);
+  o.protocol = "grpc";
+#ifdef CGOTEL_WITH_GRPC
+  CHECK(gotel_options_set_endpoint(&o, &s, "http://127.0.0.1:4317") == OTLP_OK);
+  SAME(o.exporter.endpoint, "http://127.0.0.1:4317");
+  SAME(o.exporter.metrics_endpoint, o.exporter.endpoint);
+  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(h->exporter->sig[0].url.grpc && h->exporter->sig[0].url.port == 4317);
+  SAME(h->exporter->sig[2].url.path, "/opentelemetry.proto.collector.logs.v1.LogsService/Export");
+  gotel_destroy(h);
+  h = NULL;
+  o.exporter.endpoint = "http://127.0.0.1:4317/v1/traces";
+  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT && !h);
+  o = options();
+  o.protocol = "grpc";
+  o.exporter.endpoint = NULL;
+  CHECK(gotel_create(&o, &h) == OTLP_OK);
+  CHECK(h->exporter->sig[0].url.grpc && h->exporter->sig[0].url.port == 4317 && h->exporter->sig[0].url.tls);
+  gotel_destroy(h);
+  environment("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
+  environment("OTEL_EXPORTER_OTLP_ENDPOINT", "https://localhost:4317");
+  environment("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "http://127.0.0.1:9000");
+  o = options();
+  CHECK(gotel_options_apply_env(&o, &s, NULL) == OTLP_OK);
+  SAME(o.exporter.endpoint, "https://localhost:4317");
+  SAME(o.exporter.logs_endpoint, "http://127.0.0.1:9000");
+  environment("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", "http/protobuf");
+  CHECK(gotel_options_apply_env(&o, &s, NULL) == OTLP_ERR_INVALID_ARGUMENT);
+#else
+  CHECK(gotel_create(&o, &h) == OTLP_ERR_INVALID_ARGUMENT && !h);
+  environment("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
+  CHECK(gotel_options_apply_env(&o, &s, NULL) == OTLP_ERR_INVALID_ARGUMENT);
+#endif
+}
 int main(int argc, char **argv) {
   CHECK(argc == 2);
   clear();
@@ -244,6 +291,8 @@ int main(int argc, char **argv) {
     validation();
   else if (!strcmp(argv[1], "headers"))
     headers();
+  else if (!strcmp(argv[1], "grpc"))
+    grpc_options();
   else
     CHECK(0);
   clear();

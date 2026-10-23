@@ -17,6 +17,7 @@ struct gotel_tls {
   SSL *ssl;
   int events;
   int eof;
+  int require_h2;
 };
 static _Thread_local gotel_tls_store *selected;
 gotel_tls_store *gotel_tls_select(gotel_tls_store *store) {
@@ -131,6 +132,21 @@ void gotel_tls_free(gotel_tls *t) {
     free(t);
   }
 }
+int gotel_tls_enable_h2(gotel_tls *t) {
+  static const unsigned char protocols[] = {2, 'h', '2'};
+  t->require_h2 = 1;
+  return SSL_set_alpn_protos(t->ssl, protocols, sizeof(protocols)) == 0;
+}
+static otlp_status_t negotiated(gotel_tls *t) {
+  if (t->require_h2) {
+    const unsigned char *protocol = NULL;
+    unsigned int len = 0;
+    SSL_get0_alpn_selected(t->ssl, &protocol, &len);
+    if (len != 2 || protocol[0] != 'h' || protocol[1] != '2')
+      return OTLP_ERR_PROTOCOL;
+  }
+  return OTLP_OK;
+}
 static otlp_status_t send_pending(gotel_tls *t, otlp_socket_t *s) {
   BIO *bio = SSL_get_wbio(t->ssl);
   for (int i = 0; i < 16; ++i) {
@@ -176,7 +192,7 @@ static otlp_status_t handshake(gotel_tls *t, otlp_socket_t *s) {
     if (st != OTLP_OK)
       return st;
     if (SSL_is_init_finished(t->ssl))
-      return OTLP_OK;
+      return negotiated(t);
     ERR_clear_error();
     int rc = SSL_do_handshake(t->ssl);
     int error = rc == 1 ? SSL_ERROR_NONE : SSL_get_error(t->ssl, rc);
@@ -184,7 +200,7 @@ static otlp_status_t handshake(gotel_tls *t, otlp_socket_t *s) {
     if (st != OTLP_OK)
       return st;
     if (rc == 1)
-      return OTLP_OK;
+      return negotiated(t);
     if (error == SSL_ERROR_WANT_READ) {
       st = receive(t, s);
       if (st != OTLP_OK)

@@ -80,6 +80,9 @@ typedef struct {
   /* Set by gotel_options_apply_env; enables signal-specific header overrides. */
   bool use_environment;
   gotel_watchdog_options_t watchdog;
+  /* NULL or "http/protobuf" (default), or "grpc" when built with CGOTEL_WITH_GRPC.
+   * gRPC endpoints are http(s)://host:port, without an HTTP signal path. */
+  const char *protocol;
 } gotel_options_t;
 /* Options are copied; exporter strings/resources are copied during create.
  * The operation catalog and its names must remain alive until destroy. No internal threads.

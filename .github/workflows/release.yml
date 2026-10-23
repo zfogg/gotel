@@ -56,6 +56,13 @@ jobs:
           - { runner: windows-11-arm, os: windows, arch: arm64, triplet: arm64-windows, msvc_arch: amd64_arm64 }
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          # x64 Python can launch native ARM64 test executables on Windows ARM.
+          architecture: ${{ matrix.os == 'windows' && 'x64' || matrix.arch }}
+      - name: Install gRPC test peers
+        run: python -m pip install -r c-gotel/tests/requirements-grpc.txt
       - name: Install Linux dependencies
         if: matrix.os == 'linux'
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
@@ -88,15 +95,17 @@ jobs:
             if [[ "$linkage" == shared ]]; then shared=ON; fi
             cmake -S c-gotel -B "c-gotel/build-$linkage" -G Ninja \
               -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release \
+              -DPython3_EXECUTABLE="$(command -v python)" \
               -DCMAKE_C_EXTENSIONS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
               -DBUILD_SHARED_LIBS="$shared" \
-              -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON "${osx_args[@]}"
+              -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON -DCGOTEL_WITH_GRPC=ON "${osx_args[@]}"
             cmake --build "c-gotel/build-$linkage" --parallel 4
             ctest --test-dir "c-gotel/build-$linkage" --output-on-failure --parallel 4
             python scripts/package_release.py c \
               --tag '${{ needs.validate.outputs.tag }}' \
               --build "c-gotel/build-$linkage" \
               --otlp-source "c-gotel/build-$linkage/_deps/otlp_c-src" \
+              --nghttp2-source "c-gotel/build-$linkage/_deps/cgotel_nghttp2-src" \
               --expected-arch '${{ matrix.arch }}' \
               --linkage "$linkage" --output release-assets
           done
@@ -111,9 +120,10 @@ jobs:
             $build = "c-gotel/build-$linkage"
             cmake -S c-gotel -B $build -G Ninja `
               -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release `
+              -DPython3_EXECUTABLE="$((Get-Command python).Source)" `
               -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
               -DVCPKG_TARGET_TRIPLET="$env:VCPKG_TRIPLET" `
-              -DBUILD_SHARED_LIBS=$shared -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON
+              -DBUILD_SHARED_LIBS=$shared -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON -DCGOTEL_WITH_GRPC=ON
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             cmake --build $build --parallel 4
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -123,6 +133,7 @@ jobs:
               --tag '${{ needs.validate.outputs.tag }}' `
               --build $build `
               --otlp-source "$build/_deps/otlp_c-src" `
+              --nghttp2-source "$build/_deps/cgotel_nghttp2-src" `
               --expected-arch '${{ matrix.arch }}' `
               --linkage $linkage --output release-assets
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

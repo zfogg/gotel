@@ -25,7 +25,8 @@ signals), `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`,
 `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`,
 `OTEL_EXPORTER_OTLP_TIMEOUT` (positive milliseconds),
 `OTEL_EXPORTER_OTLP_CERTIFICATE` (PEM CA bundle), and
-`OTEL_EXPORTER_OTLP_PROTOCOL` (`http/protobuf` only). The
+`OTEL_EXPORTER_OTLP_PROTOCOL` (`http/protobuf`, or `grpc` with the optional native
+transport enabled). The
 `OTEL_EXPORTER_OTLP_{TRACES,METRICS,LOGS}_{ENDPOINT,HEADERS}` variants override
 their common settings. Signal endpoints are complete URLs; base endpoints gain
 `/v1/<signal>`. Empty variables are unset. `OTEL_SERVICE_NAME` wins over
@@ -40,6 +41,7 @@ timeouts, and invalid protocol/certificate configuration using synthetic media.
 ## Build and test
 
 ```sh
+python -m pip install -r c-gotel/tests/requirements-grpc.txt
 cmake -S c-gotel -B c-gotel/build -G Ninja -DCMAKE_C_COMPILER=clang -DCGOTEL_BUILD_TESTS=ON
 cmake --build c-gotel/build
 ctest --test-dir c-gotel/build --output-on-failure
@@ -59,7 +61,7 @@ the static form for release builds. `FETCHCONTENT_SOURCE_DIR_OTLP_C` supports
 offline caches.
 
 Tagged releases provide separate platform-specific static and shared library
-ZIPs. Both contain public headers; static ZIPs include `c-gotel` and `otlp-c`
+ZIPs. Both contain public headers; static ZIPs include `c-gotel`, `otlp-c`, and `nghttp2`
 archives, while shared ZIPs contain `c-gotel` plus any platform import library.
 Read each ZIP's `README.md` for external dependencies, toolchain requirements,
 and the runtime libraries needed by shared builds.
@@ -128,9 +130,49 @@ configured bounded flush, then `gotel_destroy`. Never free a host borrowed
 by an active scope or SQLite connection. Diagnostics are opt-in through
 `gotel_set_logger`; its callback must not recursively export its own logs.
 
-The transport is OTLP/HTTP protobuf. For remote HTTPS backends, send to a local
-OpenTelemetry Collector that handles TLS and forwards downstream. No telemetry
-is sent merely by linking the library; the application controls host creation.
+The default transport is OTLP/HTTP protobuf, with verified HTTPS support.
+No telemetry is sent merely by linking the library; the application controls
+host creation.
+
+## Native OTLP/gRPC
+
+Native gRPC support is built by default using pure-C nghttp2. Disable it with
+`-DCGOTEL_WITH_GRPC=OFF` to omit the HTTP/2 dependency. HTTP/protobuf remains the
+default export protocol. Set `options.protocol = "grpc"`, or opt into environment
+configuration with `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`. A build without gRPC
+rejects that selection. No upstream checkout is changed: the build stages and
+checks the pinned otlp-c sources, retaining its queues, protobuf encoding,
+batching, retry budgets, diagnostics, and caller-driven tick/drain lifecycle.
+
+gRPC endpoints are origins, for example `http://127.0.0.1:4317` for plaintext
+HTTP/2 or `https://collector.example.com:4317` for verified TLS. Omit `/v1/traces`
+and other HTTP paths; non-root paths are rejected. With no endpoint configured,
+gRPC uses `https://localhost:4317`. The endpoint helper and standard environment
+base endpoint set all three origins without appending HTTP signal paths.
+Signal-specific endpoint and header overrides work for gRPC as well. One host
+uses one protocol; conflicting per-signal protocol environment settings are
+rejected. Separate hosts can use different protocols.
+
+The transport implements unary Export RPCs for traces, metrics and logs, gRPC
+framing, HTTP/2 flow control, trailer status handling, bounded responses (4 MiB),
+and RetryInfo backpressure (subject to the exporter's configured backoff cap).
+Partial success is decoded by otlp-c and is not retried. Resource exhaustion is
+retried only when the server supplies valid RetryInfo. Metadata names must be
+lowercase gRPC keys; connection and reserved protocol headers cannot be overridden.
+TLS reuses the existing verified OpenSSL trust store and requires ALPN `h2`.
+
+This initial transport opens a connection per batch and runs one RPC at a time;
+it does not multiplex batches, pool connections, compress messages, support
+client certificates, or provide a general-purpose gRPC client. There are no new
+library threads. DNS retains the existing synchronous resolution behavior.
+Existing exporter HTTP diagnostic/status buckets represent mapped delivery
+classes for gRPC (200 success, 503 retryable, 400 permanent), not wire HTTP status.
+
+When building tests with gRPC enabled, install the test-only Python peers with
+`python -m pip install -r c-gotel/tests/requirements-grpc.txt`. CTest exercises a
+real grpcio server and malformed HTTP/2 peers, including large records, all three
+signals, metadata, environment configuration, retries, partial success, invalid
+frames/statuses, resets, GOAWAY, deadlines, TLS trust, identity and ALPN failure.
 
 ## HTTP
 

@@ -36,7 +36,11 @@ def add_file(archive: zipfile.ZipFile, source: Path, destination: str) -> None:
 
 
 def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
-              linkage: str, expected_arch: str | None = None) -> Path:
+              linkage: str, expected_arch: str | None = None,
+              nghttp2_source: Path | None = None) -> Path:
+    if 'CGOTEL_WITH_GRPC:BOOL=ON' not in (build / 'CMakeCache.txt').read_text(encoding='utf-8'):
+        raise ValueError('C release libraries must be built with CGOTEL_WITH_GRPC=ON')
+    nghttp2_source = nghttp2_source or build / '_deps' / 'cgotel_nghttp2-src'
     name = archive_name(tag, linkage, expected_arch)
     path = output / f"{name}.zip"
     system = platform.system()
@@ -45,6 +49,8 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
         suffix = ".lib" if system == "Windows" else ".a"
         gotel_libs = [build / "src" / ("c-gotel.lib" if system == "Windows" else "libc-gotel.a")]
         gotel_libs.append(build / "_deps" / "otlp_c-build" / ("otlp_c.lib" if system == "Windows" else "libotlp_c.a"))
+        gotel_libs.append(build / "_deps" / "cgotel_nghttp2-build" / "lib" /
+                          ("nghttp2.lib" if system == "Windows" else "libnghttp2.a"))
     elif system == "Windows":
         gotel_libs = [build / "src" / "c-gotel.dll", build / "src" / "c-gotel.lib"]
     else:
@@ -59,6 +65,7 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
             (readme, "README.md"),
             (ROOT / "c-gotel" / "README.md", "API.md"),
             (otlp_source / "LICENSE", "third-party/otlp-c-LICENSE"),
+            (nghttp2_source / "COPYING", "third-party/nghttp2-COPYING"),
         ):
             add_file(archive, source, f"{name}/{destination}")
         for source in gotel_libs:
@@ -108,6 +115,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--build", type=Path)
     parser.add_argument("--otlp-source", type=Path)
+    parser.add_argument("--nghttp2-source", type=Path)
     parser.add_argument("--tarball", type=Path)
     parser.add_argument("--expected-arch", choices=("x64", "arm64"))
     parser.add_argument("--linkage", choices=("static", "shared"), default="static")
@@ -118,7 +126,7 @@ def main() -> None:
         if not args.build or not args.otlp_source:
             parser.error("C packaging needs --build and --otlp-source")
         path = package_c(tag, args.build, args.otlp_source, args.output,
-                         args.linkage, args.expected_arch)
+                         args.linkage, args.expected_arch, args.nghttp2_source)
     else:
         if not args.tarball:
             parser.error("TypeScript packaging needs --tarball")

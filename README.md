@@ -137,7 +137,8 @@ span/shutdown helpers in the root package.
 [`c-gotel`](c-gotel/) is a pure-C telemetry host for native applications. It
 provides named trace scopes, correlated logs, cumulative operation metrics,
 resource detection, bounded HTTP names, and optional SQLite query spans over
-OTLP/HTTP protobuf. It needs no Go runtime or C++ SDK. The SQLite adapter
+OTLP/HTTP protobuf, with native OTLP/gRPC support enabled by default. It needs
+no Go runtime or C++ SDK. The SQLite adapter
 attaches to an existing connection; your application keeps using ordinary
 SQLite calls. SQL inspection also works when SQLite support is off.
 
@@ -159,7 +160,13 @@ The default is a static library; `-DBUILD_SHARED_LIBS=ON` selects a shared
 library. SQLite is enabled by default; `-DCGOTEL_WITH_SQLITE=OFF` excludes its
 adapter. A parent project can pass its utf8proc and PCRE2 targets, or CMake
 resolves them. The [C library guide](c-gotel/README.md) has the target names,
-platform build details, and full lifecycle.
+platform build details, and full lifecycle. For native gRPC, set
+`options.protocol = "grpc"` (or
+`OTEL_EXPORTER_OTLP_PROTOCOL=grpc` when applying environment configuration).
+Use an origin such as `https://collector.example.com:4317`, without HTTP signal
+paths. The gRPC transport uses nghttp2 with the existing verified TLS
+implementation; it does not start library threads. Build with
+`-DCGOTEL_WITH_GRPC=OFF` to omit gRPC support and its HTTP/2 dependency.
 
 The integration follows your application's own loop: declare a fixed operation
 catalog, create a host, call `gotel_begin`/`gotel_end` around work, and call

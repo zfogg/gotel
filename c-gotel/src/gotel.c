@@ -78,6 +78,11 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
     gotel_destroy(h);
     return OTLP_ERR_NOMEM;
   }
+  otlp_status_t protocol_status = gotel_protocol_configure(h);
+  if (protocol_status != OTLP_OK) {
+    gotel_destroy(h);
+    return protocol_status;
+  }
   otlp_status_t header_status = gotel_signal_headers(h);
   if (header_status != OTLP_OK) {
     gotel_destroy(h);

@@ -26,7 +26,8 @@ otlp_status_t gotel_options_set_endpoint(gotel_options_t *o, gotel_env_storage_t
   while (n && base[n - 1] == '/')
     --n;
   char *buffers[] = {s->exporter.endpoint, s->exporter.metrics_endpoint, s->exporter.logs_endpoint};
-  const char *paths[] = {"/v1/traces", "/v1/metrics", "/v1/logs"};
+  bool grpc = o->protocol && !strcmp(o->protocol, "grpc");
+  const char *paths[] = {grpc ? "" : "/v1/traces", grpc ? "" : "/v1/metrics", grpc ? "" : "/v1/logs"};
   const char **fields[] = {&o->exporter.endpoint, &o->exporter.metrics_endpoint, &o->exporter.logs_endpoint};
   for (size_t i = 0; i < 3; ++i) {
     if (n + strlen(paths[i]) >= sizeof(s->exporter.endpoint))
@@ -55,6 +56,25 @@ otlp_status_t gotel_options_apply_env(gotel_options_t *o, gotel_env_storage_t *s
   }
   const otlp_resource_attr_t *resources = o->exporter.resource_attributes;
   size_t count = o->exporter.n_resource_attributes;
+  const char *protocol = env("OTEL_EXPORTER_OTLP_PROTOCOL");
+  if (protocol) {
+    if (!strcmp(protocol, "http/protobuf"))
+      o->protocol = "http/protobuf";
+#ifdef CGOTEL_WITH_GRPC
+    else if (!strcmp(protocol, "grpc"))
+      o->protocol = "grpc";
+#endif
+    else
+      return OTLP_ERR_INVALID_ARGUMENT;
+  }
+  /* Mixed per-signal protocols are not supported by this host API. Fail explicitly. */
+  const char *protocol_names[] = {"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
+                                 "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL"};
+  for (size_t i = 0; i < 3; ++i) {
+    const char *value = env(protocol_names[i]);
+    if (value && strcmp(value, o->protocol ? o->protocol : "http/protobuf"))
+      return OTLP_ERR_INVALID_ARGUMENT;
+  }
   otlp_status_t status = otlp_exporter_opts_apply_env(&o->exporter, &s->exporter);
   if (status != OTLP_OK)
     return status;
@@ -101,6 +121,35 @@ otlp_status_t gotel_options_apply_env(gotel_options_t *o, gotel_env_storage_t *s
   if (env("OTEL_EXPORTER_OTLP_CERTIFICATE"))
     o->tls_ca_file = env("OTEL_EXPORTER_OTLP_CERTIFICATE");
   return OTLP_OK;
+}
+
+otlp_status_t gotel_protocol_configure(gotel_host_t *h) {
+  if (!h->options.protocol || !strcmp(h->options.protocol, "http/protobuf"))
+    return OTLP_OK;
+#ifdef CGOTEL_WITH_GRPC
+  if (!strcmp(h->options.protocol, "grpc")) {
+    static const char *paths[] = {
+      "/opentelemetry.proto.collector.trace.v1.TraceService/Export",
+      "/opentelemetry.proto.collector.metrics.v1.MetricsService/Export",
+      "/opentelemetry.proto.collector.logs.v1.LogsService/Export"};
+    const char *endpoints[] = {h->options.exporter.endpoint, h->options.exporter.metrics_endpoint,
+                              h->options.exporter.logs_endpoint};
+    for (size_t i = 0; i < 3; ++i) {
+      struct otlp_http_url url;
+      const char *endpoint = endpoints[i] ? endpoints[i] : endpoints[0];
+      if (!endpoint)
+        endpoint = "https://localhost:4317";
+      otlp_status_t status = otlp_http_parse_url(endpoint, &url);
+      if (status != OTLP_OK || strcmp(url.path, "/"))
+        return OTLP_ERR_INVALID_ARGUMENT;
+      url.grpc = 1;
+      strcpy(url.path, paths[i]);
+      h->exporter->sig[i].url = url;
+    }
+    return OTLP_OK;
+  }
+#endif
+  return OTLP_ERR_INVALID_ARGUMENT;
 }
 
 otlp_status_t gotel_signal_headers(gotel_host_t *h) {

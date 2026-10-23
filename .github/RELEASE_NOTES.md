@@ -6,9 +6,12 @@ Linux, macOS, and Windows. Each ZIP contains public headers, licenses, and a
 and `static` or `shared` linkage. Use a compatible C toolchain and point its
 include path at `include/`.
 
-Static ZIPs contain `c-gotel` and `otlp-c` archives. Shared ZIPs contain the
+Native OTLP/gRPC support is included in all C releases. Select it with
+`options.protocol = "grpc"`; HTTP/protobuf remains the default export protocol.
+Static ZIPs contain `c-gotel`, `otlp-c`, and `nghttp2` archives, linked in that order. Shared ZIPs contain the
 `c-gotel` `.so`/`.dylib` and its versioned names, or on Windows `c-gotel.dll`
-and its `.lib` import library. `otlp-c` is linked into the shared library.
+and its `.lib` import library. `otlp-c` and nghttp2 are linked into the shared library, so neither needs a
+separate runtime library. The nghttp2 license is included in both ZIP types.
 The shared ZIPs do not bundle third-party runtime libraries: install matching
 PCRE2, utf8proc, OpenSSL, and SQLite libraries and make their `.so`, `.dylib`,
 or `.dll` files available to the system loader. On Windows, place the DLLs
