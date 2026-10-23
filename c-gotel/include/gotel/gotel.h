@@ -36,6 +36,14 @@ typedef struct {
    * Callbacks must be thread-safe and must not reenter the exporter. */
   otlp_event_fn exporter_event;
   void *exporter_event_context;
+  /* Resource detection matches otelhost: host, OS, process and SDK identity.
+   * Explicit exporter.resource_attributes override detected scalar attributes.
+   * argv is copied at create; NULL discovers native process arguments. Supply
+   * a redacted argv when command arguments may contain credentials. */
+  int argc;
+  const char *const *argv;
+  bool omit_command_args;
+  bool disable_resource_detection;
 } gotel_options_t;
 /* Options are copied; exporter strings/resources are copied during create.
  * The operation catalog and its names must remain alive until destroy. No internal threads.
@@ -83,18 +91,28 @@ otlp_status_t gotel_http_name(char *output, size_t capacity, const char *prefix,
                               const char *target);
 void gotel_http_attributes(gotel_scope_t *scope, const char *method, int status);
 #ifdef CGOTEL_WITH_SQLITE
+#include <gotel/sql.h>
 #include <sqlite3.h>
 typedef struct {
   const char *name;
   const char *sql;
 } gotel_query_t;
 typedef struct gotel_sqlite gotel_sqlite_t;
+typedef struct {
+  const char *namespace_name;
+  gotel_sql_options_t sql;
+} gotel_sqlite_options_t;
 /* Explicitly owns sqlite3_trace_v2's single callback slot. Attach once before
  * use; detach after statements finish and before close/host destruction.
  * Queries/prefix must remain alive through detach. Close automatically detaches.
  * No expanded SQL is read. */
 otlp_status_t gotel_sqlite_attach(gotel_host_t *host, sqlite3 *db, const char *prefix, const gotel_query_t *queries,
                                   size_t count, gotel_sqlite_t **out);
+/* Options are copied; namespace_name has the same lifetime as prefix/queries.
+ * The adapter always uses SQLite quoting; other SQL consumers use sql.h. */
+otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *host, sqlite3 *db, const char *prefix,
+                                               const gotel_query_t *queries, size_t count,
+                                               const gotel_sqlite_options_t *options, gotel_sqlite_t **out);
 void gotel_sqlite_detach(gotel_sqlite_t *attachment);
 const gotel_query_t *gotel_query_find(const gotel_query_t *queries, size_t count, const char *sql);
 #endif

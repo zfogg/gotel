@@ -1,0 +1,4802 @@
+[
+  {
+    "query": " (SELECT * FROM accounts WHERE token='secret' LIMIT 1) b ON a.id=b.id LIMIT $1",
+    "dialect": 0,
+    "safe": true,
+    "text": "(SELECT * FROM accounts WHERE token=? LIMIT ?) b ON a.id=b.id LIMIT ?",
+    "summary": "(SELECT … FROM accounts WHERE … LIMIT 1) LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": " (SELECT * FROM accounts WHERE token='secret' LIMIT 1) b ON a.id=b.id LIMIT $1",
+    "dialect": 1,
+    "safe": true,
+    "text": "(SELECT * FROM accounts WHERE token=? LIMIT ?) b ON a.id=b.id LIMIT ?",
+    "summary": "(SELECT … FROM accounts WHERE … LIMIT 1) LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": " (SELECT * FROM accounts WHERE token='secret' LIMIT 1) b ON a.id=b.id LIMIT $1",
+    "dialect": 2,
+    "safe": true,
+    "text": "(SELECT * FROM accounts WHERE token=? LIMIT ?) b ON a.id=b.id LIMIT ?",
+    "summary": "(SELECT … FROM accounts WHERE … LIMIT 1) LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": " (SELECT * FROM accounts WHERE token='secret' LIMIT 1) b ON a.id=b.id LIMIT $1",
+    "dialect": 3,
+    "safe": true,
+    "text": "(SELECT * FROM accounts WHERE token=? LIMIT ?) b ON a.id=b.id LIMIT ?",
+    "summary": "(SELECT … FROM accounts WHERE … LIMIT 1) LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": " (SELECT * FROM accounts WHERE token='secret' LIMIT 1) b ON a.id=b.id LIMIT $1",
+    "dialect": 4,
+    "safe": true,
+    "text": "(SELECT * FROM accounts WHERE token=? LIMIT ?) b ON a.id=b.id LIMIT ?",
+    "summary": "(SELECT … FROM accounts WHERE … LIMIT 1) LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "(SELECT * FROM a LIMIT 1) UNION ALL (SELECT * FROM b LIMIT $1) ORDER BY id LIMIT 10",
+    "dialect": 0,
+    "safe": true,
+    "text": "(SELECT * FROM a LIMIT ?) UNION ALL (SELECT * FROM b LIMIT ?) ORDER BY id LIMIT ?",
+    "summary": "(SELECT … FROM a LIMIT 1) UNION ALL (SELECT … FROM b LIMIT ?) ORDER BY … LIMIT 10",
+    "operation": "SELECT"
+  },
+  {
+    "query": "(SELECT * FROM a LIMIT 1) UNION ALL (SELECT * FROM b LIMIT $1) ORDER BY id LIMIT 10",
+    "dialect": 1,
+    "safe": true,
+    "text": "(SELECT * FROM a LIMIT ?) UNION ALL (SELECT * FROM b LIMIT ?) ORDER BY id LIMIT ?",
+    "summary": "(SELECT … FROM a LIMIT 1) UNION ALL (SELECT … FROM b LIMIT ?) ORDER BY … LIMIT 10",
+    "operation": "SELECT"
+  },
+  {
+    "query": "(SELECT * FROM a LIMIT 1) UNION ALL (SELECT * FROM b LIMIT $1) ORDER BY id LIMIT 10",
+    "dialect": 2,
+    "safe": true,
+    "text": "(SELECT * FROM a LIMIT ?) UNION ALL (SELECT * FROM b LIMIT ?) ORDER BY id LIMIT ?",
+    "summary": "(SELECT … FROM a LIMIT 1) UNION ALL (SELECT … FROM b LIMIT ?) ORDER BY … LIMIT 10",
+    "operation": "SELECT"
+  },
+  {
+    "query": "(SELECT * FROM a LIMIT 1) UNION ALL (SELECT * FROM b LIMIT $1) ORDER BY id LIMIT 10",
+    "dialect": 3,
+    "safe": true,
+    "text": "(SELECT * FROM a LIMIT ?) UNION ALL (SELECT * FROM b LIMIT ?) ORDER BY id LIMIT ?",
+    "summary": "(SELECT … FROM a LIMIT 1) UNION ALL (SELECT … FROM b LIMIT ?) ORDER BY … LIMIT 10",
+    "operation": "SELECT"
+  },
+  {
+    "query": "(SELECT * FROM a LIMIT 1) UNION ALL (SELECT * FROM b LIMIT $1) ORDER BY id LIMIT 10",
+    "dialect": 4,
+    "safe": true,
+    "text": "(SELECT * FROM a LIMIT ?) UNION ALL (SELECT * FROM b LIMIT ?) ORDER BY id LIMIT ?",
+    "summary": "(SELECT … FROM a LIMIT 1) UNION ALL (SELECT … FROM b LIMIT ?) ORDER BY … LIMIT 10",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindAccount :one\nSELECT id FROM accounts WHERE token='secret'",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT id FROM accounts WHERE token=?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindAccount :one\nSELECT id FROM accounts WHERE token='secret'",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT id FROM accounts WHERE token=?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindAccount :one\nSELECT id FROM accounts WHERE token='secret'",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT id FROM accounts WHERE token=?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindAccount :one\nSELECT id FROM accounts WHERE token='secret'",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT id FROM accounts WHERE token=?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindAccount :one\nSELECT id FROM accounts WHERE token='secret'",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT id FROM accounts WHERE token=?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindBars :many\nWITH recent AS (SELECT * FROM bars WHERE ts\u003e$1) SELECT * FROM recent",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH recent AS (SELECT * FROM bars WHERE ts\u003e?) SELECT * FROM recent",
+    "summary": "WITH recent AS (SELECT … FROM bars WHERE …) SELECT … FROM recent",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindBars :many\nWITH recent AS (SELECT * FROM bars WHERE ts\u003e$1) SELECT * FROM recent",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH recent AS (SELECT * FROM bars WHERE ts\u003e?) SELECT * FROM recent",
+    "summary": "WITH recent AS (SELECT … FROM bars WHERE …) SELECT … FROM recent",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindBars :many\nWITH recent AS (SELECT * FROM bars WHERE ts\u003e$1) SELECT * FROM recent",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH recent AS (SELECT * FROM bars WHERE ts\u003e?) SELECT * FROM recent",
+    "summary": "WITH recent AS (SELECT … FROM bars WHERE …) SELECT … FROM recent",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindBars :many\nWITH recent AS (SELECT * FROM bars WHERE ts\u003e$1) SELECT * FROM recent",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH recent AS (SELECT * FROM bars WHERE ts\u003e?) SELECT * FROM recent",
+    "summary": "WITH recent AS (SELECT … FROM bars WHERE …) SELECT … FROM recent",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindBars :many\nWITH recent AS (SELECT * FROM bars WHERE ts\u003e$1) SELECT * FROM recent",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH recent AS (SELECT * FROM bars WHERE ts\u003e?) SELECT * FROM recent",
+    "summary": "WITH recent AS (SELECT … FROM bars WHERE …) SELECT … FROM recent",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindWidgets :many\nSELECT * FROM widgets WHERE tenant_id = $1 AND status = $2",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE tenant_id = ? AND status = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindWidgets :many\nSELECT * FROM widgets WHERE tenant_id = $1 AND status = $2",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE tenant_id = ? AND status = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindWidgets :many\nSELECT * FROM widgets WHERE tenant_id = $1 AND status = $2",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE tenant_id = ? AND status = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindWidgets :many\nSELECT * FROM widgets WHERE tenant_id = $1 AND status = $2",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE tenant_id = ? AND status = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: FindWidgets :many\nSELECT * FROM widgets WHERE tenant_id = $1 AND status = $2",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE tenant_id = ? AND status = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: GetBars :many\nSELECT * FROM bars WHERE symbol = $1 AND n \u003e 42",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: GetBars :many\nSELECT * FROM bars WHERE symbol = $1 AND n \u003e 42",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: GetBars :many\nSELECT * FROM bars WHERE symbol = $1 AND n \u003e 42",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: GetBars :many\nSELECT * FROM bars WHERE symbol = $1 AND n \u003e 42",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "-- name: GetBars :many\nSELECT * FROM bars WHERE symbol = $1 AND n \u003e 42",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "DELETE FROM a WHERE id=777 ORDER BY id LIMIT 5",
+    "dialect": 0,
+    "safe": true,
+    "text": "DELETE FROM a WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "DELETE FROM a WHERE … ORDER BY … LIMIT 5",
+    "operation": "DELETE"
+  },
+  {
+    "query": "DELETE FROM a WHERE id=777 ORDER BY id LIMIT 5",
+    "dialect": 1,
+    "safe": true,
+    "text": "DELETE FROM a WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "DELETE FROM a WHERE … ORDER BY … LIMIT 5",
+    "operation": "DELETE"
+  },
+  {
+    "query": "DELETE FROM a WHERE id=777 ORDER BY id LIMIT 5",
+    "dialect": 2,
+    "safe": true,
+    "text": "DELETE FROM a WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "DELETE FROM a WHERE … ORDER BY … LIMIT 5",
+    "operation": "DELETE"
+  },
+  {
+    "query": "DELETE FROM a WHERE id=777 ORDER BY id LIMIT 5",
+    "dialect": 3,
+    "safe": true,
+    "text": "DELETE FROM a WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "DELETE FROM a WHERE … ORDER BY … LIMIT 5",
+    "operation": "DELETE"
+  },
+  {
+    "query": "DELETE FROM a WHERE id=777 ORDER BY id LIMIT 5",
+    "dialect": 4,
+    "safe": true,
+    "text": "DELETE FROM a WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "DELETE FROM a WHERE … ORDER BY … LIMIT 5",
+    "operation": "DELETE"
+  },
+  {
+    "query": "EXPLAIN (",
+    "dialect": 0,
+    "safe": true,
+    "text": "EXPLAIN (",
+    "summary": "EXPLAIN",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "EXPLAIN (",
+    "dialect": 1,
+    "safe": true,
+    "text": "EXPLAIN (",
+    "summary": "EXPLAIN",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "EXPLAIN (",
+    "dialect": 2,
+    "safe": true,
+    "text": "EXPLAIN (",
+    "summary": "EXPLAIN",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "EXPLAIN (",
+    "dialect": 3,
+    "safe": true,
+    "text": "EXPLAIN (",
+    "summary": "EXPLAIN",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "EXPLAIN (",
+    "dialect": 4,
+    "safe": true,
+    "text": "EXPLAIN (",
+    "summary": "EXPLAIN",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "dialect": 0,
+    "safe": true,
+    "text": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "summary": "EXPLAIN ANALYZE SELECT … FROM bars",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "dialect": 1,
+    "safe": true,
+    "text": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "summary": "EXPLAIN ANALYZE SELECT … FROM bars",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "dialect": 2,
+    "safe": true,
+    "text": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "summary": "EXPLAIN ANALYZE SELECT … FROM bars",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "dialect": 3,
+    "safe": true,
+    "text": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "summary": "EXPLAIN ANALYZE SELECT … FROM bars",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "dialect": 4,
+    "safe": true,
+    "text": "EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM bars",
+    "summary": "EXPLAIN ANALYZE SELECT … FROM bars",
+    "operation": "EXPLAIN"
+  },
+  {
+    "query": "INSERT INTO a SELECT id FROM b WHERE b.active=true ON CONFLICT(id) DO NOTHING RETURNING id",
+    "dialect": 0,
+    "safe": true,
+    "text": "INSERT INTO a SELECT id FROM b WHERE b.active=? ON CONFLICT(id) DO NOTHING RETURNING id",
+    "summary": "INSERT INTO a SELECT … FROM b WHERE … ON CONFLICT DO NOTHING RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT id FROM b WHERE b.active=true ON CONFLICT(id) DO NOTHING RETURNING id",
+    "dialect": 1,
+    "safe": true,
+    "text": "INSERT INTO a SELECT id FROM b WHERE b.active=? ON CONFLICT(id) DO NOTHING RETURNING id",
+    "summary": "INSERT INTO a SELECT … FROM b WHERE … ON CONFLICT DO NOTHING RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT id FROM b WHERE b.active=true ON CONFLICT(id) DO NOTHING RETURNING id",
+    "dialect": 2,
+    "safe": true,
+    "text": "INSERT INTO a SELECT id FROM b WHERE b.active=? ON CONFLICT(id) DO NOTHING RETURNING id",
+    "summary": "INSERT INTO a SELECT … FROM b WHERE … ON CONFLICT DO NOTHING RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT id FROM b WHERE b.active=true ON CONFLICT(id) DO NOTHING RETURNING id",
+    "dialect": 3,
+    "safe": true,
+    "text": "INSERT INTO a SELECT id FROM b WHERE b.active=? ON CONFLICT(id) DO NOTHING RETURNING id",
+    "summary": "INSERT INTO a SELECT … FROM b WHERE … ON CONFLICT DO NOTHING RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT id FROM b WHERE b.active=true ON CONFLICT(id) DO NOTHING RETURNING id",
+    "dialect": 4,
+    "safe": true,
+    "text": "INSERT INTO a SELECT id FROM b WHERE b.active=? ON CONFLICT(id) DO NOTHING RETURNING id",
+    "summary": "INSERT INTO a SELECT … FROM b WHERE … ON CONFLICT DO NOTHING RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "dialect": 0,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "summary": "INSERT INTO a SELECT unnest(…) ON CONFLICT DO UPDATE SET …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "dialect": 1,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "summary": "INSERT INTO a SELECT unnest(…) ON CONFLICT DO UPDATE SET …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "dialect": 2,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "summary": "INSERT INTO a SELECT unnest(…) ON CONFLICT DO UPDATE SET …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "dialect": 3,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "summary": "INSERT INTO a SELECT unnest(…) ON CONFLICT DO UPDATE SET …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "dialect": 4,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id",
+    "summary": "INSERT INTO a SELECT unnest(…) ON CONFLICT DO UPDATE SET …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest(CASE WHEN cardinality($1::text[]) = 0 THEN ARRAY[cardinality($2::text[])] ELSE $1 END) ON CONFLICT(id) DO NOTHING",
+    "dialect": 0,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(CASE WHEN cardinality(?::text[]) = ? THEN ARRAY[cardinality($2::text[])] ELSE ? END) ON CONFLICT(id) DO NOTHING",
+    "summary": "INSERT INTO a SELECT unnest(…)",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest(CASE WHEN cardinality($1::text[]) = 0 THEN ARRAY[cardinality($2::text[])] ELSE $1 END) ON CONFLICT(id) DO NOTHING",
+    "dialect": 1,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(CASE WHEN cardinality(?::text[]) = ? THEN ARRAY[cardinality($2::text[])] ELSE ? END) ON CONFLICT(id) DO NOTHING",
+    "summary": "INSERT INTO a SELECT unnest(…)",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest(CASE WHEN cardinality($1::text[]) = 0 THEN ARRAY[cardinality($2::text[])] ELSE $1 END) ON CONFLICT(id) DO NOTHING",
+    "dialect": 2,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(CASE WHEN cardinality(?::text[]) = ? THEN ARRAY[cardinality(?::text[])] ELSE ? END) ON CONFLICT(id) DO NOTHING",
+    "summary": "INSERT INTO a SELECT unnest(…) ON CONFLICT DO NOTHING",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest(CASE WHEN cardinality($1::text[]) = 0 THEN ARRAY[cardinality($2::text[])] ELSE $1 END) ON CONFLICT(id) DO NOTHING",
+    "dialect": 3,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(CASE WHEN cardinality(?::text[]) = ? THEN ARRAY[cardinality(?::text[])] ELSE ? END) ON CONFLICT(id) DO NOTHING",
+    "summary": "INSERT INTO a SELECT unnest(…) ON CONFLICT DO NOTHING",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO a SELECT unnest(CASE WHEN cardinality($1::text[]) = 0 THEN ARRAY[cardinality($2::text[])] ELSE $1 END) ON CONFLICT(id) DO NOTHING",
+    "dialect": 4,
+    "safe": true,
+    "text": "INSERT INTO a SELECT unnest(CASE WHEN cardinality(?::text[]) = ? THEN ARRAY[cardinality(?::text[])] ELSE ? END) ON CONFLICT(id) DO NOTHING",
+    "summary": "INSERT INTO a SELECT unnest(…) ON CONFLICT DO NOTHING",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "dialect": 0,
+    "safe": true,
+    "text": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "summary": "INSERT INTO results SELECT … FROM signals ON CONFLICT DO UPDATE SET … RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "dialect": 1,
+    "safe": true,
+    "text": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "summary": "INSERT INTO results SELECT … FROM signals ON CONFLICT DO UPDATE SET … RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "dialect": 2,
+    "safe": true,
+    "text": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "summary": "INSERT INTO results SELECT … FROM signals ON CONFLICT DO UPDATE SET … RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "dialect": 3,
+    "safe": true,
+    "text": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "summary": "INSERT INTO results SELECT … FROM signals ON CONFLICT DO UPDATE SET … RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "dialect": 4,
+    "safe": true,
+    "text": "INSERT INTO results (id) SELECT id FROM signals ON CONFLICT(id) DO UPDATE SET id=excluded.id RETURNING id",
+    "summary": "INSERT INTO results SELECT … FROM signals ON CONFLICT DO UPDATE SET … RETURNING …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results(id) VALUES($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "dialect": 0,
+    "safe": true,
+    "text": "INSERT INTO results(id) VALUES(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "summary": "INSERT INTO results VALUES … ON CONFLICT DO UPDATE SET … WHERE …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results(id) VALUES($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "dialect": 1,
+    "safe": true,
+    "text": "INSERT INTO results(id) VALUES(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "summary": "INSERT INTO results VALUES … ON CONFLICT DO UPDATE SET … WHERE …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results(id) VALUES($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "dialect": 2,
+    "safe": true,
+    "text": "INSERT INTO results(id) VALUES(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "summary": "INSERT INTO results VALUES … ON CONFLICT DO UPDATE SET … WHERE …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results(id) VALUES($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "dialect": 3,
+    "safe": true,
+    "text": "INSERT INTO results(id) VALUES(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "summary": "INSERT INTO results VALUES … ON CONFLICT DO UPDATE SET … WHERE …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "INSERT INTO results(id) VALUES($1) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "dialect": 4,
+    "safe": true,
+    "text": "INSERT INTO results(id) VALUES(?) ON CONFLICT(id) DO UPDATE SET id=excluded.id WHERE results.id IS DISTINCT FROM excluded.id",
+    "summary": "INSERT INTO results VALUES … ON CONFLICT DO UPDATE SET … WHERE …",
+    "operation": "INSERT"
+  },
+  {
+    "query": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "dialect": 0,
+    "safe": true,
+    "text": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "summary": "MERGE INTO inventory AS i USING changes AS c ON i.id=c.id WHEN MATCHED THEN UPDATE SET …",
+    "operation": "MERGE"
+  },
+  {
+    "query": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "dialect": 1,
+    "safe": true,
+    "text": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "summary": "MERGE INTO inventory AS i USING changes AS c ON i.id=c.id WHEN MATCHED THEN UPDATE SET …",
+    "operation": "MERGE"
+  },
+  {
+    "query": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "dialect": 2,
+    "safe": true,
+    "text": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "summary": "MERGE INTO inventory AS i USING changes AS c ON i.id=c.id WHEN MATCHED THEN UPDATE SET …",
+    "operation": "MERGE"
+  },
+  {
+    "query": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "dialect": 3,
+    "safe": true,
+    "text": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "summary": "MERGE INTO inventory AS i USING changes AS c ON i.id=c.id WHEN MATCHED THEN UPDATE SET …",
+    "operation": "MERGE"
+  },
+  {
+    "query": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "dialect": 4,
+    "safe": true,
+    "text": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
+    "summary": "MERGE INTO inventory AS i USING changes AS c ON i.id=c.id WHEN MATCHED THEN UPDATE SET …",
+    "operation": "MERGE"
+  },
+  {
+    "query": "SELECT \"secret",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT \"secret",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT \"secret",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT \"secret",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT \"secret",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $$secret",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $$secret",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $$secret",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $$secret",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $$secret",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $$secret$$",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $$secret$$",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $$secret$$",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $$secret$$",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $$secret$$",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1, :name, @other, %s, %(value)s, ?12",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1, :name, @other, %s, %(value)s, ?12",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1, :name, @other, %s, %(value)s, ?12",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1, :name, @other, %s, %(value)s, ?12",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $1, :name, @other, %s, %(value)s, ?12",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $private$top secret$private$",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $private$top secret$private$",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $private$top secret$private$",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $private$top secret$private$",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $private$top secret$private$",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT $tag$secret$other$",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $tag$secret$other$",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $tag$secret$other$",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $tag$secret$other$",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT $tag$secret$other$",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT '",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT '",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT '",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT '",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT '",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'a\\'secret', \"other\\\"secret\", _utf8mb4'private' # hidden\nFROM t",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'a\\'secret', \"other\\\"secret\", _utf8mb4'private' # hidden\nFROM t",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'a\\'secret', \"other\\\"secret\", _utf8mb4'private' # hidden\nFROM t",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'a\\'secret', \"other\\\"secret\", _utf8mb4'private' # hidden\nFROM t",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'a\\'secret', \"other\\\"secret\", _utf8mb4'private' # hidden\nFROM t",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?, ? FROM t",
+    "summary": "SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'a\\'secret\\'b'",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'a\\'secret\\'b'",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'a\\'secret\\'b'",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'a\\'secret\\'b'",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'a\\'secret\\'b'",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'secret",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'secret",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'secret",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'secret",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'secret FROM passwords' AS value",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ? AS value",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret FROM passwords' AS value",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ? AS value",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret FROM passwords' AS value",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ? AS value",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret FROM passwords' AS value",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ? AS value",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret FROM passwords' AS value",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ? AS value",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret'",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret'",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret'",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret'",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'secret'",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 'unterminated",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'unterminated",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'unterminated",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'unterminated",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 'unterminated",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT * FROM ",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM",
+    "summary": "SELECT … FROM …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM ",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM",
+    "summary": "SELECT … FROM …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM ",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM",
+    "summary": "SELECT … FROM …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM ",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM",
+    "summary": "SELECT … FROM …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM ",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM",
+    "summary": "SELECT … FROM …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?",
+    "summary": "SELECT … FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?",
+    "summary": "SELECT … FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?",
+    "summary": "SELECT … FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?",
+    "summary": "SELECT … FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM ?.? AS ? JOIN ? ON ?",
+    "summary": "SELECT … FROM … JOIN … ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "summary": "SELECT … FROM (accounts AS a JOIN holdings AS h ON h.account_id=a.id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "summary": "SELECT … FROM (accounts AS a JOIN holdings AS h ON h.account_id=a.id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "summary": "SELECT … FROM (accounts AS a JOIN holdings AS h ON h.account_id=a.id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "summary": "SELECT … FROM (accounts AS a JOIN holdings AS h ON h.account_id=a.id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM (accounts a JOIN holdings h ON h.account_id=a.id)",
+    "summary": "SELECT … FROM (accounts AS a JOIN holdings AS h ON h.account_id=a.id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=1.23e45::numeric",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=?::numeric",
+    "summary": "SELECT … FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=?::numeric",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=1.23e45::numeric",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=?::numeric",
+    "summary": "SELECT … FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=?::numeric",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=1.23e45::numeric",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=?::numeric",
+    "summary": "SELECT … FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=?::numeric",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=1.23e45::numeric",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=?::numeric",
+    "summary": "SELECT … FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=?::numeric",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a AS \"left\" JOIN b AS \"right\" ON \"left\".\"key\"=\"right\".\"key\" AND b.v=1.23e45::numeric",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a AS ? JOIN b AS ? ON ?.?=?.? AND b.v=?::numeric",
+    "summary": "SELECT … FROM a JOIN b ON ?.?=?.? AND b.v=?::numeric",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ? ROWS WITH TIES",
+    "summary": "SELECT … FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ? ROWS WITH TIES",
+    "summary": "SELECT … FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ? ROWS WITH TIES",
+    "summary": "SELECT … FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ? ROWS WITH TIES",
+    "summary": "SELECT … FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ? ROWS WITH TIES",
+    "summary": "SELECT … FROM a FETCH FIRST 3 ROWS WITH TIES",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "summary": "SELECT … FROM a FETCH FIRST 1 ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "summary": "SELECT … FROM a FETCH FIRST 1 ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "summary": "SELECT … FROM a FETCH FIRST 1 ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "summary": "SELECT … FROM a FETCH FIRST 1 ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a FETCH FIRST ROW ONLY",
+    "summary": "SELECT … FROM a FETCH FIRST 1 ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT $1) AS recent ON true UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "summary": "SELECT … FROM a JOIN LATERAL (SELECT … FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT … FROM c JOIN d USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT $1) AS recent ON true UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "summary": "SELECT … FROM a JOIN LATERAL (SELECT … FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT … FROM c JOIN d USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT $1) AS recent ON true UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "summary": "SELECT … FROM a JOIN LATERAL (SELECT … FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT … FROM c JOIN d USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT $1) AS recent ON true UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "summary": "SELECT … FROM a JOIN LATERAL (SELECT … FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT … FROM c JOIN d USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT $1) AS recent ON true UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN LATERAL (SELECT * FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT * FROM c JOIN d USING(id)",
+    "summary": "SELECT … FROM a JOIN LATERAL (SELECT … FROM b LIMIT ?) AS recent ON ? UNION ALL SELECT … FROM c JOIN d USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -987 AND +654 OR b.v=$1))",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "summary": "SELECT … FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -987 AND +654 OR b.v=$1))",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "summary": "SELECT … FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -987 AND +654 OR b.v=$1))",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "summary": "SELECT … FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -987 AND +654 OR b.v=$1))",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "summary": "SELECT … FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -987 AND +654 OR b.v=$1))",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "summary": "SELECT … FROM a JOIN b ON (b.id=a.id AND (b.x BETWEEN -? AND +? OR b.v=?))",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e1 THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e1 THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e1 THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e1 THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e1 THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING(id)",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN a.id\u003e? THEN b.id ELSE a.id END=a.id LEFT JOIN c USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e 123 THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e 123 THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e 123 THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e 123 THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e 123 THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "summary": "SELECT … FROM a JOIN b ON CASE WHEN b.n \u003e ? THEN a.id ELSE b.id END = a.id LEFT JOIN c ON c.id IS NOT DISTINCT FROM b.id",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT 1) AND b.ts \u003e= now() - interval 'secret'",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT ?) AND b.ts \u003e= now() - interval ?",
+    "summary": "SELECT … FROM a JOIN b ON b.id IN (SELECT … FROM c JOIN d USING (id) LIMIT 1) AND b.ts \u003e= now() - interval ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT 1) AND b.ts \u003e= now() - interval 'secret'",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT ?) AND b.ts \u003e= now() - interval ?",
+    "summary": "SELECT … FROM a JOIN b ON b.id IN (SELECT … FROM c JOIN d USING (id) LIMIT 1) AND b.ts \u003e= now() - interval ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT 1) AND b.ts \u003e= now() - interval 'secret'",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT ?) AND b.ts \u003e= now() - interval ?",
+    "summary": "SELECT … FROM a JOIN b ON b.id IN (SELECT … FROM c JOIN d USING (id) LIMIT 1) AND b.ts \u003e= now() - interval ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT 1) AND b.ts \u003e= now() - interval 'secret'",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT ?) AND b.ts \u003e= now() - interval ?",
+    "summary": "SELECT … FROM a JOIN b ON b.id IN (SELECT … FROM c JOIN d USING (id) LIMIT 1) AND b.ts \u003e= now() - interval ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT 1) AND b.ts \u003e= now() - interval 'secret'",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.id IN (SELECT id FROM c JOIN d USING(id) LIMIT ?) AND b.ts \u003e= now() - interval ?",
+    "summary": "SELECT … FROM a JOIN b ON b.id IN (SELECT … FROM c JOIN d USING (id) LIMIT 1) AND b.ts \u003e= now() - interval ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=987",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=987",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=987",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=987",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=\"sentinel\" AND b.token=? AND b.n=987",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=? AND b.token=? AND b.n=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=? AND b.token=? AND b.n=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=$$sentinel$$ AND b.token=E'secret' AND b.number=0xDEAD AND b.flag=true /* hidden */",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=$$sentinel$$ AND b.token=E'secret' AND b.number=0xDEAD AND b.flag=true /* hidden */",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=$$sentinel$$ AND b.token=E'secret' AND b.number=0xDEAD AND b.flag=true /* hidden */",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=$$sentinel$$ AND b.token=E'secret' AND b.number=0xDEAD AND b.flag=true /* hidden */",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.secret=$$sentinel$$ AND b.token=E'secret' AND b.number=0xDEAD AND b.flag=true /* hidden */",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "summary": "SELECT … FROM a JOIN b ON b.secret=? AND b.token=? AND b.number=? AND b.flag=?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags = ARRAY['secret', 'private'] AND b.ids[123] = 456",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags = ARRAY['secret', 'private'] AND b.ids[123] = ?",
+    "summary": "SELECT … FROM a JOIN b ON b.tags = ARRAY['secret', 'private'] AND b.ids[123] = ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags = ARRAY['secret', 'private'] AND b.ids[123] = 456",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags = ARRAY['secret', 'private'] AND b.ids[123] = ?",
+    "summary": "SELECT … FROM a JOIN b ON b.tags = ARRAY['secret', 'private'] AND b.ids[123] = ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags = ARRAY['secret', 'private'] AND b.ids[123] = 456",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags = ARRAY[?, ?] AND b.ids[?] = ?",
+    "summary": "SELECT … FROM a JOIN b ON b.tags = ARRAY[?, ?] AND b.ids[?] = ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags = ARRAY['secret', 'private'] AND b.ids[123] = 456",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags = ARRAY[?, ?] AND b.ids[?] = ?",
+    "summary": "SELECT … FROM a JOIN b ON b.tags = ARRAY[?, ?] AND b.ids[?] = ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags = ARRAY['secret', 'private'] AND b.ids[123] = 456",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags = ARRAY[?, ?] AND b.ids[?] = ?",
+    "summary": "SELECT … FROM a JOIN b ON b.tags = ARRAY[?, ?] AND b.ids[?] = ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT id FROM c LIMIT 1)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT id FROM c LIMIT ?)",
+    "summary": "SELECT … FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT … FROM c LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT id FROM c LIMIT 1)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT id FROM c LIMIT ?)",
+    "summary": "SELECT … FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT … FROM c LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT id FROM c LIMIT 1)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags=ARRAY[?, ?] AND b.id IN (SELECT id FROM c LIMIT ?)",
+    "summary": "SELECT … FROM a JOIN b ON b.tags=ARRAY[?, ?] AND b.id IN (SELECT … FROM c LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT id FROM c LIMIT 1)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags=ARRAY[?, ?] AND b.id IN (SELECT id FROM c LIMIT ?)",
+    "summary": "SELECT … FROM a JOIN b ON b.tags=ARRAY[?, ?] AND b.id IN (SELECT … FROM c LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON b.tags=ARRAY['secret', 'private'] AND b.id IN (SELECT id FROM c LIMIT 1)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON b.tags=ARRAY[?, ?] AND b.id IN (SELECT id FROM c LIMIT ?)",
+    "summary": "SELECT … FROM a JOIN b ON b.tags=ARRAY[?, ?] AND b.id IN (SELECT … FROM c LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON coalesce(a.id, 444) = b.id, c",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "summary": "SELECT … FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON coalesce(a.id, 444) = b.id, c",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "summary": "SELECT … FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON coalesce(a.id, 444) = b.id, c",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "summary": "SELECT … FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON coalesce(a.id, 444) = b.id, c",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "summary": "SELECT … FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a JOIN b ON coalesce(a.id, 444) = b.id, c",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "summary": "SELECT … FROM a JOIN b ON coalesce(a.id, ?) = b.id, c",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT $1 OFFSET $2",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT ? OFFSET ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT $1 OFFSET $2",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT ? OFFSET ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT $1 OFFSET $2",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT ? OFFSET ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT $1 OFFSET $2",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT ? OFFSET ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT $1 OFFSET $2",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT ? OFFSET ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT 1)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT ?)",
+    "summary": "SELECT … FROM a LIMIT ? (SELECT … FROM settings LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT 1)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT ?)",
+    "summary": "SELECT … FROM a LIMIT ? (SELECT … FROM settings LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT 1)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT ?)",
+    "summary": "SELECT … FROM a LIMIT ? (SELECT … FROM settings LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT 1)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT ?)",
+    "summary": "SELECT … FROM a LIMIT ? (SELECT … FROM settings LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT 1)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT (SELECT cap FROM settings LIMIT ?)",
+    "summary": "SELECT … FROM a LIMIT ? (SELECT … FROM settings LIMIT 1)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 10 + 777",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? + ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 10 + 777",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? + ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 10 + 777",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? + ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 10 + 777",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? + ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 10 + 777",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? + ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 20 OFFSET 0",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT 20 OFFSET 0",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 20 OFFSET 0",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT 20 OFFSET 0",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 20 OFFSET 0",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT 20 OFFSET 0",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 20 OFFSET 0",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT 20 OFFSET 0",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 20 OFFSET 0",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ? OFFSET ?",
+    "summary": "SELECT … FROM a LIMIT 20 OFFSET 0",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 5, ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ?, ?",
+    "summary": "SELECT … FROM a LIMIT 5, ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 5, ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ?, ?",
+    "summary": "SELECT … FROM a LIMIT 5, ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 5, ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ?, ?",
+    "summary": "SELECT … FROM a LIMIT 5, ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 5, ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ?, ?",
+    "summary": "SELECT … FROM a LIMIT 5, ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT 5, ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ?, ?",
+    "summary": "SELECT … FROM a LIMIT 5, ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT ALL",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ALL",
+    "summary": "SELECT … FROM a LIMIT ALL",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT ALL",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ALL",
+    "summary": "SELECT … FROM a LIMIT ALL",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT ALL",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ALL",
+    "summary": "SELECT … FROM a LIMIT ALL",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT ALL",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ALL",
+    "summary": "SELECT … FROM a LIMIT ALL",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT ALL",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT ALL",
+    "summary": "SELECT … FROM a LIMIT ALL",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a LIMIT sqlc.arg(page_size)",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a OFFSET 2 ROWS FETCH NEXT $1 ROWS ONLY",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+    "summary": "SELECT … FROM a OFFSET 2 FETCH NEXT ? ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a OFFSET 2 ROWS FETCH NEXT $1 ROWS ONLY",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+    "summary": "SELECT … FROM a OFFSET 2 FETCH NEXT ? ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a OFFSET 2 ROWS FETCH NEXT $1 ROWS ONLY",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+    "summary": "SELECT … FROM a OFFSET 2 FETCH NEXT ? ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a OFFSET 2 ROWS FETCH NEXT $1 ROWS ONLY",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+    "summary": "SELECT … FROM a OFFSET 2 FETCH NEXT ? ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a OFFSET 2 ROWS FETCH NEXT $1 ROWS ONLY",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+    "summary": "SELECT … FROM a OFFSET 2 FETCH NEXT ? ROWS ONLY",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "summary": "SELECT … FROM a UNION SELECT … FROM b INTERSECT ALL SELECT … FROM c EXCEPT SELECT … FROM d LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "summary": "SELECT … FROM a UNION SELECT … FROM b INTERSECT ALL SELECT … FROM c EXCEPT SELECT … FROM d LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "summary": "SELECT … FROM a UNION SELECT … FROM b INTERSECT ALL SELECT … FROM c EXCEPT SELECT … FROM d LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "summary": "SELECT … FROM a UNION SELECT … FROM b INTERSECT ALL SELECT … FROM c EXCEPT SELECT … FROM d LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a UNION SELECT * FROM b INTERSECT ALL SELECT * FROM c EXCEPT SELECT * FROM d LIMIT ?",
+    "summary": "SELECT … FROM a UNION SELECT … FROM b INTERSECT ALL SELECT … FROM c EXCEPT SELECT … FROM d LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = 'sentinel' AND y.n \u003e= 987654 AND y.f \u003c .8765 JOIN c z USING (id, tenant_id) LIMIT 5",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c z USING (id, tenant_id) LIMIT ?",
+    "summary": "SELECT … FROM a AS x LEFT JOIN b AS y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c AS z USING (id, tenant_id) LIMIT 5",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = 'sentinel' AND y.n \u003e= 987654 AND y.f \u003c .8765 JOIN c z USING (id, tenant_id) LIMIT 5",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c z USING (id, tenant_id) LIMIT ?",
+    "summary": "SELECT … FROM a AS x LEFT JOIN b AS y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c AS z USING (id, tenant_id) LIMIT 5",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = 'sentinel' AND y.n \u003e= 987654 AND y.f \u003c .8765 JOIN c z USING (id, tenant_id) LIMIT 5",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c z USING (id, tenant_id) LIMIT ?",
+    "summary": "SELECT … FROM a AS x LEFT JOIN b AS y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c AS z USING (id, tenant_id) LIMIT 5",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = 'sentinel' AND y.n \u003e= 987654 AND y.f \u003c .8765 JOIN c z USING (id, tenant_id) LIMIT 5",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c z USING (id, tenant_id) LIMIT ?",
+    "summary": "SELECT … FROM a AS x LEFT JOIN b AS y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c AS z USING (id, tenant_id) LIMIT 5",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = 'sentinel' AND y.n \u003e= 987654 AND y.f \u003c .8765 JOIN c z USING (id, tenant_id) LIMIT 5",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a x LEFT JOIN b y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c z USING (id, tenant_id) LIMIT ?",
+    "summary": "SELECT … FROM a AS x LEFT JOIN b AS y ON x.id = y.a_id AND y.secret = ? AND y.n \u003e= ? AND y.f \u003c ? JOIN c AS z USING (id, tenant_id) LIMIT 5",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "summary": "SELECT … FROM a, b, c WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "summary": "SELECT … FROM a, b, c WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "summary": "SELECT … FROM a, b, c WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "summary": "SELECT … FROM a, b, c WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a, b, c WHERE a.id=b.id",
+    "summary": "SELECT … FROM a, b, c WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a,b,c,d,e,f,g",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM a,b,c,d,e,f,g",
+    "summary": "SELECT … FROM a, b, c, d, e, f, g",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a,b,c,d,e,f,g",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM a,b,c,d,e,f,g",
+    "summary": "SELECT … FROM a, b, c, d, e, f, g",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a,b,c,d,e,f,g",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM a,b,c,d,e,f,g",
+    "summary": "SELECT … FROM a, b, c, d, e, f, g",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a,b,c,d,e,f,g",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM a,b,c,d,e,f,g",
+    "summary": "SELECT … FROM a, b, c, d, e, f, g",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM a,b,c,d,e,f,g",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM a,b,c,d,e,f,g",
+    "summary": "SELECT … FROM a, b, c, d, e, f, g",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "summary": "SELECT … FROM accounts UNION SELECT … FROM archived_accounts EXCEPT SELECT … FROM blocked_accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "summary": "SELECT … FROM accounts UNION SELECT … FROM archived_accounts EXCEPT SELECT … FROM blocked_accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "summary": "SELECT … FROM accounts UNION SELECT … FROM archived_accounts EXCEPT SELECT … FROM blocked_accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "summary": "SELECT … FROM accounts UNION SELECT … FROM archived_accounts EXCEPT SELECT … FROM blocked_accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM accounts UNION SELECT * FROM archived_accounts EXCEPT SELECT * FROM blocked_accounts",
+    "summary": "SELECT … FROM accounts UNION SELECT … FROM archived_accounts EXCEPT SELECT … FROM blocked_accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a ",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM accounts a",
+    "summary": "SELECT … FROM accounts AS a",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a ",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM accounts a",
+    "summary": "SELECT … FROM accounts AS a",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a ",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM accounts a",
+    "summary": "SELECT … FROM accounts AS a",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a ",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM accounts a",
+    "summary": "SELECT … FROM accounts AS a",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a ",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM accounts a",
+    "summary": "SELECT … FROM accounts AS a",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=$1 AND o.cost\u003e123 LIMIT $2",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "summary": "SELECT … FROM accounts AS a JOIN orders AS o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=$1 AND o.cost\u003e123 LIMIT $2",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "summary": "SELECT … FROM accounts AS a JOIN orders AS o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=$1 AND o.cost\u003e123 LIMIT $2",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "summary": "SELECT … FROM accounts AS a JOIN orders AS o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=$1 AND o.cost\u003e123 LIMIT $2",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "summary": "SELECT … FROM accounts AS a JOIN orders AS o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=$1 AND o.cost\u003e123 LIMIT $2",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM accounts a JOIN orders o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "summary": "SELECT … FROM accounts AS a JOIN orders AS o ON o.account_id=a.id AND o.token=? AND o.cost\u003e? LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM bars WHERE symbol = ? AND n \u003e ?",
+    "summary": "SELECT … FROM bars WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM read_parquet('secret/path')",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM read_parquet(?)",
+    "summary": "SELECT … FROM read_parquet(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM read_parquet('secret/path')",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM read_parquet(?)",
+    "summary": "SELECT … FROM read_parquet(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM read_parquet('secret/path')",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM read_parquet(?)",
+    "summary": "SELECT … FROM read_parquet(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM read_parquet('secret/path')",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM read_parquet(?)",
+    "summary": "SELECT … FROM read_parquet(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM read_parquet('secret/path')",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM read_parquet(?)",
+    "summary": "SELECT … FROM read_parquet(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN ($1, $2, $3)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN ($1, $2, $3)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN ($1, $2, $3)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN ($1, $2, $3)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN ($1, $2, $3)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN (?)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN (?)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN (?)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN (?)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM t WHERE id IN (?)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM t WHERE id IN (?)",
+    "summary": "SELECT … FROM t WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM unnest($1::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest($2::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM unnest(?::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest(?::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "summary": "SELECT … FROM unnest(…) WITH ORDINALITY AS x(id, n) JOIN unnest(…) WITH ORDINALITY AS y(id, n) USING (n)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM unnest($1::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest($2::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM unnest(?::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest(?::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "summary": "SELECT … FROM unnest(…) WITH ORDINALITY AS x(id, n) JOIN unnest(…) WITH ORDINALITY AS y(id, n) USING (n)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM unnest($1::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest($2::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM unnest(?::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest(?::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "summary": "SELECT … FROM unnest(…) WITH ORDINALITY AS x(id, n) JOIN unnest(…) WITH ORDINALITY AS y(id, n) USING (n)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM unnest($1::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest($2::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM unnest(?::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest(?::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "summary": "SELECT … FROM unnest(…) WITH ORDINALITY AS x(id, n) JOIN unnest(…) WITH ORDINALITY AS y(id, n) USING (n)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM unnest($1::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest($2::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM unnest(?::text[]) WITH ORDINALITY AS x(id, n) JOIN unnest(?::text[]) WITH ORDINALITY AS y(id, n) USING(n)",
+    "summary": "SELECT … FROM unnest(…) WITH ORDINALITY AS x(id, n) JOIN unnest(…) WITH ORDINALITY AS y(id, n) USING (n)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM widgets WHERE token = $1",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE token = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM widgets WHERE token = $1",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE token = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM widgets WHERE token = $1",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE token = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM widgets WHERE token = $1",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE token = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT * FROM widgets WHERE token = $1",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT * FROM widgets WHERE token = ?",
+    "summary": "SELECT … FROM widgets WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT /* outer /* inner secret */ hidden */ 7",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT /* outer /* inner secret */ hidden */ 7",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT /* outer /* inner secret */ hidden */ 7",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT /* outer /* inner secret */ hidden */ 7",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT /* outer /* inner secret */ hidden */ 7",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT /* secret",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT /* secret",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT /* secret",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT /* secret",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT /* secret",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 0xCAFE, 0b101, .5, 1_000.25e-2",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 0xCAFE, 0b101, .5, 1_000.25e-2",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 0xCAFE, 0b101, .5, 1_000.25e-2",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 0xCAFE, 0b101, .5, 1_000.25e-2",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 0xCAFE, 0b101, .5, 1_000.25e-2",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 1",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 1",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 1",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 1",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 1",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 1 /* secret",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 1 /* secret",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 1 /* secret",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 1 /* secret",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 1 /* secret",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT 2",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 2",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 2",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 2",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 2",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 3",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 3",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 3",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 3",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 3",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a LIMIT 20",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT 20",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a LIMIT 20",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT 20",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a LIMIT 20",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT 20",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a LIMIT 20",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT 20",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a LIMIT 20",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT 20",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a WHERE token='secret' LIMIT $1",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ? FROM a WHERE token=? LIMIT ?",
+    "summary": "SELECT … FROM a WHERE … LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a WHERE token='secret' LIMIT $1",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ? FROM a WHERE token=? LIMIT ?",
+    "summary": "SELECT … FROM a WHERE … LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a WHERE token='secret' LIMIT $1",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ? FROM a WHERE token=? LIMIT ?",
+    "summary": "SELECT … FROM a WHERE … LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a WHERE token='secret' LIMIT $1",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ? FROM a WHERE token=? LIMIT ?",
+    "summary": "SELECT … FROM a WHERE … LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT 777 FROM a WHERE token='secret' LIMIT $1",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ? FROM a WHERE token=? LIMIT ?",
+    "summary": "SELECT … FROM a WHERE … LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ? FROM a LIMIT ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ? FROM a LIMIT ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ? FROM a LIMIT ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ? FROM a LIMIT ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ? FROM a LIMIT ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ? FROM a LIMIT ?",
+    "summary": "SELECT … FROM a LIMIT ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ? FROM t",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?, ? FROM t",
+    "summary": "SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ? FROM t",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?, ? FROM t",
+    "summary": "SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ? FROM t",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?, ? FROM t",
+    "summary": "SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ? FROM t",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?, ? FROM t",
+    "summary": "SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ? FROM t",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?, ? FROM t",
+    "summary": "SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "summary": "SELECT … FROM `items` WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "summary": "SELECT … FROM `items` WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "summary": "SELECT … FROM `items` WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "summary": "SELECT … FROM `items` WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?",
+    "summary": "SELECT … FROM `items` WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, INTERVAL ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, INTERVAL ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, INTERVAL ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, INTERVAL ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ?, ?, ?, INTERVAL ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY['secret', 'private']], values[123], ARRAY[cardinality($1::text[])]",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY['secret', 'private']], values[123], ARRAY[cardinality($1::text[])]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY['secret', 'private']], values[123], ARRAY[cardinality($1::text[])]",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY['secret', 'private']], values[123], ARRAY[cardinality($1::text[])]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY['secret', 'private']], values[123], ARRAY[cardinality($1::text[])]",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "summary": "SELECT cardinality(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY['secret', 'private']], values[123], ARRAY[cardinality($1::text[])]",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "summary": "SELECT cardinality(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY['secret', 'private']], values[123], ARRAY[cardinality($1::text[])]",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "summary": "SELECT cardinality(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "summary": "SELECT cardinality(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "summary": "SELECT cardinality(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ARRAY[ARRAY[?, ?]], values[?], ARRAY[cardinality(?::text[])]",
+    "summary": "SELECT cardinality(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT B'1010', X'deadbeef'",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT B'1010', X'deadbeef'",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT B'1010', X'deadbeef'",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT B'1010', X'deadbeef'",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT B'1010', X'deadbeef'",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT E'a\\'secret\\'b', $1",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT E'a\\'secret\\'b', $1",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT E'a\\'secret\\'b', $1",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT E'a\\'secret\\'b', $1",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT E'a\\'secret\\'b', $1",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT E'secret\\",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT E'secret\\",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT E'secret\\",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT E'secret\\",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT E'secret\\",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT TRUE, false, NULL, INTERVAL '5 days'",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT TRUE, false, NULL, INTERVAL '5 days'",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT TRUE, false, NULL, INTERVAL '5 days'",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT TRUE, false, NULL, INTERVAL '5 days'",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT TRUE, false, NULL, INTERVAL '5 days'",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?, ?, ?, INTERVAL ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT U\u0026'd\\0061ta'",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT U\u0026'd\\0061ta'",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT U\u0026'd\\0061ta'",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT U\u0026'd\\0061ta'",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT U\u0026'd\\0061ta'",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ?",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ['secret', 123, [456]], values[789]",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ['secret', 123, [456]], values[789]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ['secret', 123, [456]], values[789]",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ['secret', 123, [456]], values[789]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ['secret', 123, [456]], values[789]",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT [?, ?, [?]], values[?]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ['secret', 123, [456]], values[789]",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT [?, ?, [?]], values[?]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ['secret', 123, [456]], values[789]",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT [?, ?, [?]], values[?]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [?, ?, [?]], values[?]",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT [?, ?, [?]], values[?]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [?, ?, [?]], values[?]",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT [?, ?, [?]], values[?]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [?, ?, [?]], values[?]",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT [?, ?, [?]], values[?]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [?, ?, [?]], values[?]",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT [?, ?, [?]], values[?]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [?, ?, [?]], values[?]",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT [?, ?, [?]], values[?]",
+    "summary": "SELECT …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=123",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [a table] WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=123",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [a table] WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=123",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [ AS a WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=123",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [ AS a WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=123",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [ AS a WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [a table] WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [a table] WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [ AS a WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [ AS a WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT [private column] FROM [a table] WHERE [id]=?",
+    "summary": "SELECT … FROM [ AS a WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT [secret",
+    "dialect": 0,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT [secret",
+    "dialect": 1,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT [secret",
+    "dialect": 2,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT [secret",
+    "dialect": 3,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT [secret",
+    "dialect": 4,
+    "safe": false,
+    "text": "",
+    "summary": "SQL",
+    "operation": ""
+  },
+  {
+    "query": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT ? FROM orders o WHERE o.account_id=a.id)",
+    "summary": "SELECT … FROM accounts AS a JOIN holdings AS h ON h.account_id=a.id WHERE … EXISTS (SELECT … FROM orders AS o WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT ? FROM orders o WHERE o.account_id=a.id)",
+    "summary": "SELECT … FROM accounts AS a JOIN holdings AS h ON h.account_id=a.id WHERE … EXISTS (SELECT … FROM orders AS o WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT ? FROM orders o WHERE o.account_id=a.id)",
+    "summary": "SELECT … FROM accounts AS a JOIN holdings AS h ON h.account_id=a.id WHERE … EXISTS (SELECT … FROM orders AS o WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT ? FROM orders o WHERE o.account_id=a.id)",
+    "summary": "SELECT … FROM accounts AS a JOIN holdings AS h ON h.account_id=a.id WHERE … EXISTS (SELECT … FROM orders AS o WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT ? FROM orders o WHERE o.account_id=a.id)",
+    "summary": "SELECT … FROM accounts AS a JOIN holdings AS h ON h.account_id=a.id WHERE … EXISTS (SELECT … FROM orders AS o WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id FROM spans WHERE trace_id = 'secret' ORDER BY start_ns DESC",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT id FROM spans WHERE trace_id = ? ORDER BY start_ns DESC",
+    "summary": "SELECT … FROM spans WHERE … ORDER BY …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id FROM spans WHERE trace_id = 'secret' ORDER BY start_ns DESC",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT id FROM spans WHERE trace_id = ? ORDER BY start_ns DESC",
+    "summary": "SELECT … FROM spans WHERE … ORDER BY …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id FROM spans WHERE trace_id = 'secret' ORDER BY start_ns DESC",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT id FROM spans WHERE trace_id = ? ORDER BY start_ns DESC",
+    "summary": "SELECT … FROM spans WHERE … ORDER BY …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id FROM spans WHERE trace_id = 'secret' ORDER BY start_ns DESC",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT id FROM spans WHERE trace_id = ? ORDER BY start_ns DESC",
+    "summary": "SELECT … FROM spans WHERE … ORDER BY …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id FROM spans WHERE trace_id = 'secret' ORDER BY start_ns DESC",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT id FROM spans WHERE trace_id = ? ORDER BY start_ns DESC",
+    "summary": "SELECT … FROM spans WHERE … ORDER BY …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id, name FROM widgets WHERE tenant_id = $1 AND status IN ('open', 'closed') ORDER BY created_at DESC LIMIT 25",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT id, name FROM widgets WHERE tenant_id = ? AND status IN (?) ORDER BY created_at DESC LIMIT ?",
+    "summary": "SELECT … FROM widgets WHERE … ORDER BY … LIMIT 25",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id, name FROM widgets WHERE tenant_id = $1 AND status IN ('open', 'closed') ORDER BY created_at DESC LIMIT 25",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT id, name FROM widgets WHERE tenant_id = ? AND status IN (?) ORDER BY created_at DESC LIMIT ?",
+    "summary": "SELECT … FROM widgets WHERE … ORDER BY … LIMIT 25",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id, name FROM widgets WHERE tenant_id = $1 AND status IN ('open', 'closed') ORDER BY created_at DESC LIMIT 25",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT id, name FROM widgets WHERE tenant_id = ? AND status IN (?) ORDER BY created_at DESC LIMIT ?",
+    "summary": "SELECT … FROM widgets WHERE … ORDER BY … LIMIT 25",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id, name FROM widgets WHERE tenant_id = $1 AND status IN ('open', 'closed') ORDER BY created_at DESC LIMIT 25",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT id, name FROM widgets WHERE tenant_id = ? AND status IN (?) ORDER BY created_at DESC LIMIT ?",
+    "summary": "SELECT … FROM widgets WHERE … ORDER BY … LIMIT 25",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT id, name FROM widgets WHERE tenant_id = $1 AND status IN ('open', 'closed') ORDER BY created_at DESC LIMIT 25",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT id, name FROM widgets WHERE tenant_id = ? AND status IN (?) ORDER BY created_at DESC LIMIT ?",
+    "summary": "SELECT … FROM widgets WHERE … ORDER BY … LIMIT 25",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT pg_try_advisory_lock(hashtextextended($1,0))::bool",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT pg_try_advisory_lock(hashtextextended(?,?))::bool",
+    "summary": "SELECT pg_try_advisory_lock(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT pg_try_advisory_lock(hashtextextended($1,0))::bool",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT pg_try_advisory_lock(hashtextextended(?,?))::bool",
+    "summary": "SELECT pg_try_advisory_lock(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT pg_try_advisory_lock(hashtextextended($1,0))::bool",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT pg_try_advisory_lock(hashtextextended(?,?))::bool",
+    "summary": "SELECT pg_try_advisory_lock(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT pg_try_advisory_lock(hashtextextended($1,0))::bool",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT pg_try_advisory_lock(hashtextextended(?,?))::bool",
+    "summary": "SELECT pg_try_advisory_lock(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT pg_try_advisory_lock(hashtextextended($1,0))::bool",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT pg_try_advisory_lock(hashtextextended(?,?))::bool",
+    "summary": "SELECT pg_try_advisory_lock(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT prepare_signal_grading($1, $2, $3, $4)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT prepare_signal_grading(?, ?, ?, ?)",
+    "summary": "SELECT prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT prepare_signal_grading($1, $2, $3, $4)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT prepare_signal_grading(?, ?, ?, ?)",
+    "summary": "SELECT prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT prepare_signal_grading($1, $2, $3, $4)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT prepare_signal_grading(?, ?, ?, ?)",
+    "summary": "SELECT prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT prepare_signal_grading($1, $2, $3, $4)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT prepare_signal_grading(?, ?, ?, ?)",
+    "summary": "SELECT prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT prepare_signal_grading($1, $2, $3, $4)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT prepare_signal_grading(?, ?, ?, ?)",
+    "summary": "SELECT prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT public.prepare_signal_grading($1, $2)",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT public.prepare_signal_grading(?, ?)",
+    "summary": "SELECT public.prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT public.prepare_signal_grading($1, $2)",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT public.prepare_signal_grading(?, ?)",
+    "summary": "SELECT public.prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT public.prepare_signal_grading($1, $2)",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT public.prepare_signal_grading(?, ?)",
+    "summary": "SELECT public.prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT public.prepare_signal_grading($1, $2)",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT public.prepare_signal_grading(?, ?)",
+    "summary": "SELECT public.prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT public.prepare_signal_grading($1, $2)",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT public.prepare_signal_grading(?, ?)",
+    "summary": "SELECT public.prepare_signal_grading(…)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ratio_now()",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT ratio_now()",
+    "summary": "SELECT ratio_now()",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ratio_now()",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT ratio_now()",
+    "summary": "SELECT ratio_now()",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ratio_now()",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT ratio_now()",
+    "summary": "SELECT ratio_now()",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ratio_now()",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT ratio_now()",
+    "summary": "SELECT ratio_now()",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT ratio_now()",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT ratio_now()",
+    "summary": "SELECT ratio_now()",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e0) FROM bars",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e?) FROM bars",
+    "summary": "SELECT … OVER (…) FILTER (…) FROM bars",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e0) FROM bars",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e?) FROM bars",
+    "summary": "SELECT … OVER (…) FILTER (…) FROM bars",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e0) FROM bars",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e?) FROM bars",
+    "summary": "SELECT … OVER (…) FILTER (…) FROM bars",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e0) FROM bars",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e?) FROM bars",
+    "summary": "SELECT … OVER (…) FILTER (…) FROM bars",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e0) FROM bars",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT row_number() OVER (PARTITION BY symbol ORDER BY ts), sum(price) FILTER (WHERE price\u003e?) FROM bars",
+    "summary": "SELECT … OVER (…) FILTER (…) FROM bars",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts",
+    "summary": "SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts",
+    "summary": "SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts",
+    "summary": "SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts",
+    "summary": "SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts",
+    "summary": "SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts WHERE id = $1",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts WHERE id = ?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts WHERE id = $1",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts WHERE id = ?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts WHERE id = $1",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts WHERE id = ?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts WHERE id = $1",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts WHERE id = ?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT résumé FROM accounts WHERE id = $1",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT résumé FROM accounts WHERE id = ?",
+    "summary": "SELECT … FROM accounts WHERE …",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT 1) b ON true",
+    "dialect": 0,
+    "safe": true,
+    "text": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT ?) b ON ?",
+    "summary": "SELECT … FROM signals AS s JOIN LATERAL (SELECT … FROM bars WHERE … LIMIT 1) AS b ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT 1) b ON true",
+    "dialect": 1,
+    "safe": true,
+    "text": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT ?) b ON ?",
+    "summary": "SELECT … FROM signals AS s JOIN LATERAL (SELECT … FROM bars WHERE … LIMIT 1) AS b ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT 1) b ON true",
+    "dialect": 2,
+    "safe": true,
+    "text": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT ?) b ON ?",
+    "summary": "SELECT … FROM signals AS s JOIN LATERAL (SELECT … FROM bars WHERE … LIMIT 1) AS b ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT 1) b ON true",
+    "dialect": 3,
+    "safe": true,
+    "text": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT ?) b ON ?",
+    "summary": "SELECT … FROM signals AS s JOIN LATERAL (SELECT … FROM bars WHERE … LIMIT 1) AS b ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT 1) b ON true",
+    "dialect": 4,
+    "safe": true,
+    "text": "SELECT s.id FROM signals s JOIN LATERAL (SELECT * FROM bars WHERE symbol=s.symbol LIMIT ?) b ON ?",
+    "summary": "SELECT … FROM signals AS s JOIN LATERAL (SELECT … FROM bars WHERE … LIMIT 1) AS b ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "SET application_name = 'secret'; SELECT 42",
+    "dialect": 0,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "SET application_name = 'secret'; SELECT 42",
+    "dialect": 1,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "SET application_name = 'secret'; SELECT 42",
+    "dialect": 2,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "SET application_name = 'secret'; SELECT 42",
+    "dialect": 3,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "SET application_name = 'secret'; SELECT 42",
+    "dialect": 4,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "SET application_name = ?; SELECT ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "SET application_name = ?; SELECT ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "SET application_name = ?; SELECT ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "SET application_name = ?; SELECT ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "SET application_name = ?; SELECT ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "SET application_name = ?; SELECT ?",
+    "summary": "SET",
+    "operation": "SET"
+  },
+  {
+    "query": "UPDATE a SET token='secret' WHERE id=777 ORDER BY id LIMIT ?",
+    "dialect": 0,
+    "safe": true,
+    "text": "UPDATE a SET token=? WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "UPDATE a SET … WHERE … ORDER BY … LIMIT ?",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "UPDATE a SET token='secret' WHERE id=777 ORDER BY id LIMIT ?",
+    "dialect": 1,
+    "safe": true,
+    "text": "UPDATE a SET token=? WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "UPDATE a SET … WHERE … ORDER BY … LIMIT ?",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "UPDATE a SET token='secret' WHERE id=777 ORDER BY id LIMIT ?",
+    "dialect": 2,
+    "safe": true,
+    "text": "UPDATE a SET token=? WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "UPDATE a SET … WHERE … ORDER BY … LIMIT ?",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "UPDATE a SET token='secret' WHERE id=777 ORDER BY id LIMIT ?",
+    "dialect": 3,
+    "safe": true,
+    "text": "UPDATE a SET token=? WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "UPDATE a SET … WHERE … ORDER BY … LIMIT ?",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "UPDATE a SET token='secret' WHERE id=777 ORDER BY id LIMIT ?",
+    "dialect": 4,
+    "safe": true,
+    "text": "UPDATE a SET token=? WHERE id=? ORDER BY id LIMIT ?",
+    "summary": "UPDATE a SET … WHERE … ORDER BY … LIMIT ?",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "dialect": 0,
+    "safe": true,
+    "text": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "summary": "UPDATE accounts SET … (SELECT … FROM ledger) FROM users WHERE …",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "dialect": 1,
+    "safe": true,
+    "text": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "summary": "UPDATE accounts SET … (SELECT … FROM ledger) FROM users WHERE …",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "dialect": 2,
+    "safe": true,
+    "text": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "summary": "UPDATE accounts SET … (SELECT … FROM ledger) FROM users WHERE …",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "dialect": 3,
+    "safe": true,
+    "text": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "summary": "UPDATE accounts SET … (SELECT … FROM ledger) FROM users WHERE …",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "dialect": 4,
+    "safe": true,
+    "text": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
+    "summary": "UPDATE accounts SET … (SELECT … FROM ledger) FROM users WHERE …",
+    "operation": "UPDATE"
+  },
+  {
+    "query": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "summary": "WITH RECURSIVE tree AS (SELECT … FROM nodes UNION ALL SELECT … FROM nodes AS n JOIN tree AS t ON n.parent=t.id) SELECT … FROM tree",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "summary": "WITH RECURSIVE tree AS (SELECT … FROM nodes UNION ALL SELECT … FROM nodes AS n JOIN tree AS t ON n.parent=t.id) SELECT … FROM tree",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "summary": "WITH RECURSIVE tree AS (SELECT … FROM nodes UNION ALL SELECT … FROM nodes AS n JOIN tree AS t ON n.parent=t.id) SELECT … FROM tree",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "summary": "WITH RECURSIVE tree AS (SELECT … FROM nodes UNION ALL SELECT … FROM nodes AS n JOIN tree AS t ON n.parent=t.id) SELECT … FROM tree",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",
+    "summary": "WITH RECURSIVE tree AS (SELECT … FROM nodes UNION ALL SELECT … FROM nodes AS n JOIN tree AS t ON n.parent=t.id) SELECT … FROM tree",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "summary": "WITH accounts AS (SELECT … FROM accounts) SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "summary": "WITH accounts AS (SELECT … FROM accounts) SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "summary": "WITH accounts AS (SELECT … FROM accounts) SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "summary": "WITH accounts AS (SELECT … FROM accounts) SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH accounts AS (SELECT * FROM accounts) SELECT * FROM accounts",
+    "summary": "WITH accounts AS (SELECT … FROM accounts) SELECT … FROM accounts",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e$1), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e?), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), picked AS (SELECT … FROM candidates) DELETE FROM signals USING picked WHERE …",
+    "operation": "DELETE"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e$1), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e?), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), picked AS (SELECT … FROM candidates) DELETE FROM signals USING picked WHERE …",
+    "operation": "DELETE"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e$1), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e?), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), picked AS (SELECT … FROM candidates) DELETE FROM signals USING picked WHERE …",
+    "operation": "DELETE"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e$1), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e?), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), picked AS (SELECT … FROM candidates) DELETE FROM signals USING picked WHERE …",
+    "operation": "DELETE"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e$1), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id\u003e?), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), picked AS (SELECT … FROM candidates) DELETE FROM signals USING picked WHERE …",
+    "operation": "DELETE"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e$1), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT 1 FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e?), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT ? FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), removed AS (DELETE FROM signal_outcomes USING candidates WHERE … RETURNING …) SELECT … FROM signals AS s JOIN candidates AS c ON c.id=s.id WHERE … NOT EXISTS (SELECT … FROM tradebot_intents AS i WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e$1), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT 1 FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e?), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT ? FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), removed AS (DELETE FROM signal_outcomes USING candidates WHERE … RETURNING …) SELECT … FROM signals AS s JOIN candidates AS c ON c.id=s.id WHERE … NOT EXISTS (SELECT … FROM tradebot_intents AS i WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e$1), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT 1 FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e?), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT ? FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), removed AS (DELETE FROM signal_outcomes USING candidates WHERE … RETURNING …) SELECT … FROM signals AS s JOIN candidates AS c ON c.id=s.id WHERE … NOT EXISTS (SELECT … FROM tradebot_intents AS i WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e$1), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT 1 FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e?), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT ? FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), removed AS (DELETE FROM signal_outcomes USING candidates WHERE … RETURNING …) SELECT … FROM signals AS s JOIN candidates AS c ON c.id=s.id WHERE … NOT EXISTS (SELECT … FROM tradebot_intents AS i WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e$1), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT 1 FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE ts\u003e?), removed AS (DELETE FROM signal_outcomes USING candidates WHERE signal_id=candidates.id RETURNING signal_id) SELECT s.id FROM signals s JOIN candidates c ON c.id=s.id WHERE NOT EXISTS (SELECT ? FROM tradebot_intents i WHERE i.signal_id=s.id)",
+    "summary": "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), removed AS (DELETE FROM signal_outcomes USING candidates WHERE … RETURNING …) SELECT … FROM signals AS s JOIN candidates AS c ON c.id=s.id WHERE … NOT EXISTS (SELECT … FROM tradebot_intents AS i WHERE …)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH changed AS (UPDATE accounts SET active=true RETURNING *) SELECT * FROM changed",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH changed AS (UPDATE accounts SET active=? RETURNING *) SELECT * FROM changed",
+    "summary": "WITH changed AS (UPDATE accounts SET … RETURNING …) SELECT … FROM changed",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH changed AS (UPDATE accounts SET active=true RETURNING *) SELECT * FROM changed",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH changed AS (UPDATE accounts SET active=? RETURNING *) SELECT * FROM changed",
+    "summary": "WITH changed AS (UPDATE accounts SET … RETURNING …) SELECT … FROM changed",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH changed AS (UPDATE accounts SET active=true RETURNING *) SELECT * FROM changed",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH changed AS (UPDATE accounts SET active=? RETURNING *) SELECT * FROM changed",
+    "summary": "WITH changed AS (UPDATE accounts SET … RETURNING …) SELECT … FROM changed",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH changed AS (UPDATE accounts SET active=true RETURNING *) SELECT * FROM changed",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH changed AS (UPDATE accounts SET active=? RETURNING *) SELECT * FROM changed",
+    "summary": "WITH changed AS (UPDATE accounts SET … RETURNING …) SELECT … FROM changed",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH changed AS (UPDATE accounts SET active=true RETURNING *) SELECT * FROM changed",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH changed AS (UPDATE accounts SET active=? RETURNING *) SELECT * FROM changed",
+    "summary": "WITH changed AS (UPDATE accounts SET … RETURNING …) SELECT … FROM changed",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "summary": "WITH gone AS (DELETE FROM events RETURNING …) INSERT INTO archive SELECT … FROM gone",
+    "operation": "INSERT"
+  },
+  {
+    "query": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "summary": "WITH gone AS (DELETE FROM events RETURNING …) INSERT INTO archive SELECT … FROM gone",
+    "operation": "INSERT"
+  },
+  {
+    "query": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "summary": "WITH gone AS (DELETE FROM events RETURNING …) INSERT INTO archive SELECT … FROM gone",
+    "operation": "INSERT"
+  },
+  {
+    "query": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "summary": "WITH gone AS (DELETE FROM events RETURNING …) INSERT INTO archive SELECT … FROM gone",
+    "operation": "INSERT"
+  },
+  {
+    "query": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH gone AS (DELETE FROM events RETURNING *) INSERT INTO archive SELECT * FROM gone",
+    "summary": "WITH gone AS (DELETE FROM events RETURNING …) INSERT INTO archive SELECT … FROM gone",
+    "operation": "INSERT"
+  },
+  {
+    "query": "WITH lock_result AS (SELECT pg_advisory_lock($1)) SELECT * FROM lock_result",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH lock_result AS (SELECT pg_advisory_lock(?)) SELECT * FROM lock_result",
+    "summary": "WITH lock_result AS (SELECT pg_advisory_lock(…)) SELECT … FROM lock_result",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH lock_result AS (SELECT pg_advisory_lock($1)) SELECT * FROM lock_result",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH lock_result AS (SELECT pg_advisory_lock(?)) SELECT * FROM lock_result",
+    "summary": "WITH lock_result AS (SELECT pg_advisory_lock(…)) SELECT … FROM lock_result",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH lock_result AS (SELECT pg_advisory_lock($1)) SELECT * FROM lock_result",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH lock_result AS (SELECT pg_advisory_lock(?)) SELECT * FROM lock_result",
+    "summary": "WITH lock_result AS (SELECT pg_advisory_lock(…)) SELECT … FROM lock_result",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH lock_result AS (SELECT pg_advisory_lock($1)) SELECT * FROM lock_result",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH lock_result AS (SELECT pg_advisory_lock(?)) SELECT * FROM lock_result",
+    "summary": "WITH lock_result AS (SELECT pg_advisory_lock(…)) SELECT … FROM lock_result",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH lock_result AS (SELECT pg_advisory_lock($1)) SELECT * FROM lock_result",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH lock_result AS (SELECT pg_advisory_lock(?)) SELECT * FROM lock_result",
+    "summary": "WITH lock_result AS (SELECT pg_advisory_lock(…)) SELECT … FROM lock_result",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH requested(id) AS (VALUES (1),(2)) SELECT * FROM requested JOIN accounts USING(id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH requested(id) AS (VALUES (?),(?)) SELECT * FROM requested JOIN accounts USING(id)",
+    "summary": "WITH requested AS (VALUES …) SELECT … FROM requested JOIN accounts USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH requested(id) AS (VALUES (1),(2)) SELECT * FROM requested JOIN accounts USING(id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH requested(id) AS (VALUES (?),(?)) SELECT * FROM requested JOIN accounts USING(id)",
+    "summary": "WITH requested AS (VALUES …) SELECT … FROM requested JOIN accounts USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH requested(id) AS (VALUES (1),(2)) SELECT * FROM requested JOIN accounts USING(id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH requested(id) AS (VALUES (?),(?)) SELECT * FROM requested JOIN accounts USING(id)",
+    "summary": "WITH requested AS (VALUES …) SELECT … FROM requested JOIN accounts USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH requested(id) AS (VALUES (1),(2)) SELECT * FROM requested JOIN accounts USING(id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH requested(id) AS (VALUES (?),(?)) SELECT * FROM requested JOIN accounts USING(id)",
+    "summary": "WITH requested AS (VALUES …) SELECT … FROM requested JOIN accounts USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH requested(id) AS (VALUES (1),(2)) SELECT * FROM requested JOIN accounts USING(id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH requested(id) AS (VALUES (?),(?)) SELECT * FROM requested JOIN accounts USING(id)",
+    "summary": "WITH requested AS (VALUES …) SELECT … FROM requested JOIN accounts USING (id)",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "summary": "WITH t AS (SELECT … FROM bars) SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "summary": "WITH t AS (SELECT … FROM bars) SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "summary": "WITH t AS (SELECT … FROM bars) SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "summary": "WITH t AS (SELECT … FROM bars) SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH t AS (SELECT * FROM bars) SELECT * FROM t",
+    "summary": "WITH t AS (SELECT … FROM bars) SELECT … FROM t",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON true",
+    "dialect": 0,
+    "safe": true,
+    "text": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON ?",
+    "summary": "WITH x AS (SELECT … FROM public.accounts) SELECT … FROM (WITH x AS (SELECT … FROM holdings) SELECT … FROM x) AS q JOIN x ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON true",
+    "dialect": 1,
+    "safe": true,
+    "text": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON ?",
+    "summary": "WITH x AS (SELECT … FROM public.accounts) SELECT … FROM (WITH x AS (SELECT … FROM holdings) SELECT … FROM x) AS q JOIN x ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON true",
+    "dialect": 2,
+    "safe": true,
+    "text": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON ?",
+    "summary": "WITH x AS (SELECT … FROM public.accounts) SELECT … FROM (WITH x AS (SELECT … FROM holdings) SELECT … FROM x) AS q JOIN x ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON true",
+    "dialect": 3,
+    "safe": true,
+    "text": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON ?",
+    "summary": "WITH x AS (SELECT … FROM public.accounts) SELECT … FROM (WITH x AS (SELECT … FROM holdings) SELECT … FROM x) AS q JOIN x ON ?",
+    "operation": "SELECT"
+  },
+  {
+    "query": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON true",
+    "dialect": 4,
+    "safe": true,
+    "text": "WITH x AS (SELECT * FROM public.accounts) SELECT * FROM (WITH x AS (SELECT * FROM holdings) SELECT * FROM x) q JOIN x ON ?",
+    "summary": "WITH x AS (SELECT … FROM public.accounts) SELECT … FROM (WITH x AS (SELECT … FROM holdings) SELECT … FROM x) AS q JOIN x ON ?",
+    "operation": "SELECT"
+  }
+]
