@@ -116,6 +116,7 @@ otlp_status_t gotel_sql_inspect(const char *sql, const gotel_sql_options_t *opti
   }
   output summary = {out->summary, 0, sizeof(out->summary)};
   *out->summary = 0;
+  bool mixed_operations = false;
   for (size_t start = 0; start < count;) {
     size_t end = start, nesting = 0;
     for (; end < count; ++end) {
@@ -130,25 +131,30 @@ otlp_status_t gotel_sql_inspect(const char *sql, const gotel_sql_options_t *opti
       ++out->statement_count;
       token *statement = tokens + start;
       size_t length = end - start;
-      if (!*out->operation) {
-        size_t op = 0;
-        while (op < length && sym(statement[op], '('))
-          ++op;
-        if (kw(statement[0], "WITH"))
-          for (op = 1; op < length; ++op) {
-            if (sym(statement[op], '(')) {
-              op = close_group(statement, length, op);
-              continue;
-            }
-            if (kw(statement[op], "SELECT") || kw(statement[op], "INSERT") || kw(statement[op], "UPDATE") ||
-                kw(statement[op], "DELETE") || kw(statement[op], "MERGE") || kw(statement[op], "VALUES"))
-              break;
+      size_t op = 0;
+      while (op < length && sym(statement[op], '('))
+        ++op;
+      if (kw(statement[0], "WITH"))
+        for (op = 1; op < length; ++op) {
+          if (sym(statement[op], '(')) {
+            op = close_group(statement, length, op);
+            continue;
           }
-        if (op < length && statement[op].word) {
-          output p = {out->operation, 0, sizeof(out->operation)};
-          upper(&p, statement[op]);
+          if (kw(statement[op], "SELECT") || kw(statement[op], "INSERT") || kw(statement[op], "UPDATE") ||
+              kw(statement[op], "DELETE") || kw(statement[op], "MERGE") || kw(statement[op], "VALUES"))
+            break;
         }
+      char current_operation[sizeof(out->operation)] = {0};
+      if (op < length && statement[op].word) {
+        output p = {current_operation, 0, sizeof(current_operation)};
+        upper(&p, statement[op]);
       }
+      if (out->statement_count == 1)
+        strcpy(out->operation, current_operation);
+      else if (strcmp(out->operation, current_operation))
+        mixed_operations = true;
+      if (mixed_operations)
+        *out->operation = 0;
       if (summary.n)
         text(&summary, "; ");
       summarize(&summary, statement, length, 0);

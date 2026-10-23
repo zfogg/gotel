@@ -9,24 +9,97 @@ permissions:
 
 jobs:
   c-gotel:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        library: [static, shared]
+        sqlite: ['ON']
+        include:
+          - os: ubuntu-latest
+            library: static
+            sqlite: 'OFF'
+          - os: ubuntu-latest
+            library: shared
+            sqlite: 'OFF'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install llvm ninja openssl@3 sqlite
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - name: Install Windows native dependencies
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: vcpkg install openssl:x64-windows sqlite3:x64-windows pcre2:x64-windows utf8proc:x64-windows
+      - name: Configure on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          if [[ '${{ matrix.library }}' == shared ]]; then shared=ON; else shared=OFF; fi
+          if [[ '${{ runner.os }}' == macOS ]]; then
+            export PATH="$(brew --prefix llvm)/bin:$PATH"
+            export OPENSSL_ROOT_DIR="$(brew --prefix openssl@3)"
+          fi
+          cmake -S c-gotel -B c-gotel/build -G Ninja \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_EXTENSIONS=OFF -DBUILD_SHARED_LIBS="$shared" \
+            -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
+      - name: Configure on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $shared = if ('${{ matrix.library }}' -eq 'shared') { 'ON' } else { 'OFF' }
+          cmake -S c-gotel -B c-gotel/build -G Ninja `
+            -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Debug `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DBUILD_SHARED_LIBS=$shared -DCGOTEL_BUILD_TESTS=ON `
+            -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
+      - run: cmake --build c-gotel/build --parallel 4
+      - run: ctest --test-dir c-gotel/build --output-on-failure
+
+  c-gotel-sanitizer:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         sqlite: ['ON', 'OFF']
     steps:
       - uses: actions/checkout@v4
-      - name: Install native test dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
-      - name: Configure C adapter with sanitizers
-        run: >-
+      - run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
+      - run: >-
           cmake -S c-gotel -B c-gotel/build -G Ninja
           -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_C_EXTENSIONS=OFF
-          -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
+          -DCMAKE_C_EXTENSIONS=OFF -DCGOTEL_BUILD_TESTS=ON
+          -DCGOTEL_WITH_SQLITE=${{ matrix.sqlite }}
           -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
           -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
       - run: cmake --build c-gotel/build --parallel 4
       - run: ctest --test-dir c-gotel/build --output-on-failure
+
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: corepack enable
+      - run: corepack prepare pnpm@10.20.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+
+  full-stack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f examples/full-stack/compose.yml up --build --exit-code-from verify verify
+      - if: always()
+        run: docker compose -f examples/full-stack/compose.yml down
 
   test:
     strategy:

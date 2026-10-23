@@ -6,8 +6,19 @@ import { BatchSpanProcessor, } from '@opentelemetry/sdk-trace-base';
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 export function browserHttpClientSpanName({ applicationOrigin, method, prefix, responseUrl, }) {
     const url = new URL(responseUrl);
-    const destination = url.origin === applicationOrigin ? url.pathname : `${url.host}${url.pathname}`;
+    const path = boundedClientPath(url.pathname);
+    const destination = url.origin === applicationOrigin ? path : `${url.host}${path}`;
     return `${prefix}.http.client.${method.toUpperCase()} ${destination}`;
+}
+function boundedClientPath(path) {
+    return path
+        .split('/')
+        .map((segment) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(segment) ||
+        /^[0-9a-f]{24,}$/i.test(segment) ||
+        /^[0-9]+$/.test(segment)
+        ? '{id}'
+        : segment)
+        .join('/');
 }
 export function createBrowserFetchInstrumentation({ applicationOrigin = globalThis.location.origin, prefix, ...config }) {
     return new FetchInstrumentation({

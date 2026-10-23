@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.24)
+project(gotel-demo-worker LANGUAGES C)
+set(CGOTEL_WITH_SQLITE OFF CACHE BOOL "The demo worker does not use SQLite")
+add_subdirectory(../../../c-gotel c-gotel)
+add_executable(wordcount main.c)
+target_link_libraries(wordcount PRIVATE gotel::c-gotel)

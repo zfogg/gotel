@@ -37,7 +37,11 @@ func (n Namer) Handler(next http.Handler, operation string, options ...otelhttp.
 func (n Namer) ClientSpanName(_ string, r *http.Request) string {
 	target := ""
 	if r.URL != nil {
-		target = r.URL.Host + boundedClientPath(r.URL.EscapedPath())
+		path := r.URL.EscapedPath()
+		if path == "" {
+			path = "/"
+		}
+		target = r.URL.Host + boundedClientPath(path)
 	}
 	return n.name("client", r.Method, target)
 }

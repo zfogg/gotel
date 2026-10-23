@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1.7
+FROM golang:bookworm AS build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang cmake ninja-build libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN cmake -S examples/full-stack/worker -B /tmp/worker-build -G Ninja \
+    -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release -DCGOTEL_WITH_SQLITE=OFF \
+    && cmake --build /tmp/worker-build --target wordcount --parallel 4
+RUN mkdir -p /out && CGO_ENABLED=1 go build -trimpath -o /out/api ./examples/full-stack/api
+RUN cp /tmp/worker-build/wordcount /out/wordcount
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates libssl3 curl && rm -rf /var/lib/apt/lists/*
+COPY --from=build /out/api /usr/local/bin/demo-api
+COPY --from=build /out/wordcount /usr/local/bin/wordcount
+EXPOSE 8080
+CMD ["/usr/local/bin/demo-api"]

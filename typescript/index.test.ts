@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 
 import { browserHttpClientSpanName } from "./index";
 
 describe("browserHttpClientSpanName", () => {
+  it("matches the shared Go/C/TypeScript client naming corpus", () => {
+    const fixture = readFileSync(new URL('../testdata/http_names.tsv', import.meta.url), 'utf8')
+    for (const line of fixture.split(/\r?\n/)) {
+      if (!line || line.startsWith('#')) continue
+      const [method, responseUrl, expected] = line.split('\t')
+      expect(browserHttpClientSpanName({
+        applicationOrigin: 'https://frontend.example', method, prefix: 'demo', responseUrl,
+      })).toBe(expected)
+    }
+  })
   it("uses the project HTTP client convention and excludes query cardinality", () => {
     expect(
       browserHttpClientSpanName({

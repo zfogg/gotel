@@ -29,17 +29,17 @@ assert index_result['summary']=='CREATE INDEX idx_participants_session ON ...'
 assert index_result['text']==index_query
 multi = [
     ('SELECT 1; UPDATE t SET x=\'SECRET\'; DELETE FROM t WHERE id=2', 3,
-     'SELECT …; UPDATE t SET …; DELETE FROM t WHERE …'),
-    ('SELECT \';\' AS separator; SELECT 2', 2, 'SELECT …; SELECT …'),
-    ('SELECT $$a;b$$; SELECT 2', 2, 'SELECT …; SELECT …'),
-    ('SELECT 1;; ; SELECT 2;', 2, 'SELECT …; SELECT …'),
-    ('SELECT 1/* ; hidden */; -- ; hidden\nSELECT 2', 2, 'SELECT …; SELECT …'),
+     'SELECT …; UPDATE t SET …; DELETE FROM t WHERE …', ''),
+    ('SELECT \';\' AS separator; SELECT 2', 2, 'SELECT …; SELECT …', 'SELECT'),
+    ('SELECT $$a;b$$; SELECT 2', 2, 'SELECT …; SELECT …', 'SELECT'),
+    ('SELECT 1;; ; SELECT 2;', 2, 'SELECT …; SELECT …', 'SELECT'),
+    ('SELECT 1/* ; hidden */; -- ; hidden\nSELECT 2', 2, 'SELECT …; SELECT …', 'SELECT'),
     ('/* first ; */ SELECT 1; /* second\n ; */ SELECT 2 -- third ;\n;', 2,
-     'SELECT …; SELECT …'),
+     'SELECT …; SELECT …', 'SELECT'),
 ]
-for query, count, summary in multi:
+for query, count, summary, operation in multi:
     result=inspect([dict(query=query,dialect=2)])[0]
-    assert result['status']==0 and result['count']==count and result['summary']==summary,(query,result)
+    assert result['status']==0 and result['count']==count and result['summary']==summary and result['operation']==operation,(query,result)
     assert 'SECRET' not in result['text'] and 'hidden' not in result['text'],(query,result)
 for query in ("SELECT 1; SELECT 'SECRET", 'SELECT 1; /* SECRET'):
     result=inspect([dict(query=query,dialect=2)])[0]
@@ -54,7 +54,10 @@ assert len(large_cte)>3000
 for result in inspect([dict(query=large_cte,dialect=d) for d in range(5)]):
     assert result['status']==0 and result['operation']=='SELECT'
     assert result['summary'].startswith('WITH ') and 'SELECT … FROM records WHERE …' in result['summary']
-    assert len(result['summary'].encode())<=4096 and 'SECRET' not in result['summary']+result['text']
+    assert len(result['summary'].encode())<=32768 and 'SECRET' not in result['summary']+result['text']
+large_summary=inspect([dict(query='SELECT * FROM '+('表'*12000),dialect=2)])[0]
+assert large_summary['status']==0 and 4096<len(large_summary['summary'].encode())<=32768
+assert large_summary['summary'].endswith('…')
 for c,r in zip(cases,inspect(cases)):
     if (r['status']==0)!=c['safe'] or r['text']!=c['text'] or r['summary']!=c['summary'] or r['operation']!=c['operation']:
         errors.append((c,r))
@@ -101,10 +104,10 @@ alphabet="abcXYZ0123$@?:;.,[]()/*-+ '\"`\\\n"
 for i in range(4000):
     noise.append(dict(query='SELECT '+''.join(rng.choice(alphabet) for _ in range(rng.randrange(1,200))),dialect=i%5))
 for c,r in zip(noise,inspect(noise)):
-    assert len(r['text'].encode())<=32768 and len(r['summary'].encode())<=4096
+    assert len(r['text'].encode())<=32768 and len(r['summary'].encode())<=32768
     if r['status']!=0:assert r['text']=='' and r['summary']=='SQL'
 deep=[dict(query='SELECT '+('('*200)+'1'+(')'*200),dialect=d) for d in range(5)]
-for r in inspect(deep):assert len(r['summary'].encode())<=4096
+for r in inspect(deep):assert len(r['summary'].encode())<=32768
 oversized=inspect([dict(query='SELECT '+('x'*1048576),dialect=0)])[0]
 assert oversized['status']!=0 and oversized['text']==''
 print(f'{len(cases)} Go/live parity cases, {len(edge_cases)} edge cases, 2000 secret mutations, 4000 malformed grammar cases, UTF-8 and size limits passed')

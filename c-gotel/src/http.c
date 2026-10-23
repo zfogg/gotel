@@ -80,6 +80,10 @@ otlp_status_t gotel_http_name(char *out, size_t cap, const char *prefix, bool se
       used += plen;
       s += len;
     }
+    if (used == n && used + 1 >= sizeof(safe))
+      return OTLP_ERR_OVERFLOW;
+    if (used == n)
+      safe[used++] = '/';
     safe[used] = 0;
   }
   size_t pn = strlen(prefix);

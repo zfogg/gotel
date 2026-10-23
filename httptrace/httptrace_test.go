@@ -1,11 +1,14 @@
 package httptrace
 
 import (
+	"bufio"
 	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -16,6 +19,36 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
 )
+
+func TestSharedClientNames(t *testing.T) {
+	file, err := os.Open(filepath.Join("..", "testdata", "http_names.tsv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "#") || line == "" {
+			continue
+		}
+		parts := strings.Split(line, "\t")
+		if len(parts) != 3 {
+			t.Fatalf("invalid fixture: %q", line)
+		}
+		u, err := url.Parse(parts[1])
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := (Namer{Prefix: "demo"}).ClientSpanName("", &http.Request{Method: parts[0], URL: u})
+		if got != parts[2] {
+			t.Errorf("%s %s: got %q, want %q", parts[0], parts[1], got, parts[2])
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestServerSpanNameIsBoundedAndPrefixed(t *testing.T) {
 	for _, prefix := range []string{"stonkpile", "ratio", "spaniel", ""} {

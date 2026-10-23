@@ -22,7 +22,7 @@ const (
 	DialectDuckDB          Dialect = "duckdb"
 	DialectSQLite          Dialect = "sqlite"
 	DialectMySQL           Dialect = "mysql"
-	DefaultMaxSummaryBytes         = 4096
+	DefaultMaxSummaryBytes         = 32 * 1024
 )
 
 func nativeDialect(d Dialect) C.gotel_sql_dialect_t {

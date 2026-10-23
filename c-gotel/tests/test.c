@@ -41,6 +41,25 @@ static gotel_options_t options(void) {
   return o;
 }
 static void names(void) {
+  FILE *fixtures = fopen(GOTEL_HTTP_FIXTURES, "r");
+  CHECK(fixtures);
+  char row[4096];
+  while (fgets(row, sizeof(row), fixtures)) {
+    if (row[0] == '#')
+      continue;
+    char *url = strchr(row, '\t');
+    CHECK(url);
+    *url++ = 0;
+    char *expected = strchr(url, '\t');
+    CHECK(expected);
+    *expected++ = 0;
+    expected[strcspn(expected, "\r\n")] = 0;
+    char actual[2048];
+    CHECK(gotel_http_name(actual, sizeof(actual), "demo", false, row, url) == OTLP_OK);
+    CHECK(!strcmp(actual, expected));
+  }
+  CHECK(!ferror(fixtures));
+  fclose(fixtures);
   char b[256];
   CHECK(gotel_http_name(b, sizeof(b), "app", false, "GET",
                         "https://user:secret@example.com:8443/a/123?q=secret#frag") == OTLP_OK);

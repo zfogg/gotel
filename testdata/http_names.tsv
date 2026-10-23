@@ -1,0 +1,11 @@
+# method<TAB>absolute URL<TAB>expected client span name (prefix: demo)
+GET	https://api.example.com/items/123?token=secret#hidden	demo.http.client.GET api.example.com/items/{id}
+POST	https://api.example.com:8443/orders/550e8400-e29b-41d4-a716-446655440000	demo.http.client.POST api.example.com:8443/orders/{id}
+DELETE	https://user:secret@api.example.com/reports/2360f5747fbf826f6e5ccde6376418286a886fcf2032122eb24a75f351391af0	demo.http.client.DELETE api.example.com/reports/{id}
+PURGE	https://api.example.com/items/a%2Fb?key=private	demo.http.client.PURGE api.example.com/items/a%2Fb
+GET	https://api.example.com/	demo.http.client.GET api.example.com/
+HEAD	https://api.example.com	demo.http.client.HEAD api.example.com/
+GET	https://api.example.com/bars/5m	demo.http.client.GET api.example.com/bars/5m
+GET	https://api.example.com/users/550e8400-e29b-01d4-a716-446655440000	demo.http.client.GET api.example.com/users/550e8400-e29b-01d4-a716-446655440000
+GET	https://api.example.com/%E6%97%A5%E6%9C%AC/42	demo.http.client.GET api.example.com/%E6%97%A5%E6%9C%AC/{id}
+POST	http://[::1]:8080/path/99	demo.http.client.POST [::1]:8080/path/{id}

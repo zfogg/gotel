@@ -133,7 +133,7 @@ It never uses expanded SQL or reads bind values. Malformed quoting fails closed.
 `summary` is a structural skeleton of CTEs, sources, aliases, joins, nested
 queries, clauses and row bounds, `operation` is the first SQL verb, and
 `statement_count` counts nonempty top-level statements in the call. Text
-defaults to 32768 bytes, independently of the 4096-byte summary budget; both stay
+defaults to 32768 bytes, independently of the 32768-byte summary budget; both stay
 on UTF-8 boundaries. Static integer row bounds may appear in the summary but
 are sanitized in query text. Input is limited to 1 MiB and structural recursion
 to 64 levels. This is a telemetry parser, not SQL syntax validation or execution.

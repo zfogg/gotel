@@ -20,6 +20,8 @@ if(CGOTEL_BUILD_TESTS)
 
   add_executable(c-gotel-test test.c)
   target_link_libraries(c-gotel-test PRIVATE gotel::testing Threads::Threads)
+  target_compile_definitions(c-gotel-test PRIVATE
+    GOTEL_HTTP_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../testdata/http_names.tsv")
   add_test(NAME c-gotel-unit COMMAND c-gotel-test)
   foreach(case http validation sampling context registry concurrency testing)
     add_test(NAME c-gotel-${case} COMMAND c-gotel-test --case ${case})
