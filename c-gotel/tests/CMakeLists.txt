@@ -7,6 +7,14 @@ if(CGOTEL_BUILD_TESTS)
   find_package(Threads REQUIRED)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+  add_executable(c-gotel-env-test env_test.c)
+  target_link_libraries(c-gotel-env-test PRIVATE gotel::c-gotel)
+  target_include_directories(c-gotel-env-test PRIVATE
+    ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/otlp-tls ${otlp_c_SOURCE_DIR}/src)
+  foreach(case defaults endpoints identity transport disabled validation headers)
+    add_test(NAME c-gotel-env-${case} COMMAND c-gotel-env-test ${case})
+  endforeach()
+
   add_executable(c-gotel-test test.c)
   target_link_libraries(c-gotel-test PRIVATE gotel::testing Threads::Threads)
   add_test(NAME c-gotel-unit COMMAND c-gotel-test)
