@@ -14,6 +14,12 @@ var updateSummaries = flag.Bool("update-summaries", false, "regenerate the revie
 
 func TestSummary(t *testing.T) {
 	cases := []struct{ query, want string }{
+		{"CREATE INDEX IF NOT EXISTS idx_participants_session ON participants(session_string);", "CREATE INDEX idx_participants_session ON ..."},
+		{"create index idx_participants_session on session_participants(session_id)", "CREATE INDEX idx_participants_session ON ..."},
+		{"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS public.account_id ON accounts(id) WHERE token='SECRET'", "CREATE UNIQUE INDEX public.account_id ON ..."},
+		{"CREATE INDEX \"Index Name\" ON \"Table Name\" ((lower(email)))", "CREATE INDEX \"Index Name\" ON ..."},
+		{"CREATE INDEX ON accounts(id)", "CREATE"},
+		{"CREATE INDEX 'SECRET' ON accounts(id)", "CREATE"},
 		{"-- name: FindAccount :one\nSELECT id FROM accounts WHERE token='secret'", "SELECT … FROM accounts WHERE …"},
 		{"SELECT a.id FROM accounts a JOIN holdings h ON h.account_id=a.id WHERE EXISTS (SELECT 1 FROM orders o WHERE o.account_id=a.id)", "SELECT … FROM accounts AS a JOIN holdings AS h ON h.account_id=a.id WHERE … EXISTS (SELECT … FROM orders AS o WHERE …)"},
 		{"WITH candidates AS MATERIALIZED (SELECT id FROM signals WHERE id>$1), picked AS (SELECT * FROM candidates) DELETE FROM signals USING picked WHERE signals.id=picked.id", "WITH candidates AS MATERIALIZED (SELECT … FROM signals WHERE …), picked AS (SELECT … FROM candidates) DELETE FROM signals USING picked WHERE …"},

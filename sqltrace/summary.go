@@ -629,6 +629,30 @@ func summarize(tokens []summaryToken, depth int) string {
 	}
 	i++
 	parts := []string{op}
+	if op == "CREATE" {
+		j := i
+		unique := j < len(tokens) && tokens[j].is("UNIQUE")
+		if unique {
+			j++
+		}
+		if j < len(tokens) && tokens[j].is("INDEX") {
+			j++
+			if j < len(tokens) && tokens[j].is("CONCURRENTLY") {
+				j++
+			}
+			if j+2 < len(tokens) && tokens[j].is("IF") && tokens[j+1].is("NOT") && tokens[j+2].is("EXISTS") {
+				j += 3
+			}
+			name, next := identifier(tokens, j)
+			if name != "" && next < len(tokens) && tokens[next].is("ON") {
+				kind := "CREATE INDEX "
+				if unique {
+					kind = "CREATE UNIQUE INDEX "
+				}
+				return prefix + kind + name + " ON ..."
+			}
+		}
+	}
 	if op == "SELECT" {
 		if i < len(tokens) && (tokens[i].is("DISTINCT") || tokens[i].is("ALL")) {
 			if tokens[i].is("DISTINCT") {

@@ -1,24 +1,39 @@
-#include <ctype.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include "utf8.h"
 #include <gotel/gotel.h>
+#include <pcre2.h>
 #include <stdio.h>
 #include <string.h>
-static bool identifier(const char *s, size_t n) {
-  bool digits = n > 0, hex = n >= 24, uuid = n == 36;
-  for (size_t i = 0; i < n; ++i) {
-    if (!isdigit((unsigned char)s[i]))
-      digits = false;
-    if (!isxdigit((unsigned char)s[i]))
-      hex = false;
-    if (uuid && ((i == 8 || i == 13 || i == 18 || i == 23) ? s[i] != '-' : !isxdigit((unsigned char)s[i])))
-      uuid = false;
+static otlp_status_t identifier(const char *s, size_t n, bool *result) {
+  /* Keep the same anchored ASCII ID policy as Go's httptrace.boundedClientPath. */
+  static const char pattern[] =
+      "\\A(?:[0-9]+|[0-9a-f]{24,}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\\z";
+  int error;
+  PCRE2_SIZE offset;
+  pcre2_code *code = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED, PCRE2_CASELESS, &error, &offset, NULL);
+  if (!code)
+    return OTLP_ERR_NOMEM;
+  pcre2_match_data *data = pcre2_match_data_create_from_pattern(code, NULL);
+  if (!data) {
+    pcre2_code_free(code);
+    return OTLP_ERR_NOMEM;
   }
-  return digits || hex || uuid;
+  int matched = pcre2_match(code, (PCRE2_SPTR)s, n, 0, 0, data, NULL);
+  pcre2_match_data_free(data);
+  pcre2_code_free(code);
+  if (matched < 0 && matched != PCRE2_ERROR_NOMATCH)
+    return OTLP_ERR_INVALID_ARGUMENT;
+  *result = matched >= 0;
+  return OTLP_OK;
 }
 otlp_status_t gotel_http_name(char *out, size_t cap, const char *prefix, bool server, const char *method,
                               const char *target) {
   if (!out || !cap || !prefix || !method || !*method || !target)
     return OTLP_ERR_INVALID_ARGUMENT;
   out[0] = 0;
+  if (!gotel_utf8_valid(prefix, strlen(prefix)) || !gotel_utf8_valid(method, strlen(method)) ||
+      !gotel_utf8_valid(target, strlen(target)))
+    return OTLP_ERR_INVALID_ARGUMENT;
   char safe[1024];
   size_t used = 0;
   if (server) {
@@ -53,7 +68,11 @@ otlp_status_t gotel_http_name(char *out, size_t cap, const char *prefix, bool se
         continue;
       }
       size_t len = strcspn(s, "/?#");
-      const char *part = identifier(s, len) ? "{id}" : s;
+      bool is_id;
+      otlp_status_t status = identifier(s, len, &is_id);
+      if (status != OTLP_OK)
+        return status;
+      const char *part = is_id ? "{id}" : s;
       size_t plen = part == s ? len : 4;
       if (used + plen >= sizeof(safe))
         return OTLP_ERR_OVERFLOW;

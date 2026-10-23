@@ -13,8 +13,15 @@ ctest --test-dir c-gotel/build --output-on-failure
 
 SQLite headers/libraries are required by default. Disable the adapter with
 `-DCGOTEL_WITH_SQLITE=OFF` for consumers without SQLite. A consumer can use
-`add_subdirectory(gotel/c-gotel)` and link `gotel::c-gotel`. FetchContent pins
-otlp-c to a commit; `FETCHCONTENT_SOURCE_DIR_OTLP_C` supports offline caches.
+`add_subdirectory(gotel/c-gotel)` and link `gotel::c-gotel`. `BUILD_SHARED_LIBS=ON`
+builds a shared c-gotel library; the default builds a static library. Both
+forms are tested on Windows and Linux. The library keeps the pinned otlp-c
+implementation in its own link image because it uses otlp-c's internal TLS and
+resource helpers. CMake accepts existing dependency targets through
+`CGOTEL_UTF8PROC_TARGET` and `CGOTEL_PCRE2_TARGET`; otherwise it discovers or
+fetches utf8proc and PCRE2. ascii-chat passes its existing targets and chooses
+the static form for release builds. `FETCHCONTENT_SOURCE_DIR_OTLP_C` supports
+offline caches.
 
 ## Host and operation scopes
 
@@ -70,7 +77,8 @@ is sent merely by linking the library; the application controls host creation.
 
 ## HTTP
 
-`gotel_http_name` implements the shared gotel naming convention:
+`gotel_http_name` implements the shared gotel naming convention with PCRE2 ID
+matching and utf8proc validation:
 `app.http.client.GET example.com:8443/items/{id}` and
 `app.http.server.GET /items/{id}`. Client URLs omit userinfo, query and fragment;
 integer, long hexadecimal and UUID path segments become `{id}`. A server must

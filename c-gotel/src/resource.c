@@ -183,7 +183,7 @@ otlp_status_t gotel_resource_detect(gotel_host_t *h) {
     return OTLP_OK;
   TRY(string(h, "telemetry.sdk.name", "c-gotel"));
   TRY(string(h, "telemetry.sdk.language", "cpp"));
-  TRY(string(h, "telemetry.sdk.version", "0.1.0"));
+  TRY(string(h, "telemetry.sdk.version", CGOTEL_VERSION));
   TRY(string(h, "process.runtime.name", "C"));
 #ifdef __clang__
   TRY(string(h, "process.runtime.version", __clang_version__));
