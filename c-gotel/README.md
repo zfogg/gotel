@@ -3,6 +3,31 @@
 Pure-C OpenTelemetry policy and instrumentation, backed by pinned otlp-c.
 No Go runtime, C++ SDK, background threads, or SQLite replacement calls.
 
+## Standard environment configuration
+
+Call `gotel_options_apply_env(&options, &storage, default_base_url)` after setting
+application defaults, then apply explicit application overrides before
+`gotel_create`. Keep `gotel_env_storage_t` alive through create; exporter strings,
+headers and resources are copied. `gotel_options_set_endpoint` converts a base
+URL to all three signal URLs, retaining path prefixes.
+
+Supported variables are `OTEL_SDK_DISABLED` (case-insensitive `true` disables all
+signals), `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`,
+`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`,
+`OTEL_EXPORTER_OTLP_TIMEOUT` (positive milliseconds),
+`OTEL_EXPORTER_OTLP_CERTIFICATE` (PEM CA bundle), and
+`OTEL_EXPORTER_OTLP_PROTOCOL` (`http/protobuf` only). The
+`OTEL_EXPORTER_OTLP_{TRACES,METRICS,LOGS}_{ENDPOINT,HEADERS}` variants override
+their common settings. Signal endpoints are complete URLs; base endpoints gain
+`/v1/<signal>`. Empty variables are unset. `OTEL_SERVICE_NAME` wins over
+`service.name` in resource attributes; environment resource attributes override
+matching application attributes while retaining other application attributes.
+
+Run the downstream executable checks with
+`python c-gotel/tests/ascii_chat_env.py /path/to/ascii-chat`. They exercise all
+three wire signals, resource identity, headers, endpoint precedence, disablement,
+timeouts, and invalid protocol/certificate configuration using synthetic media.
+
 ## Build and test
 
 ```sh
