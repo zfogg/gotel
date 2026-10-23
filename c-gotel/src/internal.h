@@ -12,7 +12,6 @@ typedef struct {
 struct gotel_host {
   gotel_options_t options;
   gotel_tls_store *tls;
-  otlp_env_storage_t *signal_env;
   otlp_exporter_t *exporter;
   otlp_tracer_t *tracer;
   gotel_measurement_t *measurements;
@@ -24,4 +23,3 @@ struct gotel_host {
 };
 void gotel_emit_span(gotel_host_t *host, otlp_span_t *span);
 otlp_status_t gotel_resource_detect(gotel_host_t *host);
-otlp_status_t gotel_signal_headers(gotel_host_t *host);
