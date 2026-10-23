@@ -270,6 +270,8 @@ The tag must match the CMake and TypeScript package versions. The release
 contains tested C static archives for x64 and ARM64 on Linux, macOS, and
 Windows, with public headers and linking notes; one ZIP of the compiled
 TypeScript package; and SHA-256 checksums.
+Each ZIP has a use-focused `README.md`; the GitHub Release notes summarize
+the C linking requirements and TypeScript installation steps.
 The C archives retain external dependencies such as OpenSSL, SQLite, PCRE2,
 and utf8proc. See [C release linking notes](c-gotel/RELEASE.md).
 

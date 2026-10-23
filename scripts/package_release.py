@@ -46,8 +46,8 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path, expected_a
             (gotel_lib, f"lib/{gotel_lib.name}"),
             (otlp_lib, f"lib/{otlp_lib.name}"),
             (ROOT / "LICENSE", "LICENSE"),
-            (ROOT / "c-gotel" / "README.md", "README.md"),
-            (ROOT / "c-gotel" / "RELEASE.md", "LINKING.md"),
+            (ROOT / "c-gotel" / "RELEASE.md", "README.md"),
+            (ROOT / "c-gotel" / "README.md", "API.md"),
             (otlp_source / "LICENSE", "third-party/otlp-c-LICENSE"),
         ):
             add_file(archive, source, f"{name}/{destination}")
@@ -83,7 +83,9 @@ def package_typescript(tag: str, tarball: Path, output: Path) -> Path:
             if relative.parts[0] != "package" or ".." in relative.parts:
                 raise ValueError(f"unexpected npm tarball path: {member.name}")
             data = package.extractfile(member).read()
-            archive.writestr(f"{name}/{'/'.join(relative.parts[1:])}", data)
+            destination = "PROJECT.md" if relative.as_posix() == "package/README.md" else "/".join(relative.parts[1:])
+            archive.writestr(f"{name}/{destination}", data)
+        add_file(archive, ROOT / "typescript" / "RELEASE.md", f"{name}/README.md")
     return path
 
 

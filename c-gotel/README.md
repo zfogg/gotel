@@ -58,7 +58,7 @@ the static form for release builds. `FETCHCONTENT_SOURCE_DIR_OTLP_C` supports
 offline caches.
 
 Tagged releases also provide platform-specific static-library ZIPs with
-`c-gotel`, `otlp-c`, and their public headers. Read the included `LINKING.md`
+`c-gotel`, `otlp-c`, and their public headers. Read the included `README.md`
 for the external dependencies and toolchain requirements before linking one.
 
 ## Host and operation scopes

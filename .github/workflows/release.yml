@@ -153,6 +153,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
@@ -168,6 +169,6 @@ jobs:
           cd release-assets
           sha256sum *.zip > SHA256SUMS
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes
+            gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file "$GITHUB_WORKSPACE/.github/RELEASE_NOTES.md"
           fi
           gh release upload "$RELEASE_TAG" *.zip SHA256SUMS --clobber
