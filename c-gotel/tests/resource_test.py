@@ -29,6 +29,7 @@ with Collector() as receiver:
         assert all(r==first for r in resources.values()),'resource differs across signals'
         assert first['service.name']=='resource-test'
         if mode=='disabled':assert 'process.pid' not in first;continue
+        assert first['telemetry.sdk.language']=='c'
         for key in ('host.name','os.type','os.description','process.executable.name','process.executable.path',
                     'process.owner','process.runtime.name','process.runtime.description','telemetry.sdk.name',
                     'telemetry.sdk.language','telemetry.sdk.version'):

@@ -38,7 +38,8 @@ are deep-copied during `gotel_create`. NULL `argv` discovers native arguments
 on Windows, Linux, and macOS. `omit_command_args` suppresses detection of command
 arguments, and `disable_resource_detection` disables all default detectors.
 Service version and deployment environment remain caller-supplied attributes,
-as in Go. C reports its actual compiler rather than claiming a Go runtime.
+as in Go. `telemetry.sdk.language` is `c`; C reports its actual compiler
+rather than claiming a Go runtime.
 
 Declare a bounded array of `gotel_operation_t` identities, then initialize
 `gotel_options_t` with exporter options, signal mask, sampling probability,

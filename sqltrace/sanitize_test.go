@@ -80,6 +80,14 @@ func FuzzSanitizeDoesNotRetainQuotedPayload(f *testing.F) {
 		if payload == "" || strings.ContainsAny(payload, "'\\") || !utf8.ValidString(payload) {
 			t.Skip()
 		}
+		if strings.IndexByte(payload, 0) >= 0 {
+			for _, dialect := range []Dialect{DialectGeneric, DialectPostgreSQL, DialectDuckDB, DialectSQLite, DialectMySQL} {
+				if got, ok := SanitizeDialect(dialect, "SELECT '"+payload+"'"); ok || got.Text != "" {
+					t.Fatalf("%s accepted a NUL-containing SQL literal", dialect)
+				}
+			}
+			return
+		}
 		for _, dialect := range []Dialect{DialectGeneric, DialectPostgreSQL, DialectDuckDB, DialectSQLite, DialectMySQL} {
 			query := "SELECT '" + payload + "'"
 			got, ok := SanitizeDialect(dialect, query)
