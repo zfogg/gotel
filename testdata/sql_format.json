@@ -4871,7 +4871,7 @@
       "name": "layout/duckdb-qualify",
       "dialect": "duckdb",
       "sql": "SELECT * EXCLUDE(secret) FROM users QUALIFY row_number() OVER(PARTITION BY team ORDER BY id)=1",
-      "expected": "SELECT\n  * EXCLUDE(secret)\nFROM users\nQUALIFY\n  row_number() OVER (PARTITION BY team ORDER BY id) = 1",
+      "expected": "SELECT\n  * EXCLUDE(secret)\nFROM users\nQUALIFY\n  row_number() OVER (\n    PARTITION BY team\n    ORDER BY id\n  ) = 1",
       "valid": true
     },
     {
@@ -4887,6 +4887,27 @@
       "sql": "SELECT -1 AS negative,1e-3 AS tiny,a+b AS sum,a/b AS ratio FROM t WHERE value>=-1",
       "expected": "SELECT\n  -1 AS negative,\n  1e-3 AS tiny,\n  a + b AS sum,\n  a / b AS ratio\nFROM t\nWHERE\n  value >= -1",
       "valid": true
+    },
+    {
+      "name": "layout/complex-report",
+      "dialect": "postgresql",
+      "sql": "-- Revenue report: keep this comment exactly.\nWITH eligible_orders AS (\n  SELECT\n    o.id,\n    o.customer_id,\n    o.region_id,\n    o.created_at,\n    o.total\n  FROM orders o\n  INNER JOIN customers c\n    ON c.id = o.customer_id\n    AND c.deleted_at IS NULL\n  WHERE\n    o.created_at >= $1\n    AND o.created_at < $2\n    AND (\n      (\n        o.status = 'paid'\n        AND (\n          c.tier IN ('gold', 'platinum')\n          OR c.lifetime_spend >= $3\n        )\n      )\n      OR (\n        o.status = 'refunded'\n        AND EXISTS (\n          SELECT\n            1\n          FROM refunds r\n          WHERE\n            r.order_id = o.id\n            AND r.reason <> 'fraud'\n        )\n      )\n    )\n    AND NOT (\n      o.is_test = true\n      OR c.email LIKE '%@example.com'\n    )\n),\nregional_totals AS (\n  SELECT\n    e.region_id,\n    COUNT(*) AS order_count,\n    SUM(e.total) AS revenue\n  FROM eligible_orders e\n  GROUP BY\n    e.region_id\n  HAVING\n    SUM(e.total) > $4\n    AND (\n      COUNT(*) >= $5\n      OR SUM(e.total) > $6\n    )\n)\nSELECT\n  c.id,\n  c.name,\n  COALESCE(r.name, 'Unknown') AS region,\n  CASE\n    WHEN t.revenue >= $7 AND (c.tier = 'platinum' OR c.lifetime_spend > $8) THEN\n      CASE\n        WHEN c.vip = true THEN 'priority'\n        ELSE 'growth'\n      END\n    ELSE 'standard'\n  END AS segment,\n  COUNT(DISTINCT e.id) AS orders,\n  SUM(e.total) AS customer_revenue,\n  ROW_NUMBER() OVER (PARTITION BY e.region_id ORDER BY SUM(e.total) DESC) AS regional_rank\nFROM eligible_orders e\nINNER JOIN customers c\n  ON c.id = e.customer_id\nLEFT OUTER JOIN regions r\n  ON r.id = e.region_id\n  AND (\n    r.enabled = true\n    OR r.id = $9\n  )\nINNER JOIN regional_totals t\n  ON t.region_id = e.region_id\nLEFT JOIN account_flags f\n  ON f.customer_id = c.id\n  AND f.expires_at > CURRENT_TIMESTAMP\nWHERE\n  (\n    f.blocked = false\n    OR f.blocked IS NULL\n  )\n  AND (\n    c.country = $10\n    OR (\n      c.country = $11\n      AND c.created_at BETWEEN $12 AND $13\n    )\n  ) /* preserve $14 inside this comment */\nGROUP BY\n  c.id,\n  c.name,\n  c.tier,\n  c.lifetime_spend,\n  c.vip,\n  e.region_id,\n  r.name,\n  t.revenue\nHAVING\n  COUNT(DISTINCT e.id) >= $14\n  AND (\n    SUM(e.total) > $15\n    OR MAX(e.total) > $16\n  )\nORDER BY\n  customer_revenue DESC,\n  c.id\nLIMIT $17\nOFFSET $18; -- trailing comment",
+      "expected": "-- Revenue report: keep this comment exactly.\nWITH eligible_orders AS (\n  SELECT\n    o.id,\n    o.customer_id,\n    o.region_id,\n    o.created_at,\n    o.total\n  FROM orders o\n  INNER JOIN customers c\n    ON c.id = o.customer_id\n    AND c.deleted_at IS NULL\n  WHERE\n    o.created_at >= $1\n    AND o.created_at < $2\n    AND (\n      (\n        o.status = 'paid'\n        AND (\n          c.tier IN ('gold', 'platinum')\n          OR c.lifetime_spend >= $3\n        )\n      )\n      OR (\n        o.status = 'refunded'\n        AND EXISTS (\n          SELECT\n            1\n          FROM refunds r\n          WHERE\n            r.order_id = o.id\n            AND r.reason <> 'fraud'\n        )\n      )\n    )\n    AND NOT (\n      o.is_test = true\n      OR c.email LIKE '%@example.com'\n    )\n),\nregional_totals AS (\n  SELECT\n    e.region_id,\n    COUNT(*) AS order_count,\n    SUM(e.total) AS revenue\n  FROM eligible_orders e\n  GROUP BY\n    e.region_id\n  HAVING\n    SUM(e.total) > $4\n    AND (\n      COUNT(*) >= $5\n      OR SUM(e.total) > $6\n    )\n)\nSELECT\n  c.id,\n  c.name,\n  COALESCE(r.name, 'Unknown') AS region,\n  CASE\n    WHEN t.revenue >= $7\n      AND (\n        c.tier = 'platinum'\n        OR c.lifetime_spend > $8\n      )\n    THEN\n      CASE\n        WHEN c.vip = true THEN 'priority'\n        ELSE 'growth'\n      END\n    ELSE 'standard'\n  END AS segment,\n  COUNT(DISTINCT e.id) AS orders,\n  SUM(e.total) AS customer_revenue,\n  ROW_NUMBER() OVER (\n    PARTITION BY e.region_id\n    ORDER BY SUM(e.total) DESC\n  ) AS regional_rank\nFROM eligible_orders e\nINNER JOIN customers c\n  ON c.id = e.customer_id\nLEFT OUTER JOIN regions r\n  ON r.id = e.region_id\n  AND (\n    r.enabled = true\n    OR r.id = $9\n  )\nINNER JOIN regional_totals t\n  ON t.region_id = e.region_id\nLEFT JOIN account_flags f\n  ON f.customer_id = c.id\n  AND f.expires_at > CURRENT_TIMESTAMP\nWHERE\n  (\n    f.blocked = false\n    OR f.blocked IS NULL\n  )\n  AND (\n    c.country = $10\n    OR (\n      c.country = $11\n      AND c.created_at BETWEEN $12 AND $13\n    )\n  ) /* preserve $14 inside this comment */\nGROUP BY\n  c.id,\n  c.name,\n  c.tier,\n  c.lifetime_spend,\n  c.vip,\n  e.region_id,\n  r.name,\n  t.revenue\nHAVING\n  COUNT(DISTINCT e.id) >= $14\n  AND (\n    SUM(e.total) > $15\n    OR MAX(e.total) > $16\n  )\nORDER BY\n  customer_revenue DESC,\n  c.id\nLIMIT $17\nOFFSET $18; -- trailing comment",
+      "valid": true
+    },
+    {
+      "name": "layout/case-between",
+      "dialect": "postgresql",
+      "sql": "SELECT CASE WHEN score BETWEEN $1 AND $2 AND enabled=true THEN 'yes' ELSE 'no' END FROM users",
+      "expected": "SELECT\n  CASE\n    WHEN score BETWEEN $1 AND $2\n      AND enabled = true\n    THEN 'yes'\n    ELSE 'no'\n  END\nFROM users",
+      "valid": true
+    },
+    {
+      "name": "layout/window-multiple",
+      "dialect": "postgresql",
+      "valid": true,
+      "sql": "SELECT SUM(amount) OVER (PARTITION BY team,region ORDER BY created_at DESC,id) FROM sales",
+      "expected": "SELECT\n  SUM(amount) OVER (\n    PARTITION BY\n      team,\n      region\n    ORDER BY\n      created_at DESC,\n      id\n  )\nFROM sales"
     }
   ]
 }

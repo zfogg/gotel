@@ -171,10 +171,11 @@ enum { F_NONE, F_SELECT, F_FROM, F_CONDITION, F_ORDER, F_SET, F_VALUES, F_WITH, 
 typedef struct {
   size_t base, closing, header_end;
   int clause;
-  bool active, pending, multiline, between, deleting, inserting, values_seen;
+  bool active, pending, multiline, between, deleting, inserting, values_seen, window;
 } format_frame;
 typedef struct {
   size_t depth, base;
+  bool condition, multiline;
 } format_case;
 
 static size_t format_next(format_token *ts, size_t n, size_t i) {
@@ -235,6 +236,8 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
       if (level == 64)
         return false;
       opens[++level] = i;
+      if (i && kw(ts[i - 1].t, "OVER"))
+        ts[i].multiline = true;
     } else if (ts[i].kind == 0 && t.n == 1 && strchr(")]}", *t.p)) {
       if (!level)
         return false;
@@ -277,7 +280,8 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
     bool modifier = format_join(ts, count, i) && !join_head;
     bool from = kw(t, "FROM") && ctx->active && !head;
     bool condition = (kw(t, "WHERE") || kw(t, "HAVING") || kw(t, "QUALIFY")) && ctx->active;
-    bool order = (kw(t, "ORDER") || kw(t, "GROUP")) && next < count && kw(ts[next].t, "BY") && ctx->active;
+    bool order =
+        (kw(t, "ORDER") || kw(t, "GROUP") || kw(t, "PARTITION")) && next < count && kw(ts[next].t, "BY") && ctx->active;
     bool set = kw(t, "SET") && ctx->active;
     bool values =
         kw(t, "VALUES") && ctx->clause != F_SELECT && ((!ctx->active) || (ctx->inserting && !ctx->values_seen));
@@ -290,12 +294,32 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
                    (!case_count || cases[case_count - 1].depth != depth);
     if (kw(t, "BETWEEN"))
       ctx->between = true;
-    if (kw(t, "AND") && ctx->between) {
+    bool between_and = kw(t, "AND") && ctx->between;
+    if (between_and) {
       ctx->between = false;
       logical = false;
     }
     bool case_when = case_count && cases[case_count - 1].depth == depth && (kw(t, "WHEN") || kw(t, "ELSE"));
     bool case_end = case_count && cases[case_count - 1].depth == depth && kw(t, "END");
+    format_case *case_ctx = case_count && cases[case_count - 1].depth == depth ? &cases[case_count - 1] : NULL;
+    if (case_ctx && kw(t, "WHEN")) {
+      case_ctx->condition = true;
+      case_ctx->multiline = false;
+      size_t nested = 0;
+      for (size_t j = i + 1; j < count; ++j) {
+        if (sym(ts[j].t, '(') || sym(ts[j].t, '[') || sym(ts[j].t, '{'))
+          j = ts[j].matching;
+        else if (kw(ts[j].t, "CASE"))
+          ++nested;
+        else if (kw(ts[j].t, "END") && nested)
+          --nested;
+        else if (!nested && kw(ts[j].t, "THEN")) {
+          case_ctx->multiline |= ts[j].flat_width - ts[i].flat_width > 60;
+          break;
+        } else if (!nested && (kw(ts[j].t, "AND") || kw(ts[j].t, "OR")))
+          case_ctx->multiline = true;
+      }
+    }
     bool nested_case = kw(t, "CASE") && case_count && previous != SIZE_MAX &&
                        (kw(ts[previous].t, "THEN") || kw(ts[previous].t, "ELSE"));
     bool spaced_operator = format_spaced_operator(ts, i, previous);
@@ -318,6 +342,13 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
     if (case_when) {
       line = true;
       indent = cases[case_count - 1].base + 1;
+    }
+    if (case_ctx && case_ctx->condition && case_ctx->multiline && !case_when &&
+        (kw(t, "AND") || kw(t, "OR") || kw(t, "THEN"))) {
+      line = true;
+      indent = case_ctx->base + (kw(t, "THEN") ? 1 : 2);
+      if (between_and)
+        line = false;
     }
     if (case_end) {
       line = true;
@@ -360,6 +391,8 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
         return false;
       cases[case_count++] = (format_case){depth, line_indent};
     }
+    if (case_ctx && (kw(t, "THEN") || kw(t, "ELSE")))
+      case_ctx->condition = false;
     if (select) {
       ctx->active = true;
       ctx->deleting = false;
@@ -399,6 +432,24 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
       ctx->clause = set ? F_SET : values ? F_VALUES : F_ORDER;
       ctx->pending = true;
       ctx->header_end = order ? next : i;
+      if (order && ctx->window) {
+        /* Short single-expression window clauses read naturally inline.
+         * Count only commas at this level; function arguments are opaque. */
+        size_t end = next;
+        bool list = false;
+        for (size_t j = next + 1; j < count; ++j) {
+          token item = ts[j].t;
+          if (sym(item, ')') || kw(item, "ORDER") || kw(item, "ROWS") || kw(item, "RANGE") || kw(item, "GROUPS"))
+            break;
+          if (sym(item, ','))
+            list = true;
+          if (sym(item, '(') || sym(item, '[') || sym(item, '{'))
+            j = ts[j].matching;
+          end = j;
+        }
+        if (!list && ts[end].flat_width - ts[i].flat_width <= 60)
+          ctx->pending = false;
+      }
     } else if (bound || setop || conflict) {
       ctx->clause = F_OTHER;
     } else if (sym(t, ',')) {
@@ -420,10 +471,14 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
       join_head = false;
     if (open) {
       size_t closing = head ? ctx->base : format_body(*ctx);
+      bool window = previous != SIZE_MAX && kw(ts[previous].t, "OVER");
+      bool case_condition = case_ctx && case_ctx->condition && case_ctx->multiline;
+      if (case_condition)
+        closing = case_ctx->base + 2;
       bool subquery = next < count && (kw(ts[next].t, "SELECT") || kw(ts[next].t, "WITH") || kw(ts[next].t, "UPDATE") ||
                                        kw(ts[next].t, "DELETE"));
       bool boolean = false;
-      if ((ctx->clause == F_CONDITION || ctx->clause == F_ON) &&
+      if ((ctx->clause == F_CONDITION || ctx->clause == F_ON || case_condition) &&
           (previous == SIZE_MAX || !ts[previous].t.word || kw(ts[previous].t, "AND") || kw(ts[previous].t, "OR") ||
            kw(ts[previous].t, "NOT") || kw(ts[previous].t, "WHERE") || kw(ts[previous].t, "HAVING") ||
            kw(ts[previous].t, "ON"))) {
@@ -440,10 +495,11 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
       frames[++depth] = (format_frame){.base = closing + (multiline && !boolean ? 1 : 0),
                                        .closing = closing,
                                        .clause = boolean ? F_CONDITION : F_NONE,
-                                       .active = boolean,
+                                       .active = boolean || window,
                                        .pending = multiline,
                                        .header_end = i,
-                                       .multiline = multiline};
+                                       .multiline = multiline,
+                                       .window = window};
     }
     previous = i;
   }
