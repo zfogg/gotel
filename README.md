@@ -53,6 +53,14 @@ streaming, flushing and WebSocket upgrades retain their existing behavior.
 - dialect-tolerant sanitization for PostgreSQL, DuckDB, SQLite, and MySQL syntax;
 - automatic bounded SQL operation-and-table summaries, independent of span names.
 
+SQL summaries and operation detection compile the same C parser used by
+`c-gotel` through cgo. `go get` only fetches the module; building a Go program
+that imports `sqltrace` (or its database adapters) requires cgo and a C compiler.
+The Go build compiles bundled utf8proc source and does not invoke CMake or
+require a system utf8proc installation. The bundled utf8proc source is pinned to
+commit `e5e799221b45bbb90f5fdc5c69b6b8dfbf017e78` (MIT license in
+`sqltrace/UTF8PROC_LICENSE.md`).
+
 `gormtrace` and `pgxtrace` apply that contract at the driver boundary so every
 query is covered. `pgxtrace` covers queries, COPY, batches, prepare, and connect;
 `gormtrace` supports configurable CLIENT/INTERNAL spans. `sqltrace.StartSpan`

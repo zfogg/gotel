@@ -9,6 +9,8 @@ for c in production:
     assert c['text']==c['observed_text'] and c['summary']==c['observed_summary']
     assert c['trace_url'].startswith('http://pi5:8345/traces/')
 cases+=production
+edge_cases=json.loads(Path(__file__).with_name('sql_edge_cases.json').read_text(encoding='utf-8'))
+dialects={'generic':0,'sqlite':1,'postgresql':2,'duckdb':3,'mysql':4}
 def inspect(cases):
     data=''.join(f"{c['dialect']} {c.get('limit',0)} {int(c.get('omit',False))} {int(c.get('keep',False))} {(c['raw'] if 'raw' in c else c['query'].encode()).hex()}\n" for c in cases)
     result=subprocess.run([sys.argv[1]],input=data,text=True,capture_output=True,check=True,timeout=60)
@@ -25,6 +27,17 @@ index_result=inspect([dict(query=index_query,dialect=1)])[0]
 assert index_result['status']==0
 assert index_result['summary']=='CREATE INDEX idx_participants_session ON ...'
 assert index_result['text']==index_query
+for case,result in zip(edge_cases,inspect([dict(query=case['query'],dialect=dialects[case['dialect']]) for case in edge_cases])):
+    assert result['status']==0,(case['name'],result)
+    assert result['operation']==case['operation'],(case['name'],result)
+    assert all(fragment in result['summary'] for fragment in case['contains']),(case['name'],result)
+    assert 'SECRET' not in result['summary']+result['text'],(case['name'],result)
+large_cte='WITH '+', '.join(f'c{i} AS (SELECT id FROM records WHERE token=\'SECRET\')' for i in range(60))+' SELECT * FROM c59'
+assert len(large_cte)>3000
+for result in inspect([dict(query=large_cte,dialect=d) for d in range(5)]):
+    assert result['status']==0 and result['operation']=='SELECT'
+    assert result['summary'].startswith('WITH ') and 'SELECT … FROM records WHERE …' in result['summary']
+    assert len(result['summary'].encode())<=4096 and 'SECRET' not in result['summary']+result['text']
 for c,r in zip(cases,inspect(cases)):
     if (r['status']==0)!=c['safe'] or r['text']!=c['text'] or r['summary']!=c['summary'] or r['operation']!=c['operation']:
         errors.append((c,r))
@@ -77,4 +90,4 @@ deep=[dict(query='SELECT '+('('*200)+'1'+(')'*200),dialect=d) for d in range(5)]
 for r in inspect(deep):assert len(r['summary'].encode())<=4096
 oversized=inspect([dict(query='SELECT '+('x'*1048576),dialect=0)])[0]
 assert oversized['status']!=0 and oversized['text']==''
-print(f'{len(cases)} Go/live parity cases, 2000 secret mutations, 4000 malformed grammar cases, UTF-8 and size limits passed')
+print(f'{len(cases)} Go/live parity cases, {len(edge_cases)} edge cases, 2000 secret mutations, 4000 malformed grammar cases, UTF-8 and size limits passed')

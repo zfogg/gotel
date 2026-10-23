@@ -360,8 +360,10 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	key := inspectionCacheKey{statement: statement, dialect: options.Dialect, maxBytes: options.MaxQueryTextBytes, collapse: options.CollapseInLists, omit: options.OmitQueryText}
 	cached, ok := inspections.get(key)
 	if !ok {
-		cached.summary = Summary(options.Dialect, statement)
-		cached.operation = statementOperation(options.Dialect, statement)
+		cached.summary, cached.operation, _ = inspectNative(options.Dialect, statement)
+		if cached.summary == "" {
+			cached.summary = "SQL"
+		}
 		cached.simple = SQLCName(statement)
 		sanitized, safe := SanitizeWithOptions(statement, options)
 		if safe {
@@ -497,36 +499,6 @@ func SQLCName(statement string) string {
 // Operation returns the outer SQL operation, looking past CTE definitions.
 func Operation(statement string) string {
 	return statementOperation(DialectGeneric, statement)
-}
-
-// statementOperation classifies CTE statements independently of rendered summaries.
-func statementOperation(dialect Dialect, statement string) string {
-	safe, ok := SanitizeWithOptions(statement, SanitizeOptions{Dialect: dialect, MaxQueryTextBytes: -1})
-	if !ok {
-		return ""
-	}
-	tokens := summaryTokens(safe.Text, dialect)
-	for len(tokens) > 0 && tokens[0].text == "(" {
-		tokens = tokens[1:]
-	}
-	if len(tokens) == 0 || !tokens[0].word {
-		return ""
-	}
-	if !tokens[0].is("WITH") {
-		return strings.ToUpper(tokens[0].text)
-	}
-	for i := 1; i < len(tokens); i++ {
-		if tokens[i].text == "(" {
-			i = closingParen(tokens, i)
-			continue
-		}
-		for _, op := range []string{"SELECT", "INSERT", "UPDATE", "DELETE", "MERGE", "VALUES"} {
-			if tokens[i].is(op) {
-				return op
-			}
-		}
-	}
-	return "WITH"
 }
 
 func normalizeSimpleName(value string) string {
