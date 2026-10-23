@@ -281,6 +281,8 @@ static void wire(const char *endpoint, unsigned signals) {
   gotel_error(&root, "fixture.error", "wire failure");
   gotel_end(&root);
   gotel_log(h, OTLP_SEVERITY_INFO, "wire outside", __FILE__, __LINE__, __func__);
+  for (int severity = OTLP_SEVERITY_TRACE; severity <= OTLP_SEVERITY_FATAL4; ++severity)
+    gotel_log(h, (otlp_severity_t)severity, "wire severity", __FILE__, __LINE__, __func__);
 #ifdef CGOTEL_WITH_SQLITE
   sqlite_test(h);
 #endif

@@ -37,6 +37,13 @@ try:
                 assert 9 not in outside and 10 not in outside
         if signals & 2:
             assert b'wire message' in payload
+            logs = records(server.records, '/v1/logs')
+            severity_logs = [r for r in logs if fields(r[5][0]).get(1) == [b'wire severity']]
+            assert len(severity_logs) == 24
+            labels = [b'TRACE', b'DEBUG', b'INFO', b'WARN', b'ERROR', b'FATAL']
+            for severity in range(1, 25):
+                log = next(r for r in severity_logs if r[2] == [severity])
+                assert log[3] == [labels[(severity - 1) // 4]], (severity, log)
         if signals & 4:
             if len(sys.argv) < 3 or sys.argv[2] == 'ON':
                 sql_metrics = [m for m in records(server.records, '/v1/metrics')

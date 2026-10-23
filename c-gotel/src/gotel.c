@@ -246,6 +246,9 @@ void gotel_log(gotel_host_t *h, otlp_severity_t severity, const char *body, cons
   otlp_log_record_t *r = otlp_log_record_create(severity, body);
   if (!r)
     return;
+  static const char *const severity_names[] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
+  if (severity >= OTLP_SEVERITY_TRACE && severity <= OTLP_SEVERITY_FATAL4)
+    otlp_log_record_set_severity_text(r, severity_names[((unsigned)severity - 1) / 4]);
   otlp_log_record_mark_timestamp(r);
   gotel_context_t c = gotel_current_context();
   if (c.valid && c.sampled) {
