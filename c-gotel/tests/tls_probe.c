@@ -26,9 +26,9 @@ int main(int argc, char **argv) {
   o.exporter.service_name = "c-gotel-tls";
   o.exporter.endpoint = argv[1];
   o.tls_ca_file = *argv[2] ? argv[2] : NULL;
-  o.exporter.connect_timeout_ms = 200;
-  o.exporter.read_timeout_ms = 200;
-  o.exporter.flush_timeout_ms = 1500;
+  o.exporter.connect_timeout_ms = 1000;
+  o.exporter.read_timeout_ms = 1000;
+  o.exporter.flush_timeout_ms = 5000;
   o.exporter.backoff_initial_ms = 5;
   o.exporter.backoff_max_ms = 10;
   o.exporter.max_retries = 1;

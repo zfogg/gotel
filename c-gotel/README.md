@@ -52,8 +52,9 @@ builds a shared c-gotel library; the default builds a static library. Both
 forms are tested on Windows, Linux, and macOS. The library keeps the pinned otlp-c
 implementation in its own link image because it uses otlp-c's internal TLS and
 resource helpers. CMake accepts existing dependency targets through
-`CGOTEL_UTF8PROC_TARGET` and `CGOTEL_PCRE2_TARGET`; otherwise it discovers or
-fetches utf8proc and PCRE2. ascii-chat passes its existing targets and chooses
+`CGOTEL_UTF8PROC_TARGET`, `CGOTEL_PCRE2_TARGET`, and `CGOTEL_SQLITE_TARGET`;
+otherwise it discovers SQLite3 and discovers or fetches utf8proc and PCRE2.
+ascii-chat passes its existing targets and chooses
 the static form for release builds. `FETCHCONTENT_SOURCE_DIR_OTLP_C` supports
 offline caches.
 

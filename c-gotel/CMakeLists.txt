@@ -5,6 +5,7 @@ include(FetchContent)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(CGOTEL_BUILD_TESTS "Build c-gotel unit and wire tests" OFF)
 option(CGOTEL_WITH_SQLITE "Build SQLite trace adapter" ON)
+set(CGOTEL_SQLITE_TARGET "" CACHE STRING "Existing SQLite3 CMake target")
 
 include(cmake/TextDependencies.cmake)
 

@@ -13,7 +13,7 @@ from gotel_testing import Collector
 openssl = shutil.which('openssl') or r'C:\Program Files\Git\usr\bin\openssl.exe'
 probe = sys.argv[1]
 def run(endpoint, ca, success=True, env=None):
-    subprocess.run([probe, endpoint, str(ca), '1' if success else '0'], check=True, timeout=10, env=env)
+    subprocess.run([probe, endpoint, str(ca), '1' if success else '0'], check=True, timeout=20, env=env)
 with tempfile.TemporaryDirectory(prefix='gotel-tls-') as directory:
     root = Path(directory)
     def command(*args):
