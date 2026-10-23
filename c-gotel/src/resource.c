@@ -1,3 +1,6 @@
+#if !defined(_WIN32) && !defined(_POSIX_C_SOURCE)
+#define _POSIX_C_SOURCE 200809L
+#endif
 #include "internal.h"
 /* The pinned exporter already supports owned ArrayValues internally, while its
  * public resource options accept scalars only. Use that one seam at creation,

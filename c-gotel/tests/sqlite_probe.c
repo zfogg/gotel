@@ -1,7 +1,11 @@
 #include <gotel/testing.h>
 #include <stdio.h>
 #include <string.h>
-static const gotel_operation_t operations[] = {{"test.database.operation", false}};
+static const gotel_operation_t operations[] = {{"test.database.operation", false}, {"test.cleanup", false}};
+static int advance_progress(void *context) {
+  (void)context;
+  return gotel_test_clock_advance(100) == OTLP_OK ? 0 : 1;
+}
 #define CHECK(call)                                                                                                    \
   do {                                                                                                                 \
     if (!(call)) {                                                                                                     \
@@ -20,7 +24,7 @@ int main(int argc, char **argv) {
   o.exporter.queue_capacity = 64;
   o.signals = GOTEL_ALL;
   o.operations = operations;
-  o.operation_count = 1;
+  o.operation_count = 2;
   o.realtime_sample_rate = 1;
   o.monotonic_ns = gotel_test_monotonic_ns;
   o.realtime_ns = gotel_test_realtime_ns;
@@ -33,15 +37,19 @@ int main(int argc, char **argv) {
                      "CREATE TABLE accounts(id INTEGER, token TEXT); INSERT INTO accounts VALUES(1,'LITERAL_SECRET');",
                      NULL, NULL, NULL) == SQLITE_OK);
   static const gotel_query_t queries[] = {
-      {"FindAccount", "SELECT id FROM accounts WHERE token='LITERAL_SECRET' AND id=?1"}};
+      {"FindAccount", "SELECT id FROM accounts WHERE token='LITERAL_SECRET' AND id=?1"},
+      {"DeferredFinalize", "SELECT id FROM accounts UNION ALL SELECT 99"},
+      {"EnableForeignKeys", "PRAGMA foreign_keys=ON;"}};
+  sqlite3_progress_handler(db, 1, advance_progress, NULL);
   gotel_sqlite_options_t options = {.namespace_name = "fixture"};
   options.sql.omit_query_text = !strcmp(argv[2], "omit");
   if (!strcmp(argv[2], "truncate"))
     options.sql.max_query_text_bytes = 12;
   gotel_sqlite_t *adapter = NULL;
-  CHECK(gotel_sqlite_attach_with_options(h, db, "test.storage", queries, 1, &options, &adapter) == OTLP_OK);
+  CHECK(gotel_sqlite_attach_with_options(h, db, "test.storage", queries, 3, &options, &adapter) == OTLP_OK);
   gotel_scope_t scope;
   gotel_begin(h, &scope, 0, NULL);
+  CHECK(sqlite3_exec(db, queries[2].sql, NULL, NULL, NULL) == SQLITE_OK);
   sqlite3_stmt *statement = NULL;
   CHECK(sqlite3_prepare_v2(db, queries[0].sql, -1, &statement, NULL) == SQLITE_OK);
   for (int i = 0; i < 2; ++i) {
@@ -50,7 +58,13 @@ int main(int argc, char **argv) {
     CHECK(sqlite3_reset(statement) == SQLITE_OK);
   }
   CHECK(sqlite3_finalize(statement) == SQLITE_OK);
+  CHECK(sqlite3_prepare_v2(db, queries[1].sql, -1, &statement, NULL) == SQLITE_OK);
+  CHECK(sqlite3_step(statement) == SQLITE_ROW);
   CHECK(sqlite3_exec(db, "SELECT 'BOUND_SECRET', 789, x'4142', NULL", NULL, NULL, NULL) == SQLITE_OK);
+  gotel_end(&scope);
+  gotel_begin(h, &scope, 1, NULL);
+  CHECK(gotel_test_clock_advance(250) == OTLP_OK);
+  CHECK(sqlite3_finalize(statement) == SQLITE_OK);
   gotel_end(&scope);
   CHECK(sqlite3_close(db) == SQLITE_OK);
   CHECK(gotel_drain(h) == OTLP_OK);
