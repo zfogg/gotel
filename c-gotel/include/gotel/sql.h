@@ -1,6 +1,12 @@
 #ifndef CGOTEL_SQL_H
 #define CGOTEL_SQL_H
+#ifdef CGOTEL_SQL_STANDALONE
+#include <stdbool.h>
+#include <stddef.h>
+typedef enum { OTLP_OK = 0, OTLP_ERR_NULL, OTLP_ERR_INVALID_ARGUMENT, OTLP_ERR_OVERFLOW, OTLP_ERR_NOMEM } otlp_status_t;
+#else
 #include <otlp-c/otlp.h>
+#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,8 +36,10 @@ typedef struct {
  * values. Malformed quoting fails closed: text is empty and summary is SQL.
  * Input is limited to 1 MiB and nesting to 64 levels. Output is UTF-8 bounded. */
 otlp_status_t gotel_sql_inspect(const char *sql, const gotel_sql_options_t *options, gotel_sql_metadata_t *out);
+#ifndef CGOTEL_SQL_STANDALONE
 void gotel_sql_attributes(otlp_span_t *span, const gotel_sql_metadata_t *metadata, const char *system,
                           const char *namespace_name, size_t bind_count);
+#endif
 #ifdef __cplusplus
 }
 #endif

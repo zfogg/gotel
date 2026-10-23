@@ -125,13 +125,7 @@ func TestStonkpileQuerySummaries(t *testing.T) {
 			}
 			for _, keyword := range []string{"JOIN", "ON", "USING", "LATERAL", "LIMIT", "OFFSET", "UNION", "INTERSECT", "EXCEPT"} {
 				countKeyword := func(sql string) int {
-					n := 0
-					for _, token := range summaryTokens(sql, DialectPostgreSQL) {
-						if token.is(keyword) {
-							n++
-						}
-					}
-					return n
+					return len(regexp.MustCompile(`(?i)\b`+keyword+`\b`).FindAllStringIndex(sql, -1))
 				}
 				if got, want := countKeyword(summary), countKeyword(safe.Text); got != want {
 					t.Errorf("%s: lost %s structure: got %d, want %d: %s", name, keyword, got, want, summary)

@@ -609,9 +609,9 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
     i = end < n ? end + 1 : n;
   } else {
     token op = t[i++];
-    const char *operations[] = {"SELECT",   "INSERT", "UPDATE", "DELETE", "MERGE",    "COPY",    "CALL",
-                                "TRUNCATE", "CREATE", "ALTER",  "DROP",   "VACUUM",   "ANALYZE", "PRAGMA",
-                                "SHOW",     "SET",    "BEGIN",  "COMMIT", "ROLLBACK", "VALUES"};
+    const char *operations[] = {"SELECT", "INSERT", "UPDATE",   "DELETE", "MERGE",   "COPY",   "CALL",   "TRUNCATE",
+                                "CREATE", "ALTER",  "DROP",     "VACUUM", "ANALYZE", "PRAGMA", "SHOW",   "SET",
+                                "BEGIN",  "COMMIT", "ROLLBACK", "VALUES", "REPLACE", "PIVOT",  "UNPIVOT"};
     bool supported = false;
     for (size_t j = 0; j < sizeof(operations) / sizeof(*operations); ++j)
       if (kw(op, operations[j]))
@@ -621,6 +621,13 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
       return;
     }
     upper(b, op);
+    if (kw(op, "PIVOT") || kw(op, "UNPIVOT")) {
+      if (i < n) {
+        text(b, " ");
+        name(b, t, n, i);
+      }
+      return;
+    }
     if (kw(op, "CREATE")) {
       size_t j = i;
       bool unique = j < n && kw(t[j], "UNIQUE");
@@ -974,6 +981,7 @@ done:
   free(tokens);
   return status;
 }
+#ifndef CGOTEL_SQL_STANDALONE
 void gotel_sql_attributes(otlp_span_t *span, const gotel_sql_metadata_t *m, const char *system, const char *ns,
                           size_t binds) {
   if (!span || !m)
@@ -991,3 +999,4 @@ void gotel_sql_attributes(otlp_span_t *span, const gotel_sql_metadata_t *m, cons
     otlp_span_set_attribute_string(span, "db.namespace", ns);
   otlp_span_set_attribute_int(span, "gotel.db.query.bind_count", (int64_t)binds);
 }
+#endif
