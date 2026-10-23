@@ -53,6 +53,16 @@ func main() {
 		return
 	}
 	seen := map[string]bool{}
+	for _, query := range []string{
+		"CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT 'secret')",
+		"CREATE INDEX account_id ON accounts(id)",
+		"ALTER TABLE accounts ADD COLUMN secret TEXT",
+		"DROP TABLE accounts", "REINDEX accounts", "PRAGMA journal_mode=WAL",
+		"VACUUM accounts", "ANALYZE accounts", "TRUNCATE TABLE accounts",
+		"COPY accounts FROM '/private/file.csv'", "BEGIN TRANSACTION", "COMMIT", "ROLLBACK",
+	} {
+		seen[query] = true
+	}
 	for _, file := range []string{"sqltrace/sanitize_test.go", "sqltrace/summary_test.go", "sqltrace/summary_structure_test.go", "sqltrace/sqltrace_test.go"} {
 		f, err := parser.ParseFile(token.NewFileSet(), file, nil, 0)
 		if err != nil {

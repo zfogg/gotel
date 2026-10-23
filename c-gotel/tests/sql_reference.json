@@ -240,6 +240,286 @@
     "operation": "SELECT"
   },
   {
+    "query": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "dialect": 0,
+    "safe": true,
+    "text": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "summary": "ALTER",
+    "operation": "ALTER"
+  },
+  {
+    "query": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "dialect": 1,
+    "safe": true,
+    "text": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "summary": "ALTER",
+    "operation": "ALTER"
+  },
+  {
+    "query": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "dialect": 2,
+    "safe": true,
+    "text": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "summary": "ALTER",
+    "operation": "ALTER"
+  },
+  {
+    "query": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "dialect": 3,
+    "safe": true,
+    "text": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "summary": "ALTER",
+    "operation": "ALTER"
+  },
+  {
+    "query": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "dialect": 4,
+    "safe": true,
+    "text": "ALTER TABLE accounts ADD COLUMN secret TEXT",
+    "summary": "ALTER",
+    "operation": "ALTER"
+  },
+  {
+    "query": "ANALYZE accounts",
+    "dialect": 0,
+    "safe": true,
+    "text": "ANALYZE accounts",
+    "summary": "ANALYZE accounts",
+    "operation": "ANALYZE"
+  },
+  {
+    "query": "ANALYZE accounts",
+    "dialect": 1,
+    "safe": true,
+    "text": "ANALYZE accounts",
+    "summary": "ANALYZE accounts",
+    "operation": "ANALYZE"
+  },
+  {
+    "query": "ANALYZE accounts",
+    "dialect": 2,
+    "safe": true,
+    "text": "ANALYZE accounts",
+    "summary": "ANALYZE accounts",
+    "operation": "ANALYZE"
+  },
+  {
+    "query": "ANALYZE accounts",
+    "dialect": 3,
+    "safe": true,
+    "text": "ANALYZE accounts",
+    "summary": "ANALYZE accounts",
+    "operation": "ANALYZE"
+  },
+  {
+    "query": "ANALYZE accounts",
+    "dialect": 4,
+    "safe": true,
+    "text": "ANALYZE accounts",
+    "summary": "ANALYZE accounts",
+    "operation": "ANALYZE"
+  },
+  {
+    "query": "BEGIN TRANSACTION",
+    "dialect": 0,
+    "safe": true,
+    "text": "BEGIN TRANSACTION",
+    "summary": "BEGIN",
+    "operation": "BEGIN"
+  },
+  {
+    "query": "BEGIN TRANSACTION",
+    "dialect": 1,
+    "safe": true,
+    "text": "BEGIN TRANSACTION",
+    "summary": "BEGIN",
+    "operation": "BEGIN"
+  },
+  {
+    "query": "BEGIN TRANSACTION",
+    "dialect": 2,
+    "safe": true,
+    "text": "BEGIN TRANSACTION",
+    "summary": "BEGIN",
+    "operation": "BEGIN"
+  },
+  {
+    "query": "BEGIN TRANSACTION",
+    "dialect": 3,
+    "safe": true,
+    "text": "BEGIN TRANSACTION",
+    "summary": "BEGIN",
+    "operation": "BEGIN"
+  },
+  {
+    "query": "BEGIN TRANSACTION",
+    "dialect": 4,
+    "safe": true,
+    "text": "BEGIN TRANSACTION",
+    "summary": "BEGIN",
+    "operation": "BEGIN"
+  },
+  {
+    "query": "COMMIT",
+    "dialect": 0,
+    "safe": true,
+    "text": "COMMIT",
+    "summary": "COMMIT",
+    "operation": "COMMIT"
+  },
+  {
+    "query": "COMMIT",
+    "dialect": 1,
+    "safe": true,
+    "text": "COMMIT",
+    "summary": "COMMIT",
+    "operation": "COMMIT"
+  },
+  {
+    "query": "COMMIT",
+    "dialect": 2,
+    "safe": true,
+    "text": "COMMIT",
+    "summary": "COMMIT",
+    "operation": "COMMIT"
+  },
+  {
+    "query": "COMMIT",
+    "dialect": 3,
+    "safe": true,
+    "text": "COMMIT",
+    "summary": "COMMIT",
+    "operation": "COMMIT"
+  },
+  {
+    "query": "COMMIT",
+    "dialect": 4,
+    "safe": true,
+    "text": "COMMIT",
+    "summary": "COMMIT",
+    "operation": "COMMIT"
+  },
+  {
+    "query": "COPY accounts FROM '/private/file.csv'",
+    "dialect": 0,
+    "safe": true,
+    "text": "COPY accounts FROM ?",
+    "summary": "COPY accounts",
+    "operation": "COPY"
+  },
+  {
+    "query": "COPY accounts FROM '/private/file.csv'",
+    "dialect": 1,
+    "safe": true,
+    "text": "COPY accounts FROM ?",
+    "summary": "COPY accounts",
+    "operation": "COPY"
+  },
+  {
+    "query": "COPY accounts FROM '/private/file.csv'",
+    "dialect": 2,
+    "safe": true,
+    "text": "COPY accounts FROM ?",
+    "summary": "COPY accounts",
+    "operation": "COPY"
+  },
+  {
+    "query": "COPY accounts FROM '/private/file.csv'",
+    "dialect": 3,
+    "safe": true,
+    "text": "COPY accounts FROM ?",
+    "summary": "COPY accounts",
+    "operation": "COPY"
+  },
+  {
+    "query": "COPY accounts FROM '/private/file.csv'",
+    "dialect": 4,
+    "safe": true,
+    "text": "COPY accounts FROM ?",
+    "summary": "COPY accounts",
+    "operation": "COPY"
+  },
+  {
+    "query": "CREATE INDEX account_id ON accounts(id)",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE INDEX account_id ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX account_id ON accounts(id)",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE INDEX account_id ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX account_id ON accounts(id)",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE INDEX account_id ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX account_id ON accounts(id)",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE INDEX account_id ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE INDEX account_id ON accounts(id)",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE INDEX account_id ON accounts(id)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT 'secret')",
+    "dialect": 0,
+    "safe": true,
+    "text": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT ?)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT 'secret')",
+    "dialect": 1,
+    "safe": true,
+    "text": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT ?)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT 'secret')",
+    "dialect": 2,
+    "safe": true,
+    "text": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT ?)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT 'secret')",
+    "dialect": 3,
+    "safe": true,
+    "text": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT ?)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
+    "query": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT 'secret')",
+    "dialect": 4,
+    "safe": true,
+    "text": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, token TEXT DEFAULT ?)",
+    "summary": "CREATE",
+    "operation": "CREATE"
+  },
+  {
     "query": "DELETE FROM a WHERE id=777 ORDER BY id LIMIT 5",
     "dialect": 0,
     "safe": true,
@@ -278,6 +558,46 @@
     "text": "DELETE FROM a WHERE id=? ORDER BY id LIMIT ?",
     "summary": "DELETE FROM a WHERE … ORDER BY … LIMIT 5",
     "operation": "DELETE"
+  },
+  {
+    "query": "DROP TABLE accounts",
+    "dialect": 0,
+    "safe": true,
+    "text": "DROP TABLE accounts",
+    "summary": "DROP",
+    "operation": "DROP"
+  },
+  {
+    "query": "DROP TABLE accounts",
+    "dialect": 1,
+    "safe": true,
+    "text": "DROP TABLE accounts",
+    "summary": "DROP",
+    "operation": "DROP"
+  },
+  {
+    "query": "DROP TABLE accounts",
+    "dialect": 2,
+    "safe": true,
+    "text": "DROP TABLE accounts",
+    "summary": "DROP",
+    "operation": "DROP"
+  },
+  {
+    "query": "DROP TABLE accounts",
+    "dialect": 3,
+    "safe": true,
+    "text": "DROP TABLE accounts",
+    "summary": "DROP",
+    "operation": "DROP"
+  },
+  {
+    "query": "DROP TABLE accounts",
+    "dialect": 4,
+    "safe": true,
+    "text": "DROP TABLE accounts",
+    "summary": "DROP",
+    "operation": "DROP"
   },
   {
     "query": "EXPLAIN (",
@@ -598,6 +918,126 @@
     "text": "MERGE INTO inventory i USING changes c ON i.id=c.id WHEN MATCHED THEN UPDATE SET quantity=c.quantity",
     "summary": "MERGE INTO inventory AS i USING changes AS c ON i.id=c.id WHEN MATCHED THEN UPDATE SET …",
     "operation": "MERGE"
+  },
+  {
+    "query": "PRAGMA journal_mode=WAL",
+    "dialect": 0,
+    "safe": true,
+    "text": "PRAGMA journal_mode=WAL",
+    "summary": "PRAGMA",
+    "operation": "PRAGMA"
+  },
+  {
+    "query": "PRAGMA journal_mode=WAL",
+    "dialect": 1,
+    "safe": true,
+    "text": "PRAGMA journal_mode=WAL",
+    "summary": "PRAGMA",
+    "operation": "PRAGMA"
+  },
+  {
+    "query": "PRAGMA journal_mode=WAL",
+    "dialect": 2,
+    "safe": true,
+    "text": "PRAGMA journal_mode=WAL",
+    "summary": "PRAGMA",
+    "operation": "PRAGMA"
+  },
+  {
+    "query": "PRAGMA journal_mode=WAL",
+    "dialect": 3,
+    "safe": true,
+    "text": "PRAGMA journal_mode=WAL",
+    "summary": "PRAGMA",
+    "operation": "PRAGMA"
+  },
+  {
+    "query": "PRAGMA journal_mode=WAL",
+    "dialect": 4,
+    "safe": true,
+    "text": "PRAGMA journal_mode=WAL",
+    "summary": "PRAGMA",
+    "operation": "PRAGMA"
+  },
+  {
+    "query": "REINDEX accounts",
+    "dialect": 0,
+    "safe": true,
+    "text": "REINDEX accounts",
+    "summary": "SQL",
+    "operation": "REINDEX"
+  },
+  {
+    "query": "REINDEX accounts",
+    "dialect": 1,
+    "safe": true,
+    "text": "REINDEX accounts",
+    "summary": "SQL",
+    "operation": "REINDEX"
+  },
+  {
+    "query": "REINDEX accounts",
+    "dialect": 2,
+    "safe": true,
+    "text": "REINDEX accounts",
+    "summary": "SQL",
+    "operation": "REINDEX"
+  },
+  {
+    "query": "REINDEX accounts",
+    "dialect": 3,
+    "safe": true,
+    "text": "REINDEX accounts",
+    "summary": "SQL",
+    "operation": "REINDEX"
+  },
+  {
+    "query": "REINDEX accounts",
+    "dialect": 4,
+    "safe": true,
+    "text": "REINDEX accounts",
+    "summary": "SQL",
+    "operation": "REINDEX"
+  },
+  {
+    "query": "ROLLBACK",
+    "dialect": 0,
+    "safe": true,
+    "text": "ROLLBACK",
+    "summary": "ROLLBACK",
+    "operation": "ROLLBACK"
+  },
+  {
+    "query": "ROLLBACK",
+    "dialect": 1,
+    "safe": true,
+    "text": "ROLLBACK",
+    "summary": "ROLLBACK",
+    "operation": "ROLLBACK"
+  },
+  {
+    "query": "ROLLBACK",
+    "dialect": 2,
+    "safe": true,
+    "text": "ROLLBACK",
+    "summary": "ROLLBACK",
+    "operation": "ROLLBACK"
+  },
+  {
+    "query": "ROLLBACK",
+    "dialect": 3,
+    "safe": true,
+    "text": "ROLLBACK",
+    "summary": "ROLLBACK",
+    "operation": "ROLLBACK"
+  },
+  {
+    "query": "ROLLBACK",
+    "dialect": 4,
+    "safe": true,
+    "text": "ROLLBACK",
+    "summary": "ROLLBACK",
+    "operation": "ROLLBACK"
   },
   {
     "query": "SELECT \"secret",
@@ -4320,6 +4760,46 @@
     "operation": "SET"
   },
   {
+    "query": "TRUNCATE TABLE accounts",
+    "dialect": 0,
+    "safe": true,
+    "text": "TRUNCATE TABLE accounts",
+    "summary": "TRUNCATE accounts",
+    "operation": "TRUNCATE"
+  },
+  {
+    "query": "TRUNCATE TABLE accounts",
+    "dialect": 1,
+    "safe": true,
+    "text": "TRUNCATE TABLE accounts",
+    "summary": "TRUNCATE accounts",
+    "operation": "TRUNCATE"
+  },
+  {
+    "query": "TRUNCATE TABLE accounts",
+    "dialect": 2,
+    "safe": true,
+    "text": "TRUNCATE TABLE accounts",
+    "summary": "TRUNCATE accounts",
+    "operation": "TRUNCATE"
+  },
+  {
+    "query": "TRUNCATE TABLE accounts",
+    "dialect": 3,
+    "safe": true,
+    "text": "TRUNCATE TABLE accounts",
+    "summary": "TRUNCATE accounts",
+    "operation": "TRUNCATE"
+  },
+  {
+    "query": "TRUNCATE TABLE accounts",
+    "dialect": 4,
+    "safe": true,
+    "text": "TRUNCATE TABLE accounts",
+    "summary": "TRUNCATE accounts",
+    "operation": "TRUNCATE"
+  },
+  {
     "query": "UPDATE a SET token='secret' WHERE id=777 ORDER BY id LIMIT ?",
     "dialect": 0,
     "safe": true,
@@ -4398,6 +4878,46 @@
     "text": "UPDATE accounts SET balance=(SELECT sum(delta) FROM ledger) FROM users WHERE users.id=accounts.id",
     "summary": "UPDATE accounts SET … (SELECT … FROM ledger) FROM users WHERE …",
     "operation": "UPDATE"
+  },
+  {
+    "query": "VACUUM accounts",
+    "dialect": 0,
+    "safe": true,
+    "text": "VACUUM accounts",
+    "summary": "VACUUM accounts",
+    "operation": "VACUUM"
+  },
+  {
+    "query": "VACUUM accounts",
+    "dialect": 1,
+    "safe": true,
+    "text": "VACUUM accounts",
+    "summary": "VACUUM accounts",
+    "operation": "VACUUM"
+  },
+  {
+    "query": "VACUUM accounts",
+    "dialect": 2,
+    "safe": true,
+    "text": "VACUUM accounts",
+    "summary": "VACUUM accounts",
+    "operation": "VACUUM"
+  },
+  {
+    "query": "VACUUM accounts",
+    "dialect": 3,
+    "safe": true,
+    "text": "VACUUM accounts",
+    "summary": "VACUUM accounts",
+    "operation": "VACUUM"
+  },
+  {
+    "query": "VACUUM accounts",
+    "dialect": 4,
+    "safe": true,
+    "text": "VACUUM accounts",
+    "summary": "VACUUM accounts",
+    "operation": "VACUUM"
   },
   {
     "query": "WITH RECURSIVE tree(id) AS (SELECT id FROM nodes UNION ALL SELECT n.id FROM nodes n JOIN tree t ON n.parent=t.id) SELECT * FROM tree",

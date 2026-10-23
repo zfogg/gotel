@@ -101,7 +101,7 @@ application name. `gotel_sqlite_attach_with_options` additionally accepts a
 logical database namespace, text omission, a smaller text budget and IN-list
 policy. Existing `gotel_sqlite_attach` calls use the safe default policy.
 
-SQL regression tests include 600 cases generated from Go's tests, 24 production
+SQL regression tests include 665 cases generated from Go's tests and SQL command checks, 24 production
 query examples from pi5 Spaniel/stonkpile (eight each short, medium and long),
 2,000 secret-payload mutations, malformed grammar, and size/UTF-8 boundaries.
 The checked-in JSON fixtures need no Go installation or live service at test

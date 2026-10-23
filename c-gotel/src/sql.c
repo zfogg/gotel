@@ -599,6 +599,7 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
     }
     return;
   }
+  token operation_token = t[i];
   if (sym(t[i], '(')) {
     size_t end = close_group(t, n, i);
     text(b, "(");
@@ -607,7 +608,14 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
     i = end < n ? end + 1 : n;
   } else {
     token op = t[i++];
-    if (!op.word) {
+    const char *operations[] = {"SELECT",   "INSERT", "UPDATE", "DELETE", "MERGE",    "COPY",    "CALL",
+                                "TRUNCATE", "CREATE", "ALTER",  "DROP",   "VACUUM",   "ANALYZE", "PRAGMA",
+                                "SHOW",     "SET",    "BEGIN",  "COMMIT", "ROLLBACK", "VALUES"};
+    bool supported = false;
+    for (size_t j = 0; j < sizeof(operations) / sizeof(*operations); ++j)
+      if (kw(op, operations[j]))
+        supported = true;
+    if (!supported) {
       text(b, "SQL");
       return;
     }
@@ -678,16 +686,6 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
       i = name(b, t, n, i);
       if (kw(op, "CALL"))
         return;
-    } else if (kw(op, "CREATE") || kw(op, "ALTER") || kw(op, "DROP")) {
-      if (i < n) {
-        text(b, " ");
-        upper(b, t[i++]);
-      }
-      while (i < n && (kw(t[i], "IF") || kw(t[i], "NOT") || kw(t[i], "EXISTS")))
-        ++i;
-      text(b, " ");
-      name(b, t, n, i);
-      return;
     }
   }
   while (i < n) {
@@ -706,6 +704,8 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
       return;
     }
     if (kw(v, "FROM") || kw(v, "USING")) {
+      if (kw(operation_token, "COPY"))
+        break;
       text(b, " ");
       upper(b, v);
       text(b, " ");
@@ -721,7 +721,7 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
         i = close_group(t, n, i) + 1;
       continue;
     }
-    if (kw(v, "SELECT")) {
+    if (kw(v, "SELECT") && kw(operation_token, "INSERT")) {
       text(b, " ");
       summarize(b, t + i, n - i, depth + 1);
       return;
