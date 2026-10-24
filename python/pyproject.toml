@@ -1,5 +1,5 @@
 [project]
-name = "zfogg-gotel"
+name = "gotel"
 version = "0.9.0"
 description = "Shared OpenTelemetry conventions and native SQL inspection"
 readme = "README.md"

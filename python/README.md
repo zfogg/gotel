@@ -2,7 +2,7 @@
 
 A uv-managed package providing application-owned OpenTelemetry operation names,
 OTLP traces/logs/metrics, and SQL inspection using gotel's shared C engine.
-Requires Python 3.11 or newer. The distribution is `zfogg-gotel`; imports use `gotel`.
+Requires Python 3.11 or newer. The distribution is `gotel`; imports use `gotel`.
 
 ```sh
 cd python
@@ -13,7 +13,7 @@ uv build
 
 Install from a checkout with `uv add '../gotel/python[fastapi,httpx,sqlalchemy,redis,temporal]'`.
 For an immutable Git dependency, use
-`uv add 'zfogg-gotel[fastapi,httpx,sqlalchemy,redis,temporal] @ git+https://github.com/zfogg/gotel.git@COMMIT#subdirectory=python'`.
+`uv add 'gotel[fastapi,httpx,sqlalchemy,redis,temporal] @ git+https://github.com/zfogg/gotel.git@COMMIT#subdirectory=python'`.
 Do not depend on a developer's checkout in production. Releases include wheels and
 a source distribution; PyPI publication is separate. Source builds require a C
 compiler, but no CMake, Go, system utf8proc, or native telemetry library.

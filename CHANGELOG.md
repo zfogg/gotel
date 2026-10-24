@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add the uv-managed `zfogg-gotel` Python package with SDK lifecycle, application
+- Add the uv-managed `gotel` Python package with SDK lifecycle, application
   operations, HTTP, SQLAlchemy, Redis/pipeline, and Temporal adapters, correlated
   logging, and an in-memory test kit.
 - Extend the shared C SQL engine with a ClickHouse dialect, typed parameters,

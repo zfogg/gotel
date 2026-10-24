@@ -51,7 +51,7 @@ The version tag is the Go module release. Use
 `go get github.com/zfogg/gotel/go@vX.Y.Z` with this release's version. No
 compiled Go archive is published.
 
-Python assets contain the `zfogg-gotel` native wheels and source distribution
+Python assets contain the `gotel` native wheels and source distribution
 (import name `gotel`). Install wheels with uv or pip; source builds need a C
 compiler and bundle the shared SQL engine and utf8proc. Registry publication is
 separate. The Go module now lives at `github.com/zfogg/gotel/go` and resolves
