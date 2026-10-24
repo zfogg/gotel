@@ -44,6 +44,8 @@ int main(void) {
   CHECK(gotel_sql_format(nested, GOTEL_SQL_POSTGRESQL, NULL, 0, &length) == OTLP_OK);
   CHECK(length > strlen(nested) * 8 + 1024);
   required = length;
+  CHECK(gotel_sql_format(nested, GOTEL_SQL_POSTGRESQL, out, sizeof(out), &length) == OTLP_ERR_OVERFLOW);
+  CHECK(!*out && length == required);
   char *expanded = malloc(required + 1);
   CHECK(expanded);
   CHECK(gotel_sql_format(nested, GOTEL_SQL_POSTGRESQL, expanded, required + 1, &length) == OTLP_OK);
