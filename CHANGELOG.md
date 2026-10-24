@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.10.0
+
 - Add the uv-managed `gotel` Python package with SDK lifecycle, application
   operations, HTTP, SQLAlchemy, Redis/pipeline, and Temporal adapters, correlated
   logging, and an in-memory test kit.
@@ -13,6 +15,30 @@
   These packaging changes require consumer migrations.
 - Bundle checked copies of the shared SQL engine into the standalone Go module
   and Python source package; add Python wheel/sdist release assets and CI.
+- Add the standalone C `gotel` executable with `sql format --dialect`,
+  `sql sanitize`, and conservative `--edit-file` formatting. Build to
+  `build/gotel` (`build/gotel.exe` on Windows), without a Go toolchain.
+- Preserve comments, literals, bind placeholders, indentation, blank lines,
+  line endings, and permissions during conservative file edits. Reject malformed
+  input before replacement; support Unicode SQL arguments and paths on Windows
+  and clean temporary files after failed writes.
+- Handle ClickHouse line comments, numeric heredoc tags, Unicode quotes,
+  hexadecimal floats, typed parameters, arrays, and dialect-specific clauses
+  without exposing literal or comment contents in sanitized telemetry.
+- Grow SQL layout buffers for deeply nested queries while preserving the
+  size-measurement and all-or-nothing caller-buffer contracts.
+- Keep complete bounded Python SQL templates when indentation would exceed the
+  collection limit, and name FastAPI spans correctly for routes registered
+  after instrumentation.
+
+## v0.9.0
+
+- Add shared C and Go SQL formatting APIs for PostgreSQL, DuckDB, MySQL, SQLite,
+  and generic SQL, preserving comments, literals, identifiers, and bind markers.
+- Format sanitized `db.query.text` while retaining concise span names and query
+  summaries. Indent CTEs, joins, nested predicates, CASE expressions, and windows.
+- Add a shared corpus of real Stonkpile and Spaniel queries, exact layout tests,
+  execution-equivalence checks, mutation tests, fuzzing, and sanitizer coverage.
 
 ## v0.8.5
 
