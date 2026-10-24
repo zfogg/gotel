@@ -36,33 +36,13 @@ class Namer:
             return app.state.gotel_http_remove
         if getattr(app, "_is_instrumented_by_opentelemetry", False):
             raise ValueError("remove existing FastAPI instrumentation before installing gotel")
-        namer = self
-
-        # Route resolution happens inside the router, after the OTel server hook.
-        # Wrap each route's ASGI application so renaming occurs after resolution,
-        # including on exceptions, while the server span is still recording.
-        wrapped = []
-        for route in app.routes:
-            original = route.app
-            path = getattr(route, "path", None)
-
-            def wrap(original, path):
-                async def routed(scope, receive, send):
-                    from opentelemetry import trace
-
-                    span = trace.get_current_span()
-                    if scope["type"] == "http":
-                        span.update_name(namer.server_name(scope["method"], path))
-                        span.set_attribute("http.route", path or "/{unmatched}")
-                    await original(scope, receive, send)
-
-                return routed
-
-            route.app = wrap(original, path)
-            wrapped.append((route, original))
 
         def hook(span, scope):
-            span.update_name(self.server_name(scope.get("method", "OTHER"), None))
+            # FastAPI's instrumentor resolves http.route on each request, including
+            # routes added after installation. Reuse that route rather than a
+            # snapshot of app.routes or the concrete request path.
+            route = (getattr(span, "attributes", None) or {}).get("http.route")
+            span.update_name(self.server_name(scope.get("method", "OTHER"), route))
             if server_request_hook:
                 server_request_hook(span, scope)
 
@@ -77,8 +57,6 @@ class Namer:
         def remove():
             if getattr(app.state, "gotel_http_remove", None) is remove:
                 FastAPIInstrumentor.uninstrument_app(app)
-                for route, original in wrapped:
-                    route.app = original
                 del app.state.gotel_http_remove
 
         app.state.gotel_http_remove = remove

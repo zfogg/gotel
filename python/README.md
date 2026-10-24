@@ -96,7 +96,7 @@ remove_server = names.instrument_fastapi(app)
 remove_client = names.instrument_httpx(client)
 ```
 
-Install server instrumentation after registering routes and before serving. It
+Install server instrumentation before serving; routes are resolved per request. It
 names resolved routes as `beanaries.http.server.GET /items/{item_id}` and unmatched
 requests as `beanaries.http.server.GET /{unmatched}`. Send/receive helper spans
 are suppressed. Client names retain destination host, port, and path, replace

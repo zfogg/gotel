@@ -36,6 +36,17 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "setup.py" },
+    { file = "MANIFEST.in" },
+    { file = "src/gotel/*.c" },
+    { file = "src/gotel/*.pyi" },
+    { file = "src/gotel/py.typed" },
+    { file = "vendor/**" },
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

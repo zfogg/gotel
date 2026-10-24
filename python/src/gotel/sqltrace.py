@@ -78,10 +78,11 @@ def _attributes(sql, dialect, system, namespace, policy):
     if query.operation:
         attrs["db.operation.name"] = query.operation
     if query.text:
-        attrs["db.query.text"] = format_sql_or_original(query.text, dialect=dialect)
-        # Formatting may expand a bounded template: retain the collection byte cap.
+        # Keep the complete bounded template when layout would expand past the
+        # collection cap. Formatting must not introduce silent truncation.
         limit = policy.get("max_query_text_bytes", 32768) or 32768
-        attrs["db.query.text"] = attrs["db.query.text"].encode()[:limit].decode("utf-8", errors="ignore")
+        formatted = query.text if query.truncated else format_sql_or_original(query.text, dialect=dialect)
+        attrs["db.query.text"] = formatted if len(formatted.encode()) <= limit else query.text
     if query.truncated:
         attrs["gotel.db.query.truncated"] = True
     return attrs

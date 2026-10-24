@@ -61,6 +61,16 @@ def test_database_error_privacy():
         assert capture.spans[0].status.status_code == trace.StatusCode.ERROR
 
 
+def test_database_formatting_keeps_complete_bounded_template():
+    with Capture() as capture:
+        namer = sqltrace.Namer("test.storage", tracer_provider=capture.provider)
+        sql = "SELECT a,b,c,d,e FROM t"
+        with namer.query("List", sql=sql, system="postgresql", max_query_text_bytes=23):
+            pass
+        assert capture.spans[0].attributes["db.query.text"] == sql
+        assert not capture.spans[0].attributes.get("gotel.db.query.truncated", False)
+
+
 async def test_sqlalchemy_async_success_failure_and_names():
     from sqlalchemy import text
     from sqlalchemy.ext.asyncio import create_async_engine

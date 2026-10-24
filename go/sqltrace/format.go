@@ -23,7 +23,7 @@ func FormatSQL(dialect Dialect, query string) (string, error) {
 		return query, fmt.Errorf("SQL exceeds 1 MiB or contains NUL")
 	}
 	switch dialect {
-	case "", DialectGeneric, DialectPostgreSQL, DialectDuckDB, DialectSQLite, DialectMySQL:
+	case "", DialectGeneric, DialectPostgreSQL, DialectDuckDB, DialectSQLite, DialectMySQL, DialectClickHouse:
 	default:
 		return query, fmt.Errorf("unsupported SQL dialect %q", dialect)
 	}

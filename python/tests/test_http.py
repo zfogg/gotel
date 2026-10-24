@@ -28,6 +28,22 @@ async def test_fastapi_resolved_route_and_unmatched():
         remove()
 
 
+async def test_fastapi_routes_registered_after_instrumentation():
+    app = FastAPI()
+    with Capture("beanaries") as capture:
+        remove = Namer("beanaries").instrument_fastapi(app, tracer_provider=capture.provider)
+
+        @app.get("/items/{item_id}")
+        def item(item_id: str):
+            return {"id": item_id}
+
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app), base_url="http://test") as client:
+            assert (await client.get("/items/42")).status_code == 200
+        capture.require_span("beanaries.http.server.GET /items/{item_id}")
+        assert len(capture.spans) == 1
+        remove()
+
+
 async def test_httpx_async_failure_and_removal():
     async def fail(request):
         raise httpx.ConnectError("unavailable")

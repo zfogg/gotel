@@ -27,8 +27,9 @@ static size_t format_scan(const char *s, size_t n, gotel_sql_dialect_t d, format
     size_t start = i, end = i + 1;
     int kind = 0;
     unsigned char c = (unsigned char)s[i];
-    if ((c == '-' && end < n && s[end] == '-') || (c == '#' && (d == GOTEL_SQL_MYSQL || d == GOTEL_SQL_CLICKHOUSE))) {
-      while (end < n && s[end] != '\n' && s[end] != '\r')
+    if ((end < n && ((c == '-' && s[end] == '-') || (d == GOTEL_SQL_CLICKHOUSE && c == '/' && s[end] == '/'))) ||
+        (c == '#' && (d == GOTEL_SQL_MYSQL || d == GOTEL_SQL_CLICKHOUSE))) {
+      while (end < n && s[end] != '\n' && (d == GOTEL_SQL_CLICKHOUSE || s[end] != '\r'))
         ++end;
       kind = 3;
     } else if (c == '/' && end < n && s[end] == '*') {
@@ -49,9 +50,16 @@ static size_t format_scan(const char *s, size_t n, gotel_sql_dialect_t d, format
         return SIZE_MAX;
       kind = 4;
     } else {
+      if (d == GOTEL_SQL_CLICKHOUSE && clickhouse_quote(s, n, i)) {
+        end = clickhouse_quoted_end(s, n, i);
+        if (!end)
+          return SIZE_MAX;
+        kind = 2;
+      }
       if (c == '{' && d == GOTEL_SQL_CLICKHOUSE) {
         end = clickhouse_parameter(s, n, i);
-        if (!end) return SIZE_MAX;
+        if (!end)
+          return SIZE_MAX;
         kind = 2;
       }
       size_t quote = i;
@@ -73,14 +81,10 @@ static size_t format_scan(const char *s, size_t n, gotel_sql_dialect_t d, format
         kind = 2;
       }
       /* PostgreSQL dollar strings must be recognized before $parameters. */
-      if (c == '$' && (d == GOTEL_SQL_POSTGRESQL || d == GOTEL_SQL_DUCKDB || d == GOTEL_SQL_CLICKHOUSE || d == GOTEL_SQL_GENERIC)) {
-        size_t tag = i + 1;
-        if (tag < n && letter((unsigned char)s[tag])) {
-          ++tag;
-          while (tag < n && (letter((unsigned char)s[tag]) || isdigit((unsigned char)s[tag])))
-            ++tag;
-        }
-        if (tag < n && s[tag] == '$') {
+      if (c == '$' &&
+          (d == GOTEL_SQL_POSTGRESQL || d == GOTEL_SQL_DUCKDB || d == GOTEL_SQL_CLICKHOUSE || d == GOTEL_SQL_GENERIC)) {
+        size_t tag = dollar_tag_end(s, n, i, d);
+        if (tag) {
           size_t len = tag - i + 1;
           end = tag + 1;
           while (end + len <= n && memcmp(s + end, s + i, len))
@@ -101,7 +105,7 @@ static size_t format_scan(const char *s, size_t n, gotel_sql_dialect_t d, format
         }
       }
       if (!kind && c == '$' && d == GOTEL_SQL_SQLITE) {
-        while (end < n && part((unsigned char)s[end]))
+        while (end < n && part((unsigned char)s[end]) && !(d == GOTEL_SQL_CLICKHOUSE && clickhouse_quote(s, n, end)))
           ++end;
         while (end + 2 < n && s[end] == ':' && s[end + 1] == ':' && letter((unsigned char)s[end + 2])) {
           end += 3;
@@ -123,7 +127,9 @@ static size_t format_scan(const char *s, size_t n, gotel_sql_dialect_t d, format
       }
       if (!kind && strchr("~!#%^&|+-*/<>=@", c) && !(c == '@' && end < n && letter((unsigned char)s[end]))) {
         while (end < n && strchr("~!#%^&|+-*/<>=@", s[end])) {
-          if (end + 1 < n && ((s[end] == '/' && s[end + 1] == '*') || (s[end] == '-' && s[end + 1] == '-')))
+          if (end + 1 < n &&
+              ((s[end] == '/' && (s[end + 1] == '*' || (d == GOTEL_SQL_CLICKHOUSE && s[end + 1] == '/'))) ||
+               (s[end] == '-' && s[end + 1] == '-')))
             break;
           ++end;
         }
@@ -140,27 +146,36 @@ static size_t format_scan(const char *s, size_t n, gotel_sql_dialect_t d, format
       }
       if (!kind &&
           (c == '\'' || c == '"' || c == '`' || (c == '[' && (d == GOTEL_SQL_SQLITE || d == GOTEL_SQL_GENERIC)))) {
-        bool escape = d == GOTEL_SQL_MYSQL || d == GOTEL_SQL_CLICKHOUSE || (c == '\'' && i && (s[i - 1] == 'e' || s[i - 1] == 'E') &&
-                                               (i == 1 || !part((unsigned char)s[i - 2])));
+        bool escape =
+            d == GOTEL_SQL_MYSQL || d == GOTEL_SQL_CLICKHOUSE ||
+            (c == '\'' && i && (s[i - 1] == 'e' || s[i - 1] == 'E') && (i == 1 || !part((unsigned char)s[i - 2])));
         end = quoted(s, n, i, c == '[' ? ']' : (char)c, escape);
         if (!end)
           return SIZE_MAX;
         kind = 2;
       } else if (!kind && isdigit(c)) {
-        end = number_end(s, n, i);
+        end = dialect_number_end(s, n, i, d);
       } else if (!kind && (letter(c) || c >= 128 || c == '$' || c == '?' || c == ':' || c == '@')) {
-        while (end < n && part((unsigned char)s[end]))
+        while (end < n && part((unsigned char)s[end]) && !(d == GOTEL_SQL_CLICKHOUSE && clickhouse_quote(s, n, end)))
           ++end;
         kind = letter(c) || c >= 128 ? 1 : 0;
       }
     }
     if (d == GOTEL_SQL_CLICKHOUSE && kind == 1) {
-      if (equal(s + start, end - start, "INSERT")) clickhouse_insert = true;
-      if (clickhouse_insert && equal(s + start, end - start, "FORMAT")) return SIZE_MAX;
+      if (equal(s + start, end - start, "INSERT"))
+        clickhouse_insert = true;
+      if (clickhouse_insert && equal(s + start, end - start, "FORMAT"))
+        return SIZE_MAX;
     }
-    if (kind == 0 && c == ';') clickhouse_insert = false;
-    ts[count] =
-        (format_token){{s + start, end - start, kind == 1, false, d == GOTEL_SQL_CLICKHOUSE}, gap, newline, kind == 5 ? 0 : kind, 0, false, 0};
+    if (kind == 0 && c == ';')
+      clickhouse_insert = false;
+    ts[count] = (format_token){{s + start, end - start, kind == 1, false, d == GOTEL_SQL_CLICKHOUSE},
+                               gap,
+                               newline,
+                               kind == 5 ? 0 : kind,
+                               0,
+                               false,
+                               0};
     ts[count].flat_width = (count ? ts[count - 1].flat_width : 0) + end - start + 1;
     ++count;
     i = end;
@@ -290,7 +305,8 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
     bool with = kw(t, "WITH") && !ctx->active;
     bool modifier = format_join(ts, count, i) && !join_head;
     bool from = kw(t, "FROM") && ctx->active && !head;
-    bool condition = ((t.clickhouse && kw(t, "PREWHERE")) || kw(t, "WHERE") || kw(t, "HAVING") || kw(t, "QUALIFY")) && ctx->active;
+    bool condition =
+        ((t.clickhouse && kw(t, "PREWHERE")) || kw(t, "WHERE") || kw(t, "HAVING") || kw(t, "QUALIFY")) && ctx->active;
     bool order =
         (kw(t, "ORDER") || kw(t, "GROUP") || kw(t, "PARTITION")) && next < count && kw(ts[next].t, "BY") && ctx->active;
     bool set = kw(t, "SET") && ctx->active;

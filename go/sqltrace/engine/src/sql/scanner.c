@@ -11,7 +11,9 @@ static bool sanitize(const char *s, size_t n, gotel_sql_dialect_t dialect, bool 
       ++i;
       continue;
     }
-    if ((i + 1 < n && s[i] == '-' && s[i + 1] == '-') || ((dialect == GOTEL_SQL_MYSQL || dialect == GOTEL_SQL_CLICKHOUSE) && s[i] == '#')) {
+    if ((i + 1 < n &&
+         ((s[i] == '-' && s[i + 1] == '-') || (dialect == GOTEL_SQL_CLICKHOUSE && s[i] == '/' && s[i + 1] == '/'))) ||
+        ((dialect == GOTEL_SQL_MYSQL || dialect == GOTEL_SQL_CLICKHOUSE) && s[i] == '#')) {
       while (i < n && s[i] != '\n')
         ++i;
       space = true;
@@ -40,13 +42,8 @@ static bool sanitize(const char *s, size_t n, gotel_sql_dialect_t dialect, bool 
       text(b, " ");
     space = false;
     if (c == '$') {
-      size_t j = i + 1;
-      if (j < n && letter((unsigned char)s[j])) {
-        ++j;
-        while (j < n && (letter((unsigned char)s[j]) || isdigit((unsigned char)s[j])))
-          ++j;
-      }
-      if (j < n && s[j] == '$') {
+      size_t j = dollar_tag_end(s, n, i, dialect);
+      if (j) {
         size_t tag = j - i + 1, k = j + 1;
         while (k + tag <= n && memcmp(s + k, s + i, tag))
           ++k;
@@ -56,6 +53,17 @@ static bool sanitize(const char *s, size_t n, gotel_sql_dialect_t dialect, bool 
         i = k + tag;
         continue;
       }
+    }
+    if (dialect == GOTEL_SQL_CLICKHOUSE && clickhouse_quote(s, n, i)) {
+      size_t end = clickhouse_quoted_end(s, n, i);
+      if (!end)
+        return false;
+      if (clickhouse_quote(s, n, i) == 0x98)
+        text(b, "?");
+      else
+        put(b, s + i, end - i);
+      i = end;
+      continue;
     }
     size_t quote = i;
     if (i + 1 < n && strchr("EeBbXxNn", c) && s[i + 1] == '\'')
@@ -108,7 +116,8 @@ static bool sanitize(const char *s, size_t n, gotel_sql_dialect_t dialect, bool 
     } else if ((c == ':' || c == '@' || c == '$') && i + 1 < n && letter((unsigned char)s[i + 1]) &&
                !(c == ':' && i && s[i - 1] == ':')) {
       end = i + 2;
-      while (end < n && part((unsigned char)s[end]))
+      while (end < n && part((unsigned char)s[end]) &&
+             !(dialect == GOTEL_SQL_CLICKHOUSE && clickhouse_quote(s, n, end)))
         ++end;
       /* SQLite permits Tcl variable suffixes; remove those rather than emit values. */
       if (c == '$' && dialect == GOTEL_SQL_SQLITE) {
@@ -140,7 +149,7 @@ static bool sanitize(const char *s, size_t n, gotel_sql_dialect_t dialect, bool 
       continue;
     }
     if (isdigit(c) || (c == '.' && i + 1 < n && isdigit((unsigned char)s[i + 1]))) {
-      end = number_end(s, n, i);
+      end = dialect_number_end(s, n, i, dialect);
       if (numbers)
         put(b, s + i, end - i);
       else
@@ -150,7 +159,8 @@ static bool sanitize(const char *s, size_t n, gotel_sql_dialect_t dialect, bool 
     }
     if (letter(c) || c >= 128) {
       end = i + 1;
-      while (end < n && part((unsigned char)s[end]))
+      while (end < n && part((unsigned char)s[end]) &&
+             !(dialect == GOTEL_SQL_CLICKHOUSE && clickhouse_quote(s, n, end)))
         ++end;
       if (dialect == GOTEL_SQL_CLICKHOUSE) {
         if (equal(s + i, end - i, "INSERT"))
@@ -186,7 +196,9 @@ static size_t tokenize(const char *s, token *t, size_t cap, gotel_sql_dialect_t 
     size_t start = i;
     bool word = false;
     char c = s[i];
-    if (c == '"' || c == '`' || (c == '[' && (dialect == GOTEL_SQL_SQLITE || dialect == GOTEL_SQL_GENERIC)))
+    if (dialect == GOTEL_SQL_CLICKHOUSE && clickhouse_quote(s, n, i))
+      i = clickhouse_quoted_end(s, n, i);
+    else if (c == '"' || c == '`' || (c == '[' && (dialect == GOTEL_SQL_SQLITE || dialect == GOTEL_SQL_GENERIC)))
       i = quoted(s, n, i, c == '[' ? ']' : c, dialect == GOTEL_SQL_CLICKHOUSE);
     else if (letter((unsigned char)c) || (unsigned char)c >= 128) {
       word = true;
@@ -194,12 +206,13 @@ static size_t tokenize(const char *s, token *t, size_t cap, gotel_sql_dialect_t 
       while (i < n && part((unsigned char)s[i]))
         ++i;
     } else if (isdigit((unsigned char)c))
-      i = number_end(s, n, i);
+      i = dialect_number_end(s, n, i, dialect);
     else
       ++i;
     if (i <= start)
       return 0;
-    t[count++] = (token){s + start, i - start, word, start && isspace((unsigned char)s[start - 1]), dialect == GOTEL_SQL_CLICKHOUSE};
+    t[count++] = (token){s + start, i - start, word, start && isspace((unsigned char)s[start - 1]),
+                         dialect == GOTEL_SQL_CLICKHOUSE};
   }
   return count;
 }

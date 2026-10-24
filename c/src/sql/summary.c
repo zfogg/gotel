@@ -8,7 +8,9 @@ static size_t close_group(token *t, size_t n, size_t i) {
   }
   return n;
 }
-static bool identifier(token t) { return t.word || *t.p == '"' || *t.p == '`' || *t.p == '['; }
+static bool identifier(token t) {
+  return (t.clickhouse && clickhouse_quote(t.p, t.n, 0) == 0x9c) || t.word || *t.p == '"' || *t.p == '`' || *t.p == '[';
+}
 static size_t name(output *b, token *t, size_t n, size_t i) {
   if (i >= n || !identifier(t[i]))
     return i;
@@ -515,7 +517,11 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
       size_t bound_end = end, by = end;
       if (v.clickhouse)
         for (size_t j = i + 1; j < end; ++j)
-          if (kw(t[j], "BY")) { by = j; bound_end = j; break; }
+          if (kw(t[j], "BY")) {
+            by = j;
+            bound_end = j;
+            break;
+          }
       if (bound_end > i + 1 && (kw(t[bound_end - 1], "ROWS") || kw(t[bound_end - 1], "ROW")))
         --bound_end;
       while (comma < bound_end && !sym(t[comma], ',')) {
@@ -529,7 +535,8 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
         text(b, ", ");
         bound(b, t + comma + 1, bound_end - comma - 1);
       }
-      if (by < end) item(b, "BY …");
+      if (by < end)
+        item(b, "BY …");
       nested(b, t + i + 1, bound_end - i - 1, depth + 1);
       i = end;
       continue;
@@ -585,7 +592,8 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
       }
       continue;
     }
-    if ((v.clickhouse && (kw(v, "PREWHERE") || kw(v, "SETTINGS") || kw(v, "SAMPLE") || kw(v, "FORMAT"))) || kw(v, "WHERE") || kw(v, "HAVING") || kw(v, "QUALIFY") || kw(v, "SET") || kw(v, "RETURNING") || kw(v, "GROUP") ||
+    if ((v.clickhouse && (kw(v, "PREWHERE") || kw(v, "SETTINGS") || kw(v, "SAMPLE") || kw(v, "FORMAT"))) ||
+        kw(v, "WHERE") || kw(v, "HAVING") || kw(v, "QUALIFY") || kw(v, "SET") || kw(v, "RETURNING") || kw(v, "GROUP") ||
         kw(v, "ORDER") || kw(v, "WINDOW")) {
       text(b, " ");
       upper(b, v);

@@ -43,5 +43,11 @@
   {"name":"clickhouse-array-join","dialect":"clickhouse","query":"SELECT * FROM builds ARRAY JOIN tags AS tag WHERE tag='SECRET'","operation":"SELECT","contains":["ARRAY JOIN tags AS tag","WHERE"]},
   {"name":"clickhouse-global-join","dialect":"clickhouse","query":"SELECT * FROM builds GLOBAL ANY LEFT JOIN projects ON builds.id=projects.id","operation":"SELECT","contains":["GLOBAL ANY LEFT JOIN projects"]},
   {"name":"clickhouse-settings-insert","dialect":"clickhouse","query":"INSERT INTO builds (id,name) SETTINGS max_partitions_per_insert_block=10000 VALUES (42,'SECRET')","operation":"INSERT","contains":["INSERT INTO builds","SETTINGS","VALUES"]},
-  {"name":"clickhouse-aggregates","dialect":"clickhouse","query":"SELECT argMax(name,created_at),uniqExact(id) FROM builds GROUP BY project_id","operation":"SELECT","contains":["FROM builds","GROUP BY"]}
+  {"name":"clickhouse-aggregates","dialect":"clickhouse","query":"SELECT argMax(name,created_at),uniqExact(id) FROM builds GROUP BY project_id","operation":"SELECT","contains":["FROM builds","GROUP BY"]},
+  {"name":"clickhouse-slash-comment","dialect":"clickhouse","query":"SELECT 1 // SECRET_VALUE\nFROM t","operation":"SELECT","contains":["SELECT"]},
+  {"name":"clickhouse-numeric-heredoc","dialect":"clickhouse","query":"SELECT $1tag$SECRET_VALUE$1tag$","operation":"SELECT","contains":["SELECT"]},
+  {"name":"clickhouse-unicode-string","dialect":"clickhouse","query":"SELECT ‘SECRET_VALUE’","operation":"SELECT","contains":["SELECT"]},
+  {"name":"clickhouse-adjacent-unicode-string","dialect":"clickhouse","query":"SELECT‘SECRET_VALUE’","operation":"SELECT","contains":["SELECT"]},
+  {"name":"clickhouse-unicode-identifier","dialect":"clickhouse","query":"SELECT * FROM “my table” WHERE x=‘SECRET_VALUE’","operation":"SELECT","contains":["SELECT"]},
+  {"name":"clickhouse-hex-float","dialect":"clickhouse","query":"SELECT 0x1.fp+3 FROM t","operation":"SELECT","contains":["SELECT"]}
 ]

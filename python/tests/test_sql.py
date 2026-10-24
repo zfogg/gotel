@@ -45,6 +45,54 @@ def test_clickhouse_final_is_not_alias():
 @pytest.mark.parametrize(
     "sql",
     [
+        "SELECT 1 // privatevalue\nFROM t",
+        "SELECT 1+// privatevalue\rFROM hidden\n2 FROM t",
+        "SELECT $1tag$privatevalue$1tag$",
+        "SELECT $123$privatevalue$123$",
+        "SELECT \u2018privatevalue\u2019",
+        "SELECT\u2018privatevalue\u2019",
+        "SELECT \u2018privatevalue /* ; \u2019 FROM t",
+    ],
+)
+def test_clickhouse_lexical_privacy(sql):
+    query = sqltrace.inspect(sql, dialect=Dialect.CLICKHOUSE)
+    assert "privatevalue" not in query.text + query.summary
+    formatted = sqltrace.format_sql(sql, dialect=Dialect.CLICKHOUSE)
+    assert "privatevalue" in formatted
+    after = sqltrace.inspect(formatted, dialect=Dialect.CLICKHOUSE)
+    assert "privatevalue" not in after.text + after.summary
+    assert (after.summary, after.operation, after.statement_count) == (
+        query.summary,
+        query.operation,
+        query.statement_count,
+    )
+    assert "".join(after.text.split()) == "".join(query.text.split())
+    assert sqltrace.format_sql(formatted, dialect=Dialect.CLICKHOUSE) == formatted
+
+
+@pytest.mark.parametrize("number", ["0x1.fp+3", "0XFF.8P-3", "0x1p+3", "0xF_F.8p2"])
+def test_clickhouse_hex_float(number):
+    sql = f"SELECT {number}"
+    assert sqltrace.inspect(sql, dialect=Dialect.CLICKHOUSE).text == "SELECT ?"
+    formatted = sqltrace.format_sql(sql, dialect=Dialect.CLICKHOUSE)
+    assert number in formatted
+    assert sqltrace.inspect(formatted, dialect=Dialect.CLICKHOUSE).text == "SELECT ?"
+
+
+def test_clickhouse_unicode_identifiers_and_unclosed_literals():
+    sql = "SELECT * FROM \u201cmy table\u201d WHERE x=\u2018privatevalue\u2019"
+    query = sqltrace.inspect(sql, dialect=Dialect.CLICKHOUSE)
+    assert "\u201cmy table\u201d" in query.text and "\u201cmy table\u201d" in query.summary
+    for malformed in ["SELECT \u2018privatevalue", "SELECT $1tag$privatevalue"]:
+        with pytest.raises(SQLInspectionError):
+            sqltrace.inspect(malformed, dialect=Dialect.CLICKHOUSE)
+        with pytest.raises(ValueError):
+            sqltrace.format_sql(malformed, dialect=Dialect.CLICKHOUSE)
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
         "SELECT 'unterminated",
         "SELECT {name:String",
         "SELECT {x:Array(UInt64}",
