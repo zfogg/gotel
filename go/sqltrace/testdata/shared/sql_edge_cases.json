@@ -1,5 +1,5 @@
 [
-  {"name":"tiny select","dialect":"generic","query":"SELECT 1","operation":"SELECT","contains":["SELECT …"]},
+  {"name":"tiny select","dialect":"generic","query":"SELECT 1","operation":"SELECT","contains":["SELECT ?"]},
   {"name":"tiny insert","dialect":"sqlite","query":"INSERT INTO t VALUES (1)","operation":"INSERT","contains":["INSERT INTO t","VALUES"]},
   {"name":"tiny delete","dialect":"mysql","query":"DELETE FROM t WHERE id=7","operation":"DELETE","contains":["DELETE FROM t","WHERE …"]},
   {"name":"tiny begin","dialect":"postgresql","query":"BEGIN TRANSACTION","operation":"BEGIN","contains":["BEGIN"]},

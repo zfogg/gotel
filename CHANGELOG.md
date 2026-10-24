@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep short scalar SELECT queries on one line and retain their redacted
+  expression in query summaries, so health checks read `SELECT ?`.
+
 ## v0.10.1
 
 - Make application-name span prefixes optional across C, Go, Python and
