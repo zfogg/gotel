@@ -213,7 +213,7 @@ jobs:
         run: uv run --all-extras ty check
       - working-directory: python
         run: uv build --sdist
-      - uses: pypa/cibuildwheel@v3
+      - uses: pypa/cibuildwheel@v4.3.1
         with:
           package-dir: python
           output-dir: python/dist
