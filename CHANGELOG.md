@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep short scalar SELECT queries on one line and retain their redacted
+  expression in query summaries, so health checks read `SELECT ?`.
+
 ## v0.11.0
 
 - Add canonical SQL namespaces `storage.postgres`, `storage.sqlite`,
@@ -15,7 +18,6 @@
 - Redis command and pipeline spans use `storage.redis.GET` and
   `storage.redis.PIPELINE` in both Go and Python; scopes and metric labels
   retain their existing identities.
-
 
 ## v0.10.1
 

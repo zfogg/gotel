@@ -29,13 +29,13 @@ assert index_result['summary']=='CREATE INDEX idx_participants_session ON ...'
 assert index_result['text']==index_query
 multi = [
     ('SELECT 1; UPDATE t SET x=\'SECRET\'; DELETE FROM t WHERE id=2', 3,
-     'SELECT …; UPDATE t SET …; DELETE FROM t WHERE …', ''),
-    ('SELECT \';\' AS separator; SELECT 2', 2, 'SELECT …; SELECT …', 'SELECT'),
-    ('SELECT $$a;b$$; SELECT 2', 2, 'SELECT …; SELECT …', 'SELECT'),
-    ('SELECT 1;; ; SELECT 2;', 2, 'SELECT …; SELECT …', 'SELECT'),
-    ('SELECT 1/* ; hidden */; -- ; hidden\nSELECT 2', 2, 'SELECT …; SELECT …', 'SELECT'),
+     'SELECT ?; UPDATE t SET …; DELETE FROM t WHERE …', ''),
+    ('SELECT \';\' AS separator; SELECT 2', 2, 'SELECT ? AS separator; SELECT ?', 'SELECT'),
+    ('SELECT $$a;b$$; SELECT 2', 2, 'SELECT ?; SELECT ?', 'SELECT'),
+    ('SELECT 1;; ; SELECT 2;', 2, 'SELECT ?; SELECT ?', 'SELECT'),
+    ('SELECT 1/* ; hidden */; -- ; hidden\nSELECT 2', 2, 'SELECT ?; SELECT ?', 'SELECT'),
     ('/* first ; */ SELECT 1; /* second\n ; */ SELECT 2 -- third ;\n;', 2,
-     'SELECT …; SELECT …', 'SELECT'),
+     'SELECT ?; SELECT ?', 'SELECT'),
 ]
 for query, count, summary, operation in multi:
     result=inspect([dict(query=query,dialect=2)])[0]
@@ -92,7 +92,7 @@ malformed=["SELECT 'SECRET",'SELECT /* SECRET','SELECT $tag$SECRET$wrong$', 'SEL
 for r in inspect([dict(query=q,dialect=d) for q in malformed for d in range(5)]):
     assert r['status']!=0 and r['text']=='' and r['summary']=='SQL'
 for r in inspect([dict(query="SELECT 'SECRET'",dialect=d,omit=True) for d in range(5)]):
-    assert r['status']==0 and not r['text'] and r['summary']=='SELECT …'
+    assert r['status']==0 and not r['text'] and r['summary']=='SELECT ?'
 
 # A malformed suffix must still fail closed beyond the text truncation budget.
 for r in inspect([dict(query='SELECT '+('x,'*5000)+"'SECRET",dialect=d,limit=8) for d in range(5)]):

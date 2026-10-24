@@ -4915,6 +4915,174 @@
       "name": "layout/optional-span-filters",
       "sql": "SELECT COUNT(*) FROM spans WHERE (parent_span_id = ? OR parent_span_id IS ?) AND (? = ? OR duration_ns >= ?)",
       "valid": true
+    },
+    {
+      "name": "short-scalar/generic/health",
+      "dialect": "generic",
+      "sql": "SELECT 1",
+      "valid": true,
+      "expected": "SELECT 1"
+    },
+    {
+      "name": "short-scalar/generic/redacted",
+      "dialect": "generic",
+      "sql": "SELECT ?",
+      "valid": true,
+      "expected": "SELECT ?"
+    },
+    {
+      "name": "short-scalar/generic/version",
+      "dialect": "generic",
+      "sql": "SELECT version()",
+      "valid": true,
+      "expected": "SELECT version()"
+    },
+    {
+      "name": "short-scalar/generic/alias",
+      "dialect": "generic",
+      "sql": "SELECT ? AS value;",
+      "valid": true,
+      "expected": "SELECT ? AS value;"
+    },
+    {
+      "name": "short-scalar/sqlite/health",
+      "dialect": "sqlite",
+      "sql": "SELECT 1",
+      "valid": true,
+      "expected": "SELECT 1"
+    },
+    {
+      "name": "short-scalar/sqlite/redacted",
+      "dialect": "sqlite",
+      "sql": "SELECT ?",
+      "valid": true,
+      "expected": "SELECT ?"
+    },
+    {
+      "name": "short-scalar/sqlite/version",
+      "dialect": "sqlite",
+      "sql": "SELECT version()",
+      "valid": true,
+      "expected": "SELECT version()"
+    },
+    {
+      "name": "short-scalar/sqlite/alias",
+      "dialect": "sqlite",
+      "sql": "SELECT ? AS value;",
+      "valid": true,
+      "expected": "SELECT ? AS value;"
+    },
+    {
+      "name": "short-scalar/postgresql/health",
+      "dialect": "postgresql",
+      "sql": "SELECT 1",
+      "valid": true,
+      "expected": "SELECT 1"
+    },
+    {
+      "name": "short-scalar/postgresql/redacted",
+      "dialect": "postgresql",
+      "sql": "SELECT ?",
+      "valid": true,
+      "expected": "SELECT ?"
+    },
+    {
+      "name": "short-scalar/postgresql/version",
+      "dialect": "postgresql",
+      "sql": "SELECT version()",
+      "valid": true,
+      "expected": "SELECT version()"
+    },
+    {
+      "name": "short-scalar/postgresql/alias",
+      "dialect": "postgresql",
+      "sql": "SELECT ? AS value;",
+      "valid": true,
+      "expected": "SELECT ? AS value;"
+    },
+    {
+      "name": "short-scalar/duckdb/health",
+      "dialect": "duckdb",
+      "sql": "SELECT 1",
+      "valid": true,
+      "expected": "SELECT 1"
+    },
+    {
+      "name": "short-scalar/duckdb/redacted",
+      "dialect": "duckdb",
+      "sql": "SELECT ?",
+      "valid": true,
+      "expected": "SELECT ?"
+    },
+    {
+      "name": "short-scalar/duckdb/version",
+      "dialect": "duckdb",
+      "sql": "SELECT version()",
+      "valid": true,
+      "expected": "SELECT version()"
+    },
+    {
+      "name": "short-scalar/duckdb/alias",
+      "dialect": "duckdb",
+      "sql": "SELECT ? AS value;",
+      "valid": true,
+      "expected": "SELECT ? AS value;"
+    },
+    {
+      "name": "short-scalar/mysql/health",
+      "dialect": "mysql",
+      "sql": "SELECT 1",
+      "valid": true,
+      "expected": "SELECT 1"
+    },
+    {
+      "name": "short-scalar/mysql/redacted",
+      "dialect": "mysql",
+      "sql": "SELECT ?",
+      "valid": true,
+      "expected": "SELECT ?"
+    },
+    {
+      "name": "short-scalar/mysql/version",
+      "dialect": "mysql",
+      "sql": "SELECT version()",
+      "valid": true,
+      "expected": "SELECT version()"
+    },
+    {
+      "name": "short-scalar/mysql/alias",
+      "dialect": "mysql",
+      "sql": "SELECT ? AS value;",
+      "valid": true,
+      "expected": "SELECT ? AS value;"
+    },
+    {
+      "name": "short-scalar/clickhouse/health",
+      "dialect": "clickhouse",
+      "sql": "SELECT 1",
+      "valid": true,
+      "expected": "SELECT 1"
+    },
+    {
+      "name": "short-scalar/clickhouse/redacted",
+      "dialect": "clickhouse",
+      "sql": "SELECT ?",
+      "valid": true,
+      "expected": "SELECT ?"
+    },
+    {
+      "name": "short-scalar/clickhouse/version",
+      "dialect": "clickhouse",
+      "sql": "SELECT version()",
+      "valid": true,
+      "expected": "SELECT version()"
+    },
+    {
+      "name": "short-scalar/clickhouse/alias",
+      "dialect": "clickhouse",
+      "sql": "SELECT ? AS value;",
+      "valid": true,
+      "expected": "SELECT ? AS value;"
     }
   ]
 }

@@ -12,6 +12,16 @@ CLICKHOUSE_CASES = json.loads(
 )
 
 
+@pytest.mark.parametrize("dialect", list(Dialect))
+@pytest.mark.parametrize("sql", ["SELECT 1", "SELECT 'private-value'", "SELECT 987654"])
+def test_short_scalar_telemetry_presentation(dialect, sql):
+    attrs = sqltrace._attributes(sql, dialect, "clickhouse", "test", {})
+    assert attrs["db.query.text"] == "SELECT ?"
+    assert attrs["db.query.summary"] == "SELECT ?"
+    assert attrs["db.operation.name"] == "SELECT"
+    assert "private-value" not in str(attrs) and "987654" not in str(attrs)
+
+
 @pytest.mark.parametrize("case", CLICKHOUSE_CASES, ids=lambda case: case["name"])
 def test_clickhouse_shared_corpus(case):
     sql = case["query"]
