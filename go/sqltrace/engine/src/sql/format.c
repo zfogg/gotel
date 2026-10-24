@@ -395,7 +395,7 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
     }
     /* PostgreSQL concatenates adjacent quoted strings only across a newline.
      * Preserve such newlines, including those beside intervening comments. */
-    if (f.newline && (f.kind == 2 || (i && ts[i - 1].kind == 2)))
+    if (f.newline && (f.kind == 2 || (f.kind >= 3 && i && ts[i - 1].kind == 2)))
       line = true;
     if (line) {
       format_line(b, indent);
@@ -516,7 +516,10 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
             boolean = true;
         }
       }
-      bool multiline = ts[i].multiline || subquery || boolean;
+      /* Short boolean groups fit inline; only expanded groups need clause
+       * state that breaks their AND/OR tokens onto separate lines. */
+      boolean = boolean && (ts[i].multiline || subquery);
+      bool multiline = ts[i].multiline || subquery;
       if (ctx->clause == F_WITH)
         closing = ctx->base;
       frames[++depth] = (format_frame){.base = closing + (multiline && !boolean ? 1 : 0),
