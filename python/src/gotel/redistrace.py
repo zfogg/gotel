@@ -33,8 +33,10 @@ def instrument(client, *, application):
         command = command.upper() if isinstance(command, str) else "OTHER"
         if command not in _COMMANDS and command != "PIPELINE":
             command = "OTHER"
-        with application.tracer("redis").start_as_current_span(
-            application.qualify(f"storage.redis.{command.lower()}"),
+        with trace.get_tracer(
+            application.qualify("redis"), tracer_provider=application.tracer_provider
+        ).start_as_current_span(
+            f"storage.redis.{command}",
             kind=trace.SpanKind.CLIENT,
             attributes={"db.system.name": "redis", "db.operation.name": command},
             record_exception=False,

@@ -18,8 +18,8 @@ async def test_redis_async():
                 pipeline.set("private-key", "private-value")
                 pipeline.get("private-key")
                 assert await pipeline.execute() == [True, b"private-value"]
-            capture.require_span("test.storage.redis.pipeline")
-            capture.require_span("test.storage.redis.set")
+            capture.require_span("storage.redis.PIPELINE")
+            capture.require_span("storage.redis.SET")
             capture.require_no_values("private-key", "private-value")
             remove()
             remove()

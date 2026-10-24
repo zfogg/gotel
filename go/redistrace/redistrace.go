@@ -10,6 +10,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/zfogg/gotel/go"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -43,9 +44,10 @@ func (h *hook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 			h.observe(ctx, Observation{Command: operation, Count: 1, Duration: time.Since(started), Err: traceError(err), PayloadBytes: argsSize(cmd.Args())})
 			return err
 		}
-		ctx, span := h.config.Application.Start(ctx, "redis", "storage.redis."+operation,
-			attribute.String("db.system.name", "redis"),
-			attribute.String("db.operation.name", operation),
+		ctx, span := otel.Tracer(strings.Trim(h.config.Application.Prefix()+"/redis", "/")).Start(ctx, "storage.redis."+strings.ToUpper(operation),
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(attribute.String("db.system.name", "redis"),
+				attribute.String("db.operation.name", strings.ToUpper(operation))),
 		)
 		err := next(ctx, cmd)
 		traceErr := traceError(err)
@@ -85,10 +87,11 @@ func (h *hook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.Process
 			h.observe(ctx, Observation{Command: "pipeline", Count: len(cmds), Duration: time.Since(started), Err: err})
 			return err
 		}
-		ctx, span := h.config.Application.Start(ctx, "redis", "storage.redis.pipeline",
-			attribute.String("db.system.name", "redis"),
-			attribute.String("db.operation.name", "pipeline"),
-			attribute.Int("db.redis.command_count", len(cmds)),
+		ctx, span := otel.Tracer(strings.Trim(h.config.Application.Prefix()+"/redis", "/")).Start(ctx, "storage.redis.PIPELINE",
+			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithAttributes(attribute.String("db.system.name", "redis"),
+				attribute.String("db.operation.name", "PIPELINE"),
+				attribute.Int("db.redis.command_count", len(cmds))),
 		)
 		err := next(ctx, cmds)
 		gotel.End(span, err)

@@ -46,6 +46,19 @@ type Namer struct {
 	Prefix string
 }
 
+// StorageNamer returns the canonical storage.<system> namespace, independent
+// of the application name. PostgreSQL uses postgres in span names only.
+func StorageNamer(system string) Namer {
+	system = strings.ToLower(strings.TrimSpace(system))
+	if system == "postgresql" {
+		system = "postgres"
+	}
+	if !validSimpleName(system) {
+		panic("invalid database system")
+	}
+	return MustNamer("storage." + system)
+}
+
 // NewNamer validates prefix and returns a Namer. Prefix segments use the same
 // identifier grammar as query names.
 func NewNamer(prefix string) (Namer, error) {
@@ -462,6 +475,9 @@ type DBSpan struct {
 func StartSpan(ctx context.Context, config SpanConfig) (context.Context, *DBSpan) {
 	if TracingDisabled(ctx) || config.Tracer == nil {
 		return ctx, &DBSpan{}
+	}
+	if config.Namer.Prefix == "" && config.System != "" {
+		config.Namer = StorageNamer(config.System)
 	}
 	name := NameFromContext(ctx)
 	if name == "" {
