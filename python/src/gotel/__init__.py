@@ -1,5 +1,8 @@
-"""Application-owned operation names on standard OpenTelemetry spans."""
+"""GotelApp-owned operation names on standard OpenTelemetry spans."""
 
-from .application import Application, correlation
+from .application import GotelApp, correlation
 
-__all__ = ["Application", "correlation"]
+__all__ = ["GotelApp", "Application", "correlation"]
+
+# Compatibility for consumers of the already published Python API.
+Application = GotelApp

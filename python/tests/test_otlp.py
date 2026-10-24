@@ -8,7 +8,7 @@ from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import ExportLogsSer
 from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import ExportMetricsServiceRequest
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import ExportTraceServiceRequest
 
-from gotel import Application
+from gotel import GotelApp
 from gotel.otelhost import Config, start
 
 
@@ -38,7 +38,7 @@ def test_otlp_three_signals():
                 timeout=2,
             )
         ) as runtime:
-            app = Application("beanaries", tracer_provider=runtime.tracer_provider)
+            app = GotelApp("beanaries", tracer_provider=runtime.tracer_provider)
             counter = runtime.meter_provider.get_meter("test").create_counter("test.operations")
             with app.operation("Test") as span:
                 logging.getLogger("gotel.otlp.test").warning("correlated message")

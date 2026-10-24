@@ -12,7 +12,7 @@ from opentelemetry import metrics, trace
 from opentelemetry.instrumentation.utils import is_instrumentation_enabled, suppress_instrumentation
 
 from . import _sql
-from .application import Application
+from .application import GotelApp
 
 
 class Dialect(IntEnum):
@@ -90,7 +90,7 @@ def _attributes(sql, dialect, system, namespace, policy):
 
 class Namer:
     def __init__(self, prefix: str, *, tracer_provider=None, meter_provider=None):
-        self.application = Application(prefix, tracer_provider=tracer_provider)
+        self.application = GotelApp(prefix, tracer_provider=tracer_provider)
         meter = metrics.get_meter(prefix, meter_provider=meter_provider)
         self.duration = meter.create_histogram("db.client.operation.duration", unit="s")
 
