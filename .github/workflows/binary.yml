@@ -13,6 +13,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify shared SQL sources
+        run: python scripts/sync_sql_engine.py --check
       - name: Configure C binary
         run: cmake -S src/binary -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build C binary
