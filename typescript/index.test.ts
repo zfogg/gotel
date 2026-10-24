@@ -5,6 +5,12 @@ import { browserHttpClientSpanName, createBrowserFetchInstrumentation } from "./
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 
 describe("browserHttpClientSpanName", () => {
+  it("omits the separator when no application prefix is configured", () => {
+    expect(browserHttpClientSpanName({
+      prefix: "", method: "get", applicationOrigin: "https://frontend.example",
+      responseUrl: "https://frontend.example/items/123?secret=value",
+    })).toBe("http.client.GET /items/{id}");
+  });
   it('names fetch(url, init) with default GET and names failed requests at start', () => {
     const instrumentation = createBrowserFetchInstrumentation({prefix:'demo',applicationOrigin:'https://frontend.example'});
     const provider = new WebTracerProvider();

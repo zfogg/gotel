@@ -38,7 +38,7 @@ export function browserHttpClientSpanName({
   const url = new URL(responseUrl)
   const path = boundedClientPath(url.pathname)
   const destination = url.origin === applicationOrigin ? path : `${url.host}${path}`
-  return `${prefix}.http.client.${method.toUpperCase()} ${destination}`
+  return `${prefix ? `${prefix}.` : ""}http.client.${method.toUpperCase()} ${destination}`
 }
 
 function boundedClientPath(path: string): string {
