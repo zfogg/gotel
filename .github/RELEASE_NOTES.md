@@ -1,3 +1,13 @@
+## Query naming changes in v0.11.0
+
+SQL spans use `storage.<database>.<QueryName>`; PostgreSQL uses `postgres` in
+span names and `postgresql` in semantic attributes. Python gains static
+per-execution `sqltrace.call`/`call_sync` helpers, task-local naming, statement
+overrides, and distinct names for eager relationships and ORM flush writes.
+Go adapters default to database-specific namespaces. Explicit custom namers
+remain supported. Redis spans are `storage.redis.GET` (uppercase command) and
+`storage.redis.PIPELINE`, without an application prefix.
+
 ## C libraries
 
 The 12 C ZIPs cover static and shared `gotel` builds for x64 and ARM64 on

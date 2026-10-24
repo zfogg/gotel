@@ -180,8 +180,8 @@ tracing = temporaltrace.interceptor(application=application)
 ```
 
 Redis wraps sync/async client commands and emits bounded names such as
-`beanaries.storage.redis.get`. Unknown commands use `other`; keys, values, and
-exception messages are not exported. Pipelines receive one `storage.redis.pipeline` span around execution, without
+`storage.redis.GET`. Unknown commands use `OTHER`; keys, values, and
+exception messages are not exported. Pipelines receive one `storage.redis.PIPELINE` span around execution, without
 recording queued commands or values.
 
 Temporal uses the SDK's replay-aware interceptor, propagation, and workflow
@@ -200,3 +200,33 @@ The SQL implementation is authored only in `../c/`. Run
 `python scripts/sync_sql_engine.py` from the repository root after changing it.
 The checked bundles in `vendor/` and `../go/sqltrace/engine/` make source packages
 self-contained; CI checks their byte-for-byte parity.
+
+## Database query names (v0.11)
+
+Give each query execution site a unique static PascalCase name. The name is
+independent of the service/application identity. Use `storage_prefix(system)`
+for namespaces: PostgreSQL is `storage.postgres`, while the semantic attribute
+`db.system.name` remains `postgresql`. SQLite, DuckDB and ClickHouse use
+`storage.sqlite`, `storage.duckdb` and `storage.clickhouse`.
+
+```python
+storage = sqltrace.Namer(sqltrace.storage_prefix("postgresql"))
+sqltrace.instrument_sqlalchemy(engine, namer=storage, system="postgresql")
+result = await sqltrace.call("ListBuilds", session.execute, statement)
+# Emits storage.postgres.ListBuilds; no wrapper span is created.
+```
+
+`call` forwards arguments/results unchanged and restores task-local names on
+errors and cancellation. `call_sync` handles synchronous APIs. Direct driver
+adapters use `with storage.query(sql=sql, system="clickhouse")` to pick up the
+current name. Use `with sqltrace.name("ListBuilds")` for other integrations.
+An explicit `query("Name", ...)` or SQLAlchemy
+`.execution_options(gotel_query_name="Name")` takes precedence over the context;
+the compatibility fallback remains `Query`. Avoid naming an entire function
+that executes several queries. Eager relationship queries append `Load` and
+the relationship path; ORM flush/commit queries append their SQL operation
+and target table, so separate SQL definitions stay distinguishable.
+
+Go consumers use `sqltrace.StorageNamer("postgresql")` with pgx/GORM
+instrumentation. C SQLite consumers pass `"storage.sqlite"` as the attachment
+prefix. Custom namespaces remain explicit overrides in all adapters.

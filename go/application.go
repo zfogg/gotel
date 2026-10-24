@@ -47,5 +47,13 @@ func (a Application) Start(ctx context.Context, component, name string, attrs ..
 func (a Application) HTTP() httptrace.Namer { return httptrace.Namer{Prefix: a.prefix} }
 
 func (a Application) StorageName(system, operation string) string {
-	return qualify(a.prefix, "storage."+strings.ToLower(strings.TrimSpace(system))+"."+strings.ToLower(strings.TrimSpace(operation)))
+	system = strings.ToLower(strings.TrimSpace(system))
+	if system == "postgresql" {
+		system = "postgres"
+	}
+	operation = strings.TrimSpace(operation)
+	if system == "redis" {
+		operation = strings.ToUpper(operation)
+	}
+	return "storage." + system + "." + operation
 }

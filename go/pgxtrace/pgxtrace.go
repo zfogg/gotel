@@ -39,6 +39,9 @@ func New(config Config) *Tracer {
 	if config.System == "" {
 		config.System = "postgresql"
 	}
+	if config.Namer.Prefix == "" {
+		config.Namer = sqltrace.StorageNamer(config.System)
+	}
 	if config.Sanitize.Dialect == "" {
 		config.Sanitize = sqltrace.DefaultSanitizeOptions(sqltrace.DialectPostgreSQL)
 	}

@@ -23,7 +23,7 @@ func TestCommandNameIsBoundedAndNeverContainsArguments(t *testing.T) {
 	client := redis.NewClient(&redis.Options{Addr: "127.0.0.1:1", MaxRetries: -1, DialTimeout: time.Millisecond, Dialer: func(context.Context, string, string) (net.Conn, error) { return nil, context.DeadlineExceeded }})
 	client.AddHook(New(Config{Application: gotel.NewApplication("ratio")}))
 	_ = client.SScan(t.Context(), "secret-key", 0, "secret-pattern", 1).Err()
-	if got := recorder.Ended()[0].Name(); got != "ratio.storage.redis.sscan" {
+	if got := recorder.Ended()[0].Name(); got != "storage.redis.SSCAN" {
 		t.Fatalf("span name = %q", got)
 	}
 }
@@ -82,7 +82,7 @@ func TestDisableRootSpansKeepsObservationsAndTracesChildren(t *testing.T) {
 	parent.End()
 	var childParent trace.SpanID
 	for _, span := range recorder.Ended() {
-		if span.Name() == "stonkpile.storage.redis.get" {
+		if span.Name() == "storage.redis.GET" {
 			childParent = span.Parent().SpanID()
 		}
 	}

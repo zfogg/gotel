@@ -19,24 +19,29 @@ import (
 
 // WrapTransactions instruments connection acquisition and the BEGIN, COMMIT,
 // and ROLLBACK lifecycle that GORM callbacks cannot observe.
-func WrapTransactions(db *sql.DB, application gotel.Application) gorm.ConnPool {
-	return &transactionPool{DB: db, application: application}
+func WrapTransactions(db *sql.DB, application gotel.Application, system ...string) gorm.ConnPool {
+	database := "postgres"
+	if len(system) > 0 {
+		database = system[0]
+	}
+	return &transactionPool{DB: db, application: application, namer: sqltrace.StorageNamer(database)}
 }
 
 type transactionPool struct {
 	*sql.DB
 	application gotel.Application
+	namer       sqltrace.Namer
 }
 
 func (p *transactionPool) GetDBConn() (*sql.DB, error) { return p.DB, nil }
 func (p *transactionPool) BeginTx(ctx context.Context, opts *sql.TxOptions) (pool gorm.ConnPool, err error) {
-	beginCtx, span := p.application.ComponentTracer(gotel.ComponentStorage).Start(ctx, p.application.StorageName("db", "transaction.begin"))
+	beginCtx, span := otel.Tracer(strings.Trim(p.application.Prefix()+"/storage", "/")).Start(ctx, p.namer.Name("BeginTransaction"), trace.WithSpanKind(trace.SpanKindClient))
 	defer func() { gotel.End(span, err) }()
 	tx, err := p.DB.BeginTx(beginCtx, opts)
 	if err != nil {
 		return nil, err
 	}
-	return &tracedTransaction{Tx: tx, ctx: ctx, db: p.DB, application: p.application}, nil
+	return &tracedTransaction{Tx: tx, ctx: ctx, db: p.DB, application: p.application, namer: p.namer}, nil
 }
 
 type tracedTransaction struct {
@@ -44,16 +49,17 @@ type tracedTransaction struct {
 	ctx         context.Context
 	db          *sql.DB
 	application gotel.Application
+	namer       sqltrace.Namer
 }
 
 func (t *tracedTransaction) GetDBConn() (*sql.DB, error) { return t.db, nil }
 func (t *tracedTransaction) Commit() (err error) {
-	_, span := t.application.ComponentTracer(gotel.ComponentStorage).Start(t.ctx, t.application.StorageName("db", "transaction.commit"))
+	_, span := otel.Tracer(strings.Trim(t.application.Prefix()+"/storage", "/")).Start(t.ctx, t.namer.Name("CommitTransaction"), trace.WithSpanKind(trace.SpanKindClient))
 	defer func() { gotel.End(span, err) }()
 	return t.Tx.Commit()
 }
 func (t *tracedTransaction) Rollback() (err error) {
-	_, span := t.application.ComponentTracer(gotel.ComponentStorage).Start(t.ctx, t.application.StorageName("db", "transaction.rollback"))
+	_, span := otel.Tracer(strings.Trim(t.application.Prefix()+"/storage", "/")).Start(t.ctx, t.namer.Name("RollbackTransaction"), trace.WithSpanKind(trace.SpanKindClient))
 	defer func() { gotel.End(span, err) }()
 	return t.Tx.Rollback()
 }
@@ -120,6 +126,9 @@ func New(config Config) gorm.Plugin {
 func (p *plugin) Name() string { return p.config.Name }
 
 func (p *plugin) Initialize(db *gorm.DB) error {
+	if p.config.Namer.Prefix == "" {
+		p.config.Namer = sqltrace.StorageNamer(p.system(db))
+	}
 	register := func(op string, before, after func(*gorm.DB)) error {
 		key := "gotel:" + op
 		switch op {

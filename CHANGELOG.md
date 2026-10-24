@@ -5,6 +5,20 @@
 - Keep short scalar SELECT queries on one line and retain their redacted
   expression in query summaries, so health checks read `SELECT ?`.
 
+## v0.11.0
+
+- Add canonical SQL namespaces `storage.postgres`, `storage.sqlite`,
+  `storage.duckdb`, and `storage.clickhouse`, independent of application names.
+  Go pgx/GORM adapters use database namespaces by default; explicit custom
+  namers remain supported. Transaction spans use the same database namespace.
+- Add Python `sqltrace.call`, `call_sync`, and task-local `name` for static
+  names at each database execution site, plus `storage_prefix`. Statement
+  execution options can override names. Eager relationship loads and writes
+  to different tables within a flush receive distinct descriptive suffixes.
+- Redis command and pipeline spans use `storage.redis.GET` and
+  `storage.redis.PIPELINE` in both Go and Python; scopes and metric labels
+  retain their existing identities.
+
 ## v0.10.1
 
 - Make application-name span prefixes optional across C, Go, Python and
