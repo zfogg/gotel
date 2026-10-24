@@ -4,6 +4,9 @@
 
 ## v0.10.0
 
+- Add Go `mcptrace` middleware for the official MCP SDK: connected request/tool
+  spans, request counters, duration histograms, bounded method/tool labels,
+  protocol/tool error and panic handling, without recording payloads.
 - Add the uv-managed `gotel` Python package with SDK lifecycle, application
   operations, HTTP, SQLAlchemy, Redis/pipeline, and Temporal adapters, correlated
   logging, and an in-memory test kit.

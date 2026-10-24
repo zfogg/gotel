@@ -181,6 +181,10 @@ utf8proc installation is needed. From this repository, inspect generated sqlc
 queries without running the application with
 `go -C go run ./cmd/sqlsummary -dir PATH -largest 10`.
 
+[`mcptrace`](go/mcptrace/) instruments the official Go MCP SDK with connected
+request/tool spans, counters, and latency histograms. It bounds method/tool
+labels and omits arguments, results, and error contents.
+
 Other Go packages include [`redistrace`](go/redistrace/),
 [`temporaltrace`](go/temporaltrace/), [`slogadapter`](go/slogadapter/), and shared
 span/shutdown helpers in the root package.
