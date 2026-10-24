@@ -1,6 +1,6 @@
 ## C libraries
 
-The 12 C ZIPs cover static and shared `c-gotel` builds for x64 and ARM64 on
+The 12 C ZIPs cover static and shared `gotel` builds for x64 and ARM64 on
 Linux, macOS, and Windows. Each ZIP contains public headers, licenses, and a
 `README.md` specific to its linkage type. Archive names identify the OS, CPU,
 and `static` or `shared` linkage. Use a compatible C toolchain and point its
@@ -8,8 +8,8 @@ include path at `include/`.
 
 Native OTLP/gRPC support is included in all C releases. Select it with
 `options.protocol = "grpc"`; HTTP/protobuf remains the default export protocol.
-Static ZIPs contain `c-gotel`, `otlp-c`, and `nghttp2` archives, linked in that order. Shared ZIPs contain the
-`c-gotel` `.so`/`.dylib` and its versioned names, or on Windows `c-gotel.dll`
+Static ZIPs contain `gotel`, `otlp-c`, and `nghttp2` archives, linked in that order. Shared ZIPs contain the
+`gotel` `.so`/`.dylib` and its versioned names, or on Windows `gotel.dll`
 and its `.lib` import library. `otlp-c` and nghttp2 are linked into the shared library, so neither needs a
 separate runtime library. The nghttp2 license is included in both ZIP types.
 The shared ZIPs do not bundle third-party runtime libraries: install matching
@@ -21,7 +21,7 @@ examples and commands to inspect exact binary dependencies.
 
 The static archives do **not** combine all third-party dependencies. Link PCRE2
 8-bit, utf8proc, OpenSSL SSL/Crypto, and SQLite3. The SQLite adapter is enabled;
-define `CGOTEL_WITH_SQLITE=1` when compiling your application. Linux may need
+define `GOTEL_WITH_SQLITE=1` when compiling your application. Linux may need
 `-pthread` and, with static OpenSSL, `-ldl` or other libraries reported by
 `pkg-config --static --libs openssl`. macOS needs `Security.framework` and
 `CoreFoundation.framework`. Windows needs `Shell32.lib`, `Advapi32.lib`,
@@ -32,7 +32,7 @@ the archive's architecture (`x64-windows` or `arm64-windows`).
 Each C ZIP has a `README.md` with CMake and GNU Make examples for all three
 operating systems, plus `API.md` for the source-build route and C API. To have
 CMake resolve the dependencies for you, build the matching tag from source
-with `add_subdirectory(c-gotel)` and link `gotel::c-gotel`.
+with `add_subdirectory(gotel)` and link `gotel::gotel`.
 
 ## TypeScript
 
@@ -48,5 +48,12 @@ Go/C/TypeScript source tree.
 ## Go
 
 The version tag is the Go module release. Use
-`go get github.com/zfogg/gotel@vX.Y.Z` with this release's version. No
+`go get github.com/zfogg/gotel/go@vX.Y.Z` with this release's version. No
 compiled Go archive is published.
+
+Python assets contain the `zfogg-gotel` native wheels and source distribution
+(import name `gotel`). Install wheels with uv or pip; source builds need a C
+compiler and bundle the shared SQL engine and utf8proc. Registry publication is
+separate. The Go module now lives at `github.com/zfogg/gotel/go` and resolves
+matching `go/vX.Y.Z` tags. Update Go imports and C `GOTEL_*` CMake options when
+migrating from earlier releases.

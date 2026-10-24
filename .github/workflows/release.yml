@@ -37,8 +37,9 @@ jobs:
           fi
           [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release tag: $tag"; exit 1; }
           version="${tag#v}"
-          grep -Fq "project(c-gotel VERSION $version LANGUAGES C)" c-gotel/CMakeLists.txt
+          grep -Fq "project(gotel VERSION $version LANGUAGES C)" c/CMakeLists.txt
           node -e 'if (require("./package.json").version !== process.argv[1]) process.exit(1)' "$version"
+          python -c 'import sys,tomllib; assert tomllib.load(open("python/pyproject.toml", "rb"))["project"]["version"] == sys.argv[1]' "$version"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
   c-libraries:
@@ -62,9 +63,9 @@ jobs:
           # x64 Python can launch native ARM64 test executables on Windows ARM.
           architecture: ${{ matrix.os == 'windows' && 'x64' || matrix.arch }}
       - name: Install gRPC test peers
-        run: python -m pip install -r c-gotel/tests/requirements-grpc.txt
+        run: python -m pip install -r c/tests/requirements-grpc.txt
       - name: Install independent SQL formatting test engines
-        run: python -m pip install -r c-gotel/tests/requirements-format.txt
+        run: python -m pip install -r c/tests/requirements-format.txt
       - name: Install Linux dependencies
         if: matrix.os == 'linux'
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
@@ -96,19 +97,19 @@ jobs:
           for linkage in static shared; do
             shared=OFF
             if [[ "$linkage" == shared ]]; then shared=ON; fi
-            cmake -S c-gotel -B "c-gotel/build-$linkage" -G Ninja \
+            cmake -S c -B "c/build-$linkage" -G Ninja \
               -DCMAKE_C_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
               -DPython3_EXECUTABLE="$(command -v python)" \
               -DCMAKE_C_EXTENSIONS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
               -DBUILD_SHARED_LIBS="$shared" \
-              -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON -DCGOTEL_WITH_GRPC=ON "${osx_args[@]}"
-            cmake --build "c-gotel/build-$linkage" --parallel 4
-            ctest --test-dir "c-gotel/build-$linkage" --output-on-failure --parallel 4
+              -DGOTEL_BUILD_TESTS=ON -DGOTEL_WITH_SQLITE=ON -DGOTEL_WITH_GRPC=ON "${osx_args[@]}"
+            cmake --build "c/build-$linkage" --parallel 4
+            ctest --test-dir "c/build-$linkage" --output-on-failure --parallel 4
             python scripts/package_release.py c \
               --tag '${{ needs.validate.outputs.tag }}' \
-              --build "c-gotel/build-$linkage" \
-              --otlp-source "c-gotel/build-$linkage/_deps/otlp_c-src" \
-              --nghttp2-source "c-gotel/build-$linkage/_deps/cgotel_nghttp2-src" \
+              --build "c/build-$linkage" \
+              --otlp-source "c/build-$linkage/_deps/otlp_c-src" \
+              --nghttp2-source "c/build-$linkage/_deps/gotel_nghttp2-src" \
               --expected-arch '${{ matrix.arch }}' \
               --linkage "$linkage" --output release-assets
           done
@@ -120,13 +121,13 @@ jobs:
         run: |
           foreach ($linkage in @('static', 'shared')) {
             $shared = if ($linkage -eq 'shared') { 'ON' } else { 'OFF' }
-            $build = "c-gotel/build-$linkage"
-            cmake -S c-gotel -B $build -G Ninja `
+            $build = "c/build-$linkage"
+            cmake -S c -B $build -G Ninja `
               -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release `
               -DPython3_EXECUTABLE="$((Get-Command python).Source)" `
               -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
               -DVCPKG_TARGET_TRIPLET="$env:VCPKG_TRIPLET" `
-              -DBUILD_SHARED_LIBS=$shared -DCGOTEL_BUILD_TESTS=ON -DCGOTEL_WITH_SQLITE=ON -DCGOTEL_WITH_GRPC=ON
+              -DBUILD_SHARED_LIBS=$shared -DGOTEL_BUILD_TESTS=ON -DGOTEL_WITH_SQLITE=ON -DGOTEL_WITH_GRPC=ON
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             cmake --build $build --parallel 4
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -136,7 +137,7 @@ jobs:
               --tag '${{ needs.validate.outputs.tag }}' `
               --build $build `
               --otlp-source "$build/_deps/otlp_c-src" `
-              --nghttp2-source "$build/_deps/cgotel_nghttp2-src" `
+              --nghttp2-source "$build/_deps/gotel_nghttp2-src" `
               --expected-arch '${{ matrix.arch }}' `
               --linkage $linkage --output release-assets
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -182,12 +183,57 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: go/go.mod
+          cache-dependency-path: go/go.sum
       - run: python scripts/sync_sql_engine.py --check
-      - run: go test ./...
+      - working-directory: go
+        run: go test ./...
+
+  python:
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.1'
+          python-version: '3.12'
+      - run: python scripts/sync_sql_engine.py --check
+      - working-directory: python
+        run: uv sync --all-extras --locked
+      - working-directory: python
+        run: uv run --all-extras pytest -q
+      - working-directory: python
+        run: uv run --all-extras ruff format --check src tests setup.py
+      - working-directory: python
+        run: uv run --all-extras ty check
+      - working-directory: python
+        run: uv build --sdist
+      - uses: pypa/cibuildwheel@v3
+        with:
+          package-dir: python
+          output-dir: python/dist
+        env:
+          CIBW_BUILD: 'cp311-* cp312-* cp313-* cp314-*'
+          CIBW_SKIP: '*-musllinux* *-win32 *-manylinux_i686'
+          CIBW_ARCHS: native
+          CIBW_TEST_COMMAND: >-
+            python -c "from gotel.sqltrace import inspect,Dialect; assert inspect('SELECT 1',dialect=Dialect.CLICKHOUSE).operation == 'SELECT'"
+      - run: python scripts/test_python_package.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-python-${{ matrix.os }}
+          path: |
+            python/dist/*.whl
+            python/dist/*.tar.gz
+          if-no-files-found: error
 
   publish:
-    needs: [validate, c-libraries, typescript, go-source]
+    needs: [validate, c-libraries, typescript, go-source, python]
     if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
@@ -199,6 +245,19 @@ jobs:
           pattern: release-*
           path: release-assets
           merge-multiple: true
+      - name: Publish immutable nested Go module tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          git fetch --tags origin
+          tag="go/$RELEASE_TAG"
+          if git rev-parse --verify "refs/tags/$tag" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$tag")" = "$(git rev-parse HEAD)"
+          else
+            git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com tag -a "$tag" -m "Go module $RELEASE_TAG"
+            git push origin "refs/tags/$tag"
+          fi
       - name: Publish GitHub Release assets
         shell: bash
         env:
@@ -207,8 +266,8 @@ jobs:
           RELEASE_TAG: ${{ needs.validate.outputs.tag }}
         run: |
           cd release-assets
-          sha256sum *.zip > SHA256SUMS
+          sha256sum *.zip *.whl *.tar.gz > SHA256SUMS
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file "$GITHUB_WORKSPACE/.github/RELEASE_NOTES.md"
           fi
-          gh release upload "$RELEASE_TAG" *.zip SHA256SUMS --clobber
+          gh release upload "$RELEASE_TAG" *.zip *.whl *.tar.gz SHA256SUMS --clobber

@@ -1,0 +1,48 @@
+[project]
+name = "zfogg-gotel"
+version = "0.9.0"
+description = "Shared OpenTelemetry conventions and native SQL inspection"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "vendor/UTF8PROC_LICENSE.md"]
+requires-python = ">=3.11"
+dependencies = ["opentelemetry-api>=1.30,<2", "opentelemetry-instrumentation>=0.51b0,<1", "opentelemetry-sdk>=1.30,<2", "opentelemetry-exporter-otlp-proto-http>=1.30,<2"]
+
+[project.optional-dependencies]
+grpc = ["opentelemetry-exporter-otlp-proto-grpc>=1.30,<2"]
+fastapi = ["opentelemetry-instrumentation-fastapi>=0.51b0,<1"]
+httpx = ["opentelemetry-instrumentation-httpx>=0.51b0,<1"]
+sqlalchemy = ["sqlalchemy[asyncio]>=2,<3"]
+redis = ["redis>=5,<8"]
+temporal = ["temporalio[opentelemetry]>=1.9,<2"]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.14",
+    "httpx>=0.27",
+    "fastapi>=0.115",
+    "aiosqlite>=0.21",
+    "fakeredis>=2",
+    "ty>=0.0.91",
+    "setuptools>=77",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

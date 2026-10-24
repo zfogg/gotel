@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Add the uv-managed `zfogg-gotel` Python package with SDK lifecycle, application
+  operations, HTTP, SQLAlchemy, Redis/pipeline, and Temporal adapters, correlated
+  logging, and an in-memory test kit.
+- Extend the shared C SQL engine with a ClickHouse dialect, typed parameters,
+  escaped identifiers, clause summaries, and formatting. Reject `INSERT FORMAT`
+  payload inspection rather than exposing non-SQL data.
+- Move the native library to `c/`, rename C targets/options/artifacts to gotel,
+  and move the Go module to `go/` (`github.com/zfogg/gotel/go`, `go/vX.Y.Z` tags).
+  These packaging changes require consumer migrations.
+- Bundle checked copies of the shared SQL engine into the standalone Go module
+  and Python source package; add Python wheel/sdist release assets and CI.
+
 ## v0.8.5
 
 - Add native OTLP/gRPC export for traces, metrics, and logs with HTTP/2 flow control, verified TLS, trailer statuses, and RetryInfo backpressure.

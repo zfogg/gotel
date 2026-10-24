@@ -1,10 +1,10 @@
 # gotel
 
-SQL layout formatting is shared with c-gotel: `sqltrace.FormatSQL(dialect, query)`
+SQL layout formatting is shared with gotel: `sqltrace.FormatSQL(dialect, query)`
 returns formatted text and an error (the original text on error).
 `sqltrace.FormatSQLOrOriginal` is the tolerant presentation helper. Both preserve
 comments, quoted text, identifiers, and bind markers; neither executes SQL or
-substitutes values. Formatting supports PostgreSQL, DuckDB, MySQL, SQLite and a
+substitutes values. Formatting supports PostgreSQL, DuckDB, MySQL, SQLite, ClickHouse and a
 generic dialect, with a 1 MiB input limit and 64 nesting levels. It is a layout
 formatter, not a SQL validator. Telemetry formats only the sanitized template in
 `db.query.text`; span names and `db.query.summary` remain concise.
@@ -16,7 +16,7 @@ When a request crosses a browser, an HTTP service, a database, and a native
 process, “how long did it take?” is only the first question. You also need to
 know which operation ran, where it spent time, and whether its trace, logs, and
 metrics describe the same work. gotel provides reusable OpenTelemetry
-instrumentation for those boundaries in Go, C, and TypeScript.
+instrumentation for those boundaries in Go, C, Python, and TypeScript.
 
 Your application still chooses its service name and telemetry backend. gotel
 supplies stable operation names, resource attributes, safe database metadata,
@@ -26,22 +26,66 @@ Collector or another OTLP-compatible backend.
 | Your application | Start here | What it adds |
 | --- | --- | --- |
 | Go service | [Go packages](#go-services) | SDK setup, HTTP and database spans, logs, metrics, and resource detection |
-| Native C application | [c-gotel](#c---c-gotel) | Trace scopes, correlated logs, operation metrics, HTTP names, and SQLite spans |
+| Python application | [Python package](python/) | uv package, SDK lifecycle, HTTP/database/Redis/Temporal adapters, and shared SQL inspection |
+| Native C application | [gotel](#c---gotel) | Trace scopes, correlated logs, operation metrics, HTTP names, and SQLite spans |
 | Browser application | [TypeScript package](#typescript-browser-applications) | Fetch spans with bounded names and an optional browser provider |
 
 Use only the pieces your application needs. Where the languages overlap, they
-share conventions: Go and C compile the **same C SQL scanner** for query
+share conventions: Go, C, and Python compile the **same C SQL scanner** for query
 summaries and sanitized query text.
+
+## Repository layout and migration
+
+Language libraries live in `c/`, `go/`, `python/`, and `typescript/`. The
+TypeScript package manifest remains at the repository root for existing Git
+package consumers. Python is a uv project; see [its guide](python/README.md).
+
+The Go module is now `github.com/zfogg/gotel/go`; update imports to that prefix.
+Its immutable module tags are `go/vX.Y.Z`, paired with the repository's `vX.Y.Z`
+release. C consumers use `add_subdirectory(gotel/c)`, link `gotel::gotel`, and
+replace `CGOTEL_*` options with `GOTEL_*`. Native files are named `libgotel` /
+`gotel.dll`; release archives are named `gotel-vX.Y.Z-<os>-<arch>-<linkage>.zip`.
+These are breaking packaging changes; prior releases retain their original paths.
+
+The SQL engine is authored in `c/src/sql/`. Checked generated bundles make the
+Go module and Python sdist independently buildable. After editing shared SQL or
+fixtures, run `python scripts/sync_sql_engine.py`; CI checks bundle parity.
+
+## Development commands
+
+Python tooling is managed by uv in `python/`: Ruff handles linting, import sorting,
+and formatting; ty checks types in the library, tests, and build configuration.
+Run these targets from the repository root with GNU Make and uv installed:
+
+| Command | Purpose |
+| --- | --- |
+| `make sync` | Install the locked Python development environment and all adapters |
+| `make format` | Sort Python imports and apply Ruff formatting |
+| `make lint` | Check Python lint rules and formatting without changing files |
+| `make typecheck` | Run ty against Python source, tests, and `setup.py` |
+| `make test-python` | Run Python tests |
+| `make test-go` | Run Go tests and vet |
+| `make test-typescript` | Run TypeScript type checks and tests |
+| `make test` | Run Python, Go, and TypeScript tests |
+| `make check` | Run Python lint/type checks and all three language test targets |
+| `make test-c` | Build and test an already configured `c/build` |
+
+Install TypeScript dependencies with `pnpm install --frozen-lockfile` before the
+TypeScript targets. C requires its native dependencies and initial CMake
+configuration; see [the C guide](c/README.md). Without Make, the Python equivalents
+are `uv run --directory python --all-extras ruff format src tests setup.py`,
+`uv run --directory python --all-extras ruff check src tests setup.py`, and
+`uv run --directory python --all-extras ty check`. `make format` also sorts imports.
 
 ## Go services
 
 Install the module in your Go application:
 
 ```sh
-go get github.com/zfogg/gotel@latest
+go get github.com/zfogg/gotel/go@latest
 ```
 
-[`otelhost`](otelhost/) gives a service one place to configure OpenTelemetry
+[`otelhost`](go/otelhost/) gives a service one place to configure OpenTelemetry
 providers, OTLP export, resources, propagation, and shutdown. It can export
 traces, metrics, and logs over gRPC or HTTP/protobuf. For example:
 
@@ -57,13 +101,13 @@ if err != nil {
 defer runtime.Shutdown(context.Background())
 ```
 
-Import `github.com/zfogg/gotel/otelhost` for that example. If your service
+Import `github.com/zfogg/gotel/go/otelhost` for that example. If your service
 already configures the OpenTelemetry SDK, keep its providers and use gotel's
 instrumentation packages independently.
 
 ### Give HTTP operations useful names
 
-[`httptrace`](httptrace/) works with `otelhttp` and `net/http` without requiring
+[`httptrace`](go/httptrace/) works with `otelhttp` and `net/http` without requiring
 a particular router. A request to `/items/123` can appear as
 `catalog.http.server.GET /items/{id}` instead of creating a new span name for
 every item. Client names retain the destination host, port, and path while
@@ -76,14 +120,14 @@ client := &http.Client{Transport: names.Transport(http.DefaultTransport)}
 handler := names.Handler(mux, "catalog")
 ```
 
-Import `github.com/zfogg/gotel/httptrace`. Go `ServeMux` supplies the resolved
+Import `github.com/zfogg/gotel/go/httptrace`. Go `ServeMux` supplies the resolved
 route through `Request.Pattern`. For another router, give `RouteMiddleware` a
 callback that returns its route template, or call `SetServerRoute` on the
 existing span. Neither hook creates another span or wraps the response writer.
 
 ### See a database call without exposing its values
 
-[`sqltrace`](sqltrace/) keeps the application operation name separate from SQL
+[`sqltrace`](go/sqltrace/) keeps the application operation name separate from SQL
 structure. A `ListWidgets` call can have a stable span name such as
 `catalog.storage.ListWidgets` alongside `db.query.text`, a structural
 `db.query.summary`, the database system and namespace, and bind and statement
@@ -109,12 +153,12 @@ queryCtx := namer.WithName(ctx, "ListWidgets")
 err = db.WithContext(queryCtx).Find(&widgets).Error
 ```
 
-Import `github.com/zfogg/gotel/sqltrace` and
-`github.com/zfogg/gotel/gormtrace`. [`pgxtrace`](pgxtrace/) covers pgx queries,
+Import `github.com/zfogg/gotel/go/sqltrace` and
+`github.com/zfogg/gotel/go/gormtrace`. [`pgxtrace`](go/pgxtrace/) covers pgx queries,
 COPY, batches, prepare, and connect. For `database/sql`, use
 `sqltrace.QueryContext`, `QueryRowContext`, or `ExecContext`; they end spans at
 the appropriate point in the rows' lifecycle. `sqltrace.StartSpan` covers
-custom database operations, and [`dbmetrics`](dbmetrics/) provides the
+custom database operations, and [`dbmetrics`](go/dbmetrics/) provides the
 `db.client.operation.duration` histogram.
 
 The sanitized query template removes literals, comments, and bind
@@ -129,21 +173,21 @@ ordering, and row bounds. It is a structural description, not a query plan.
 Identifiers can appear in summaries, so avoid putting secrets in identifier
 names.
 
-SQL parsing lives in [`c-gotel/src/sql/`](c-gotel/src/sql/) and is compiled
+SQL parsing lives in [`c/src/sql/`](c/src/sql/) and is compiled
 into the Go package through cgo. **`go get` does not run CMake.** Building an
 application that imports `sqltrace` or its adapters requires `CGO_ENABLED=1`
 and a C compiler. The Go package bundles pinned utf8proc source; no system
 utf8proc installation is needed. From this repository, inspect generated sqlc
 queries without running the application with
-`go run ./cmd/sqlsummary -dir PATH -largest 10`.
+`go -C go run ./cmd/sqlsummary -dir PATH -largest 10`.
 
-Other Go packages include [`redistrace`](redistrace/),
-[`temporaltrace`](temporaltrace/), [`slogadapter`](slogadapter/), and shared
+Other Go packages include [`redistrace`](go/redistrace/),
+[`temporaltrace`](go/temporaltrace/), [`slogadapter`](go/slogadapter/), and shared
 span/shutdown helpers in the root package.
 
-## C - c-gotel
+## C - gotel
 
-[`c-gotel`](c-gotel/) is a pure-C telemetry host for native applications. It
+[`gotel`](c/) is a pure-C telemetry host for native applications. It
 provides named trace scopes, correlated logs, cumulative operation metrics,
 resource detection, bounded HTTP names, and optional SQLite query spans over
 OTLP/HTTP protobuf, with native OTLP/gRPC support enabled by default. It needs
@@ -154,28 +198,28 @@ SQLite calls. SQL inspection also works when SQLite support is off.
 Add it to an existing CMake project and link its target:
 
 ```cmake
-add_subdirectory(gotel/c-gotel)
-target_link_libraries(my-app PRIVATE gotel::c-gotel)
+add_subdirectory(gotel/c)
+target_link_libraries(my-app PRIVATE gotel::gotel)
 ```
 
 Or build the C library on its own with Clang and Ninja:
 
 ```sh
-cmake -S c-gotel -B c-gotel/build -G Ninja -DCMAKE_C_COMPILER=clang
-cmake --build c-gotel/build
+cmake -S c -B c/build -G Ninja -DCMAKE_C_COMPILER=clang
+cmake --build c/build
 ```
 
 The default is a static library; `-DBUILD_SHARED_LIBS=ON` selects a shared
-library. SQLite is enabled by default; `-DCGOTEL_WITH_SQLITE=OFF` excludes its
+library. SQLite is enabled by default; `-DGOTEL_WITH_SQLITE=OFF` excludes its
 adapter. A parent project can pass its utf8proc and PCRE2 targets, or CMake
-resolves them. The [C library guide](c-gotel/README.md) has the target names,
+resolves them. The [C library guide](c/README.md) has the target names,
 platform build details, and full lifecycle. For native gRPC, set
 `options.protocol = "grpc"` (or
 `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` when applying environment configuration).
 Use an origin such as `https://collector.example.com:4317`, without HTTP signal
 paths. The gRPC transport uses nghttp2 with the existing verified TLS
 implementation; it does not start library threads. Build with
-`-DCGOTEL_WITH_GRPC=OFF` to omit gRPC support and its HTTP/2 dependency.
+`-DGOTEL_WITH_GRPC=OFF` to omit gRPC support and its HTTP/2 dependency.
 
 The integration follows your application's own loop: declare a fixed operation
 catalog, create a host, call `gotel_begin`/`gotel_end` around work, and call
@@ -185,7 +229,7 @@ the host on shutdown. The catalog bounds metric cardinality; unsampled calls
 still contribute to operation metrics. A copied context can cross a worker
 queue and become a child span without sharing a live mutable scope.
 
-For SQL, [`gotel_sql_inspect`](c-gotel/include/gotel/sql.h) returns sanitized
+For SQL, [`gotel_sql_inspect`](c/include/gotel/sql.h) returns sanitized
 text, a structural summary, the outer operation, truncation status, and the
 number of nonempty top-level statements. `gotel_sql_sanitize` exposes the same
 scanner with a caller-sized output buffer:
@@ -256,11 +300,11 @@ tears down the provider.
 
 ## Development and reference
 
-Run Go tests with `go test ./...` and browser tests with `pnpm test`.
+Run Go tests with `go -C go test ./...` and browser tests with `pnpm test`.
 `pnpm build` generates the ignored TypeScript `dist/` directory; package
 packing builds it automatically and includes the compiled files. For C,
-enable `CGOTEL_BUILD_TESTS=ON` during configure and run
-`ctest --test-dir c-gotel/build --output-on-failure`. CI builds and tests the
+enable `GOTEL_BUILD_TESTS=ON` during configure and run
+`ctest --test-dir c/build --output-on-failure`. CI builds and tests the
 C library as both static and shared on Windows, Linux, and macOS, with an
 additional Linux build without the SQLite adapter. The Go and TypeScript tests
 also run in CI. The [shared HTTP naming cases](testdata/http_names.tsv) run
@@ -273,7 +317,7 @@ and a C worker process. A browser runner makes a real request; a verifier then
 checks Spaniel for a connected trace containing spans from all three service
 names. The example shows trace context passing through HTTP and a process
 boundary, and gives you a local waterfall to inspect. See the
-[C library guide](c-gotel/README.md), the [SQL fixtures](sqltrace/testdata/),
+[C library guide](c/README.md), the [SQL fixtures](go/sqltrace/testdata/),
 and [LICENSE](LICENSE) for further detail.
 
 ## Releases
@@ -290,12 +334,12 @@ TypeScript package; and SHA-256 checksums.
 Each ZIP has a use-focused `README.md`; the GitHub Release notes summarize
 the C linking requirements and TypeScript installation steps.
 The C archives retain external dependencies such as OpenSSL, SQLite, PCRE2,
-and utf8proc. Read the [C linking guide](c-gotel/RELEASE.md) for static and
+and utf8proc. Read the [C linking guide](c/RELEASE.md) for static and
 shared libraries, including platform libraries and DLL, dylib, or `.so`
 placement required at run time.
 
 For Go, the Git tag **is** the release artifact:
-`go get github.com/zfogg/gotel@vMAJOR.MINOR.PATCH` retrieves the matching source and
+`go get github.com/zfogg/gotel/go@vMAJOR.MINOR.PATCH` retrieves the matching source and
 builds it with the consumer's toolchain. A compiled Go `.a` would be tied to
 a toolchain and is not useful as a normal Go module distribution. For
 TypeScript installation, prefer npm registry publication when configured or a
