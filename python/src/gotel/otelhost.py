@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import logging
 import os
 import platform
@@ -20,7 +21,7 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
 
 _start_lock = threading.Lock()
 _installed_global = False
@@ -34,6 +35,8 @@ class _ExporterOptions(TypedDict, total=False):
 
 @dataclass
 class Config:
+    disable_span_name_prefix: bool = False
+    application_name: str | None = None
     service_name: str | None = None
     endpoint: str | None = None
     protocol: str | None = None
@@ -48,6 +51,27 @@ class Config:
     span_processors: tuple[Any, ...] = ()
     install_global: bool = True
     attach_logging_handler: bool = True
+
+
+class _SpanNameExporter(SpanExporter):
+    def __init__(self, exporter, application: str):
+        self.exporter = exporter
+        self.prefix = application.strip().rstrip(".") + "." if application.strip().rstrip(".") else ""
+
+    def export(self, spans):
+        output = []
+        for span in spans:
+            renamed = copy.copy(span)
+            name = span.name.removeprefix(self.prefix)
+            renamed._name = name or span.name
+            output.append(renamed)
+        return self.exporter.export(output)
+
+    def shutdown(self):
+        return self.exporter.shutdown()
+
+    def force_flush(self, timeout_millis: int = 30000) -> bool:
+        return self.exporter.force_flush(timeout_millis)
 
 
 class Runtime:
@@ -179,7 +203,12 @@ def _start(config: Config) -> Runtime:
             runtime.tracer_provider = TracerProvider(resource=resource, shutdown_on_exit=False)
             for processor in config.span_processors:
                 runtime.tracer_provider.add_span_processor(processor)
-            runtime.tracer_provider.add_span_processor(BatchSpanProcessor(_exporter(config, "traces")))
+            exporter = _exporter(config, "traces")
+            if config.disable_span_name_prefix:
+                exporter = _SpanNameExporter(
+                    exporter, config.application_name or str(resource.attributes.get("service.name", ""))
+                )
+            runtime.tracer_provider.add_span_processor(BatchSpanProcessor(exporter))
         if "metrics" in config.signals:
             reader = PeriodicExportingMetricReader(_exporter(config, "metrics"))
             runtime.meter_provider = MeterProvider(resource=resource, metric_readers=[reader], shutdown_on_exit=False)

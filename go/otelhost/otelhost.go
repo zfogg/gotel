@@ -58,15 +58,19 @@ type SlogConfig struct {
 // Config describes resources, exporters, propagation, and extension points.
 // Injected exporters/readers make setup deterministic in tests.
 type Config struct {
-	ServiceName    string
-	ServiceVersion string
-	Environment    string
-	Endpoint       string
-	Protocol       Protocol
-	Insecure       bool
-	Headers        map[string]string
-	Signals        Signals
-	Attributes     []attribute.KeyValue
+	// DisableSpanNamePrefix omits ApplicationName + "." from exported span
+	// names. ApplicationName defaults to ServiceName. Metrics/scopes are unchanged.
+	DisableSpanNamePrefix bool
+	ApplicationName       string
+	ServiceName           string
+	ServiceVersion        string
+	Environment           string
+	Endpoint              string
+	Protocol              Protocol
+	Insecure              bool
+	Headers               map[string]string
+	Signals               Signals
+	Attributes            []attribute.KeyValue
 	// ResourceOptions extend the standard SDK/host/OS/process resource. Use
 	// resource.WithFromEnv to honor OTEL_RESOURCE_ATTRIBUTES and OTEL_SERVICE_NAME.
 	ResourceOptions []resource.Option
@@ -136,6 +140,13 @@ func Start(ctx context.Context, config Config) (_ *Runtime, err error) {
 			opts = append(opts, sdktrace.WithSampler(config.Sampler))
 		}
 		if exporter != nil {
+			if config.DisableSpanNamePrefix {
+				application := config.ApplicationName
+				if application == "" {
+					application = config.ServiceName
+				}
+				exporter = gotel.WithoutApplicationPrefix(exporter, application)
+			}
 			opts = append(opts, sdktrace.WithBatcher(exporter))
 		}
 		runtime.TracerProvider = sdktrace.NewTracerProvider(opts...)

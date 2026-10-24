@@ -77,7 +77,7 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
     return 0;
   otlp_span_t *span = NULL;
   if ((h->options.signals & GOTEL_TRACES) && !(parent.valid && !parent.sampled))
-    span = otlp_tracer_start_span(h->tracer, span_name);
+    span = otlp_tracer_start_span(h->tracer, gotel_span_name(h, span_name));
   if (span) {
     otlp_span_set_kind(span, OTLP_SPAN_KIND_CLIENT);
     gotel_sql_attributes_with_limit(span, &metadata, "sqlite", a->options.namespace_name,

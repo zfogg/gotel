@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.10.1
+
+- Make application-name span prefixes optional across C, Go, Python and
+  TypeScript. Defaults preserve existing names; disabling removes one exact
+  application prefix from exported names without changing service identity,
+  instrumentation scopes, metrics, attributes, or trace relationships.
+- Expose Python `GotelApp`, retaining `Application` as a compatibility alias.
+- Document coordinated Python and TypeScript updates for Beanaries alongside
+  the other four consumers.
+
 - Publish releases from annotated tags without conflicting with shallow checkout
   refs when verifying the nested Go module tag.
 

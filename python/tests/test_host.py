@@ -91,3 +91,33 @@ def test_public_app_name_and_compatibility():
     assert Application is LegacyApplication is GotelApp
     assert GotelApp("beanaries").qualify("scraper.Fetch") == "beanaries.scraper.Fetch"
     assert GotelApp("beanaries").qualify("beanaries.scraper.Fetch") == "beanaries.scraper.Fetch"
+
+
+@pytest.mark.parametrize("disabled", [False, True])
+def test_span_name_prefix_option(disabled):
+    traces = InMemorySpanExporter()
+    with start(
+        Config(
+            service_name="demo-api",
+            application_name="demo",
+            disable_span_name_prefix=disabled,
+            signals=("traces",),
+            trace_exporter=traces,
+            install_global=False,
+        )
+    ) as runtime:
+        app = GotelApp("demo", tracer_provider=runtime.tracer_provider)
+        with app.operation("Parent"):
+            with app.operation("storage.Find") as child:
+                child.update_name("demo.storage.Final")
+        assert runtime.force_flush()
+        spans = traces.get_finished_spans()
+        assert [span.name for span in spans] == (
+            ["storage.Final", "Parent"] if disabled else ["demo.storage.Final", "demo.Parent"]
+        )
+        assert spans[0].parent is not None and spans[1].context is not None
+        assert spans[0].parent.span_id == spans[1].context.span_id
+        assert spans[0].resource.attributes["service.name"] == "demo-api"
+        assert spans[0].instrumentation_scope is not None
+        assert spans[0].instrumentation_scope.name == "demo.storage"
+        assert child.name == "demo.storage.Final"

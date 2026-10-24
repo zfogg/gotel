@@ -17,6 +17,8 @@ int main(int argc, char **argv) {
   if (argc != 3)
     return 2;
   gotel_options_t o = {0};
+  o.application_name = "test";
+  o.disable_span_name_prefix = !strcmp(argv[2], "unprefixed");
   o.exporter.service_name = "sqlite-test";
   o.exporter.endpoint = argv[1];
   o.exporter.flush_timeout_ms = 1000;

@@ -44,3 +44,21 @@ func TestOperationsRetainErrorsBetweenHealthySamples(t *testing.T) {
 		t.Fatalf("exported spans=%d, want 1", len(ex.spans))
 	}
 }
+
+func TestDisableSpanNamePrefixPreservesRetention(t *testing.T) {
+	ex := &exporter{}
+	processor := New(Config{Application: gotel.NewApplication("test"), Exporter: ex, HealthyEvery: 20, DisableSpanNamePrefix: true})
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(processor))
+	defer provider.Shutdown(context.Background())
+	_, span := provider.Tracer("test/background").Start(context.WithValue(t.Context(), operationKey{}, &operationState{name: "job"}), "test.job")
+	span.SetStatus(2, "failure")
+	span.End()
+	if err := processor.ForceFlush(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	ex.mu.Lock()
+	defer ex.mu.Unlock()
+	if len(ex.spans) != 1 || ex.spans[0].Name() != "job" || ex.spans[0].Status().Code != 2 {
+		t.Fatal("name policy changed retention or error status")
+	}
+}

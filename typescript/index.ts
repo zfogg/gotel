@@ -9,6 +9,7 @@ import {
   BatchSpanProcessor,
   type BatchSpanProcessorBrowserConfig,
   type SpanExporter,
+  type ReadableSpan,
 } from '@opentelemetry/sdk-trace-base'
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web'
 import type { Attributes, Span } from '@opentelemetry/api'
@@ -85,6 +86,8 @@ export function createBrowserFetchInstrumentation({
 }
 
 export interface BrowserTelemetryOptions {
+  /** Omit prefix + "." from emitted span names; resources/scopes stay intact. */
+  disableSpanNamePrefix?: boolean
   prefix: string
   serviceName: string
   serviceVersion?: string
@@ -96,6 +99,24 @@ export interface BrowserTelemetryOptions {
   traceExporter?: SpanExporter
   batch?: BatchSpanProcessorBrowserConfig
   fetch?: Omit<BrowserFetchInstrumentationOptions, 'prefix' | 'applicationOrigin'>
+}
+
+/** Export names without one application prefix, preserving immutable input spans. */
+export function withoutApplicationPrefix(exporter: SpanExporter, application: string): SpanExporter {
+  const prefix = application.trim().replace(/\.+$/, '')
+  return {
+    export(spans, callback) {
+      const output = spans.map((span): ReadableSpan => {
+        const name = prefix && span.name.startsWith(prefix + '.') ? span.name.slice(prefix.length + 1) : span.name
+        return new Proxy(span, { get(target, property, receiver) {
+          return property === 'name' ? name || span.name : Reflect.get(target, property, receiver)
+        } })
+      })
+      exporter.export(output, callback)
+    },
+    shutdown: () => exporter.shutdown(),
+    forceFlush: () => exporter.forceFlush?.() ?? Promise.resolve(),
+  }
 }
 
 export interface AuthenticatedExporterOptions {
@@ -132,6 +153,7 @@ const unregister = new Map<string, () => void>()
 // supplying traceExporter (for example, an authenticated exporter wrapper).
 export function startBrowserTelemetry({
   prefix,
+  disableSpanNamePrefix = false,
   serviceName,
   serviceVersion,
   environment,
@@ -146,7 +168,8 @@ export function startBrowserTelemetry({
 	const existing = providers.get(serviceName)
 	if (existing) return existing
 	const applicationResource = browserTelemetryResource({ serviceName, serviceVersion, environment, attributes })
-  const exporter = traceExporter ?? new OTLPTraceExporter({ url: traceExportUrl })
+  const originalExporter = traceExporter ?? new OTLPTraceExporter({ url: traceExportUrl })
+  const exporter = disableSpanNamePrefix ? withoutApplicationPrefix(originalExporter, prefix) : originalExporter
   const provider = new WebTracerProvider({
     resource: resource ? applicationResource.merge(resource) : applicationResource,
     spanProcessors: [new BatchSpanProcessor(exporter, batch)],

@@ -83,6 +83,10 @@ typedef struct {
   /* NULL or "http/protobuf" (default), or "grpc" when built with GOTEL_WITH_GRPC.
    * gRPC endpoints are http(s)://host:port, without an HTTP signal path. */
   const char *protocol;
+  /* Omit application_name + "." from span names only. NULL application_name
+   * uses exporter.service_name. Disabled by default; metrics/scopes are unchanged. */
+  bool disable_span_name_prefix;
+  const char *application_name;
 } gotel_options_t;
 /* Options are copied; exporter strings/resources are copied during create.
  * The operation catalog and its names must remain alive until destroy. No internal threads.
@@ -158,16 +162,16 @@ void gotel_log(gotel_host_t *host, otlp_severity_t severity, const char *body, c
 
 #if GOTEL_LOG_SOURCE_ENABLED
 #define GOTEL_LOG_AUTO(host, severity, body) gotel_log_at((host), (severity), (body), __FILE__, __LINE__, __func__)
-#define GOTEL_LOG_EXPLICIT(host, severity, body, file, line, function)                                                \
+#define GOTEL_LOG_EXPLICIT(host, severity, body, file, line, function)                                                 \
   gotel_log_at((host), (severity), (body), (file), (line), (function))
 #else
 #define GOTEL_LOG_AUTO(host, severity, body) gotel_log_at((host), (severity), (body), NULL, 0, NULL)
-#define GOTEL_LOG_EXPLICIT(host, severity, body, file, line, function)                                                \
+#define GOTEL_LOG_EXPLICIT(host, severity, body, file, line, function)                                                 \
   gotel_log_at((host), (severity), (body), NULL, 0, NULL)
 #endif
 #define GOTEL_LOG_DISPATCH(_1, _2, _3, _4, _5, _6, selected, ...) selected
 #define gotel_log(...)                                                                                                 \
-  GOTEL_LOG_DISPATCH(__VA_ARGS__, GOTEL_LOG_EXPLICIT, GOTEL_LOG_INVALID, GOTEL_LOG_INVALID, GOTEL_LOG_AUTO)       \
+  GOTEL_LOG_DISPATCH(__VA_ARGS__, GOTEL_LOG_EXPLICIT, GOTEL_LOG_INVALID, GOTEL_LOG_INVALID, GOTEL_LOG_AUTO)            \
   (__VA_ARGS__)
 /* Safe bounded HTTP naming. Returns overflow rather than truncating identities.
  * Client URL excludes userinfo/query/fragment and normalizes common ID segments.

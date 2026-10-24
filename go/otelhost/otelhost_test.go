@@ -60,3 +60,25 @@ func TestStartRequiresServiceName(t *testing.T) {
 		t.Fatal("missing service name accepted")
 	}
 }
+
+func TestSpanNamePrefixOption(t *testing.T) {
+	for _, disabled := range []bool{false, true} {
+		exporter := tracetest.NewInMemoryExporter()
+		runtime, err := Start(context.Background(), Config{ServiceName: "demo-api", ApplicationName: "demo", DisableSpanNamePrefix: disabled, Signals: Traces, TraceExporter: exporter})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, span := runtime.TracerProvider.Tracer("demo/http").Start(context.Background(), "demo.http.server.GET /items")
+		span.SetName("demo.http.server.POST /items")
+		span.End()
+		_ = runtime.TracerProvider.ForceFlush(context.Background())
+		want := "demo.http.server.POST /items"
+		if disabled {
+			want = "http.server.POST /items"
+		}
+		if exporter.GetSpans()[0].Name != want {
+			t.Fatal(exporter.GetSpans()[0].Name)
+		}
+		_ = runtime.Shutdown(context.Background())
+	}
+}

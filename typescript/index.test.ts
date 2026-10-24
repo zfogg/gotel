@@ -81,3 +81,23 @@ describe("browserHttpClientSpanName", () => {
     ).toBe("stonkpile.http.client.GET example.com/runs/{id}");
   });
 });
+
+
+describe('optional application span prefix', () => {
+  it('changes only exported names and preserves original spans and relationships', async () => {
+    const { withoutApplicationPrefix } = await import('./index');
+    const { InMemorySpanExporter, SimpleSpanProcessor } = await import('@opentelemetry/sdk-trace-base');
+    const output = new InMemorySpanExporter();
+    const provider = new WebTracerProvider({spanProcessors:[new SimpleSpanProcessor(withoutApplicationPrefix(output,'demo'))]});
+    const span = provider.getTracer('demo/http').startSpan('demo.http.client.GET example.com/items');
+    span.setAttribute('example', 7); span.end();
+    await provider.forceFlush();
+    const exported = output.getFinishedSpans()[0];
+    expect(exported.name).toBe('http.client.GET example.com/items');
+    expect(exported.attributes).toEqual({example:7});
+    expect(exported.spanContext()).toEqual(span.spanContext());
+    expect(exported.instrumentationScope.name).toBe('demo/http');
+    expect((span as unknown as {name:string}).name).toBe('demo.http.client.GET example.com/items');
+    await provider.shutdown();
+  });
+});

@@ -34,6 +34,36 @@ Use only the pieces your application needs. Where the languages overlap, they
 share conventions: Go, C, and Python compile the **same C SQL scanner** for query
 summaries and sanitized query text.
 
+## Optional application-name span prefix
+
+Existing span names keep their application prefix by default. Disable it at
+SDK setup to emit `http.server.GET /items` or `storage.Find` instead of
+`myapp.http.server.GET /items` or `myapp.storage.Find`. This changes exported
+span names only: service resources, instrumentation scopes, metrics, attributes,
+span IDs and parent relationships stay intact. Already unprefixed names and
+names belonging to other applications are unchanged. Final HTTP route renames
+are covered as well as ordinary operation spans.
+
+- **Go:** set `otelhost.Config{ApplicationName: "myapp", DisableSpanNamePrefix: true}`.
+  `ApplicationName` defaults to `ServiceName`. For gotel's custom retention
+  processor, set `traceprocessor.Config.DisableSpanNamePrefix`; it uses the
+  configured `Application`. Other custom exporters can use
+  `gotel.WithoutApplicationPrefix(exporter, "myapp")`.
+- **Python:** set `otelhost.Config(application_name="myapp", disable_span_name_prefix=True)`.
+  `application_name` defaults to the resource's `service.name`.
+- **TypeScript:** pass `disableSpanNamePrefix: true` to `startBrowserTelemetry`;
+  the existing `prefix` identifies the application. Custom exporters can use
+  `withoutApplicationPrefix(exporter, "myapp")`.
+- **C:** set `options.disable_span_name_prefix = true` and
+  `options.application_name = "myapp"` before `gotel_create`. The application
+  name defaults to `options.exporter.service_name`. Operation, watchdog snapshot
+  and SQLite span names follow the same policy; operation metric names retain
+  their catalog names.
+
+When service names vary by process (for example `myapp-api` and `myapp-worker`),
+set the shared application name explicitly. Prefix removal matches the exact
+`myapp.` boundary once; it does not remove component names such as `storage`.
+
 ## Repository layout and migration
 
 Language libraries live in `c/`, `go/`, `python/`, and `typescript/`. The

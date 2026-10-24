@@ -64,6 +64,17 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
   if (!h)
     return OTLP_ERR_NOMEM;
   h->options = *o;
+  const char *application = o->application_name ? o->application_name : o->exporter.service_name;
+  if (o->disable_span_name_prefix && application) {
+    if (strlen(application) >= sizeof(h->application_name)) {
+      free(h);
+      return OTLP_ERR_INVALID_ARGUMENT;
+    }
+    snprintf(h->application_name, sizeof(h->application_name), "%s", application);
+    size_t n = strlen(h->application_name);
+    while (n && h->application_name[n - 1] == '.')
+      h->application_name[--n] = 0;
+  }
   /* Build roots once per host, before requests can borrow them. HTTP-only hosts
    * may run on minimal systems without a CA store. Explicit invalid bundles fail. */
   otlp_status_t tls_status = gotel_tls_store_create(o->tls_ca_file, &h->tls);
@@ -201,7 +212,7 @@ otlp_status_t gotel_publish_span_snapshot(gotel_host_t *h, const gotel_span_snap
     return OTLP_OK;
   if (!snapshot->name[0] || !memchr(snapshot->name, 0, sizeof(snapshot->name)))
     return OTLP_ERR_INVALID_ARGUMENT;
-  otlp_span_t *span = otlp_span_create(snapshot->name);
+  otlp_span_t *span = otlp_span_create(gotel_span_name(h, snapshot->name));
   if (!span)
     return OTLP_ERR_NOMEM;
   otlp_status_t status = OTLP_OK;
@@ -250,7 +261,7 @@ void gotel_begin(gotel_host_t *h, gotel_scope_t *s, size_t op, const gotel_conte
   s->context.sampled = sampled;
   s->context.realtime = realtime || (inherited && parent.realtime);
   if (sampled && (h->options.signals & GOTEL_TRACES)) {
-    s->span = otlp_tracer_start_span(h->tracer, h->options.operations[op].name);
+    s->span = otlp_tracer_start_span(h->tracer, gotel_span_name(h, h->options.operations[op].name));
     if (s->span) {
       if (inherited) {
         otlp_span_set_trace_id(s->span, parent.trace_id);
@@ -440,4 +451,12 @@ otlp_status_t gotel_stats(gotel_host_t *h, otlp_exporter_stats_t *out) {
 void gotel_set_logger(gotel_host_t *h, otlp_log_fn logger, void *context) {
   if (h)
     otlp_exporter_set_logger(h->exporter, logger, context);
+}
+
+const char *gotel_span_name(gotel_host_t *host, const char *name) {
+  size_t n = strlen(host->application_name);
+  if (host->options.disable_span_name_prefix && n && !strncmp(name, host->application_name, n) && name[n] == '.' &&
+      name[n + 1])
+    return name + n + 1;
+  return name;
 }

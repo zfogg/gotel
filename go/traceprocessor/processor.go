@@ -16,6 +16,8 @@ import (
 )
 
 type Config struct {
+	// Omit the application's name from exported spans, preserving retention keys.
+	DisableSpanNamePrefix               bool
 	Application                         gotel.Application
 	Exporter                            sdktrace.SpanExporter
 	ExportTimeout                       time.Duration
@@ -65,6 +67,9 @@ func Retain(ctx context.Context) {
 }
 
 func New(config Config) sdktrace.SpanProcessor {
+	if config.DisableSpanNamePrefix {
+		config.Exporter = gotel.WithoutApplicationPrefix(config.Exporter, config.Application.Prefix())
+	}
 	if config.ExportTimeout <= 0 {
 		config.ExportTimeout = 10 * time.Second
 	}
