@@ -1,9 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-import { browserHttpClientSpanName } from "./index";
+import { browserHttpClientSpanName, createBrowserFetchInstrumentation } from "./index";
+import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 
 describe("browserHttpClientSpanName", () => {
+  it('names fetch(url, init) with default GET and names failed requests at start', () => {
+    const instrumentation = createBrowserFetchInstrumentation({prefix:'demo',applicationOrigin:'https://frontend.example'});
+    const provider = new WebTracerProvider();
+    const span = provider.getTracer('test').startSpan('GET', {attributes:{'url.full':'https://api.example/users/123?secret=value','http.request.method':'GET'}});
+    instrumentation.getConfig().requestHook?.(span, {});
+    expect((span as unknown as {name:string}).name).toBe('demo.http.client.GET api.example/users/{id}');
+    const response = new Response();
+    Object.defineProperty(response,'url',{value:'https://api.example/users/456?secret=value'});
+    instrumentation.getConfig().applyCustomAttributesOnSpan?.(span, {}, response);
+    expect((span as unknown as {name:string}).name).toBe('demo.http.client.GET api.example/users/{id}');
+    span.end();
+    instrumentation.disable();
+    return provider.shutdown();
+  });
   it("matches the shared Go/C/TypeScript client naming corpus", () => {
     const fixture = readFileSync(new URL('../testdata/http_names.tsv', import.meta.url), 'utf8')
     for (const line of fixture.split(/\r?\n/)) {

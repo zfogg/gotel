@@ -11,6 +11,7 @@ import {
   type SpanExporter,
 } from '@opentelemetry/sdk-trace-base'
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web'
+import type { Attributes, Span } from '@opentelemetry/api'
 
 export interface BrowserHttpSpanNameOptions {
   applicationOrigin: string
@@ -57,29 +58,27 @@ export function createBrowserFetchInstrumentation({
   prefix,
   ...config
 }: BrowserFetchInstrumentationOptions): FetchInstrumentation {
+  function name(span: Span, request: Request | RequestInit, responseUrl?: string) {
+    // fetch(url, init) supplies RequestInit to hooks, so URL/method may only
+    // exist on the SDK span. Request objects expose them directly.
+    const attributes = (span as Span & { readonly attributes?: Attributes }).attributes ?? {}
+    const url = responseUrl || (request instanceof Request ? request.url : attributes['url.full'] ?? attributes['http.url'])
+    if (typeof url !== 'string' || !url) return
+    span.updateName(browserHttpClientSpanName({
+      applicationOrigin,
+      method: request.method ?? String(attributes['http.request.method'] ?? attributes['http.method'] ?? 'GET'),
+      prefix,
+      responseUrl: url,
+    }))
+  }
   return new FetchInstrumentation({
     ...config,
     requestHook(span, request) {
-      const typedRequest = request as Request
-      span.updateName(
-        browserHttpClientSpanName({
-          applicationOrigin,
-          method: typedRequest.method,
-          prefix,
-          responseUrl: typedRequest.url,
-        }),
-      )
+      name(span, request)
     },
     applyCustomAttributesOnSpan(span, request, result) {
       if (result instanceof Response) {
-        span.updateName(
-          browserHttpClientSpanName({
-            applicationOrigin,
-            method: (request as Request).method,
-            prefix,
-            responseUrl: result.url,
-          }),
-        )
+        name(span, request, result.url)
       }
     },
   })
@@ -126,6 +125,7 @@ export function browserTelemetryResource(options: Pick<BrowserTelemetryOptions, 
 }
 
 const providers = new Map<string, WebTracerProvider>()
+const unregister = new Map<string, () => void>()
 
 // startBrowserTelemetry owns the standard browser resource, provider, batch
 // processor, and fetch instrumentation. Applications retain exporter policy by
@@ -152,11 +152,12 @@ export function startBrowserTelemetry({
     spanProcessors: [new BatchSpanProcessor(exporter, batch)],
   })
   provider.register()
-  registerInstrumentations({
+  const remove = registerInstrumentations({
     instrumentations: [
       createBrowserFetchInstrumentation({ ...fetch, applicationOrigin, prefix }),
     ],
   })
+	unregister.set(serviceName, remove)
 	providers.set(serviceName, provider)
   return provider
 }
@@ -165,5 +166,7 @@ export async function shutdownBrowserTelemetry(serviceName: string): Promise<voi
   const provider = providers.get(serviceName)
   if (!provider) return
   providers.delete(serviceName)
+  unregister.get(serviceName)?.()
+  unregister.delete(serviceName)
   await provider.shutdown()
 }
