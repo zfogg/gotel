@@ -57,7 +57,7 @@ class BinaryTests(unittest.TestCase):
             ('generic', b' \t\n\n', b' \t\n\n'),
             ('generic', b'select   1;', b'select 1;'),
             ('postgresql', b"select  a::text, b->>'x', - -1, x != 2;", b"select a::text, b->>'x', - -1, x != 2;"),
-            ('postgresql', 'select   \'日本語  café\';\r'.encode(), 'select \'日本語  café\';\r'.encode()),
+            ('postgresql', 'select   \'æ—¥æœ¬èªž  cafÃ©\';\r'.encode(), 'select \'æ—¥æœ¬èªž  cafÃ©\';\r'.encode()),
         ]
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'queries with spaces.sql'
@@ -85,6 +85,38 @@ class BinaryTests(unittest.TestCase):
                 self.assertEqual(result.stdout, b'')
                 self.assertEqual(path.read_bytes(), sql)
                 self.assertEqual(list(Path(directory).glob('*.tmp')), [])
+
+    def test_unicode_arguments_and_paths(self):
+        sql = "select   '日本語 café 😀';"
+        for command in ('format', 'sanitize'):
+            argument = run('sql', command, sql)
+            piped = run('sql', command, sql=sql.encode())
+            self.assertEqual(argument.returncode, 0, argument.stderr)
+            self.assertEqual(piped.returncode, 0, piped.stderr)
+            self.assertEqual(argument.stdout, piped.stdout)
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory) / '日本語 café 😀'
+            folder.mkdir()
+            path = folder / '日本.sql'
+            path.write_bytes(sql.encode())
+            result = run('sql', 'format', '--edit-file', str(path))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(path.read_bytes(), "select '日本語 café 😀';".encode())
+            self.assertEqual(list(folder.glob('*.tmp')), [])
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows read-only replacement behavior')
+    def test_readonly_failure_removes_temp(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'readonly.sql'
+            path.write_bytes(b'select   1;')
+            path.chmod(0o444)
+            try:
+                result = run('sql', 'format', '--edit-file', str(path))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(path.read_bytes(), b'select   1;')
+                self.assertEqual(list(Path(directory).glob('*.tmp')), [])
+            finally:
+                path.chmod(0o666)
 
     def test_bad_arguments(self):
         for args in [[], ['sql', 'unknown'], ['sql', 'format', '--dialect', 'unknown'], ['sql', 'sanitize', '--edit-file', 'x'], ['sql', 'format', '--edit-file', 'missing.sql'], ['sql', 'format', 'a', 'b'], ['sql', 'format', '--edit-file', 'x', 'select 1'], ['sql', 'format', '--edit-file', '']]:
