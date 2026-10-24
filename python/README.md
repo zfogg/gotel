@@ -45,12 +45,13 @@ commands are `uv run --all-extras ruff check src tests setup.py`,
 ## Lifecycle
 
 ```python
-from gotel import Application
+from gotel import GotelApp
 from gotel.otelhost import Config, start
+
 
 async def serve():
     async with start(Config(service_name="beanaries-api")) as runtime:
-        application = Application("beanaries")
+        application = GotelApp("beanaries")
         with application.operation("scraper.FetchProject") as span:
             span.set_attribute("beanaries.project.source", "github")
             await fetch_project()
@@ -145,15 +146,17 @@ metadata and must not contain secrets.
 ```python
 storage = sqltrace.Namer("beanaries.storage")
 remove = sqltrace.instrument_sqlalchemy(
-    engine, namer=storage, system="clickhouse", namespace="beanaries",
+    engine,
+    namer=storage,
+    system="clickhouse",
+    namespace="beanaries",
     dialect=sqltrace.Dialect.CLICKHOUSE,
 )
 
 with storage.name("ListBuilds"):
     result = await session.execute(statement)
 
-with storage.query("InsertBuilds", sql=sql, system="clickhouse",
-                   dialect=sqltrace.Dialect.CLICKHOUSE):
+with storage.query("InsertBuilds", sql=sql, system="clickhouse", dialect=sqltrace.Dialect.CLICKHOUSE):
     await cursor.execute(sql, parameters)
 ```
 

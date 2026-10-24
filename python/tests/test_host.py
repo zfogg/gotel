@@ -6,7 +6,7 @@ import pytest
 from opentelemetry.sdk._logs.export import InMemoryLogRecordExporter
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-from gotel import Application
+from gotel import GotelApp
 from gotel.otelhost import Config, start
 
 
@@ -25,7 +25,7 @@ def test_traces_logs_flush_shutdown():
             attach_logging_handler=False,
         )
     ) as runtime:
-        app = Application("beanaries", tracer_provider=runtime.tracer_provider)
+        app = GotelApp("beanaries", tracer_provider=runtime.tracer_provider)
         logger = logging.getLogger("gotel.host.test")
         handler = LoggingHandler(logger_provider=runtime.logger_provider)
         logger.addHandler(handler)
@@ -62,11 +62,11 @@ def test_global_lifecycle_is_once_per_process():
             "-c",
             """
 from gotel.otelhost import Config, start
-from gotel import Application
+from gotel import GotelApp
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 exporter = InMemorySpanExporter()
 runtime = start(Config(signals=('traces',), trace_exporter=exporter))
-with Application('global').operation('Run'):
+with GotelApp('global').operation('Run'):
     pass
 assert runtime.force_flush()
 assert exporter.get_finished_spans()[0].name == 'global.Run'
@@ -81,3 +81,13 @@ else:
         ],
         check=True,
     )
+
+
+def test_public_app_name_and_compatibility():
+    from gotel import Application, GotelApp
+    from gotel.application import Application as LegacyApplication
+
+    assert GotelApp.__name__ == "GotelApp"
+    assert Application is LegacyApplication is GotelApp
+    assert GotelApp("beanaries").qualify("scraper.Fetch") == "beanaries.scraper.Fetch"
+    assert GotelApp("beanaries").qualify("beanaries.scraper.Fetch") == "beanaries.scraper.Fetch"

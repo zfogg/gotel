@@ -26,7 +26,7 @@ def correlation() -> dict[str, str]:
     return {"trace_id": format(context.trace_id, "032x"), "span_id": format(context.span_id, "016x")}
 
 
-class Application:
+class GotelApp:
     def __init__(self, prefix: str, *, tracer_provider=None):
         self.prefix = prefix.strip().rstrip(".")
         self.tracer_provider = tracer_provider
@@ -70,3 +70,7 @@ class Application:
             return synchronous
 
         return decorate
+
+
+# Compatibility for imports from gotel.application in v0.10.0.
+Application = GotelApp

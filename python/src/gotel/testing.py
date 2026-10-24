@@ -4,7 +4,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-from .application import Application
+from .application import GotelApp
 
 
 class Capture:
@@ -12,7 +12,7 @@ class Capture:
         self.exporter = InMemorySpanExporter()
         self.provider = TracerProvider(shutdown_on_exit=False)
         self.provider.add_span_processor(SimpleSpanProcessor(self.exporter))
-        self.application = Application(prefix, tracer_provider=self.provider)
+        self.application = GotelApp(prefix, tracer_provider=self.provider)
 
     @property
     def spans(self):
