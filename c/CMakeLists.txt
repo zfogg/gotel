@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(gotel VERSION 0.9.0 LANGUAGES C)
+project(gotel VERSION 0.10.0 LANGUAGES C)
 
 include(FetchContent)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)

@@ -48,6 +48,8 @@ if(GOTEL_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/sql_test.py $<TARGET_FILE:gotel-sql-probe>)
   add_test(NAME gotel-sanitize COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/sql_sanitize_test.py $<TARGET_FILE:gotel-sql-probe>)
+  add_test(NAME gotel-clickhouse COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/sql_clickhouse_test.py $<TARGET_FILE:gotel-sql-probe>)
   add_test(NAME gotel-format COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/sql_format_test.py $<TARGET_FILE:gotel-sql-probe>)
   add_executable(gotel-format-api-test sql_format_api_test.c)

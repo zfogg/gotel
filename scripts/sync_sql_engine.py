@@ -35,7 +35,7 @@ for source in (root / "go/sqltrace/utf8proc_vendor").glob("*"):
 for source in (root / "testdata").glob("*"):
     if source.is_file():
         write(root / "go/testdata" / source.name, source.read_bytes())
-for name in ("sql_edge_cases.json", "sql_reference.json", "stonkpile_pi5.json"):
+for name in ("sql_edge_cases.json", "sql_reference.json", "stonkpile_pi5.json", "sql_clickhouse.json"):
     write(root / "go/sqltrace/testdata/shared" / name, (root / "c/tests" / name).read_bytes())
 write(root / "python/LICENSE", (root / "LICENSE").read_bytes())
 write(root / "go/LICENSE", (root / "LICENSE").read_bytes())

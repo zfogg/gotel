@@ -1,4 +1,4 @@
-/* Shared SQL source SHA256: f552f2c9d8f2434b33e8cf4be8d85872ab0a62def7e04269afbd1a90663edb74 */
+/* Shared SQL source SHA256: fba02e365ab3d05553c0fe674af07c71782ba44b08eaada3bafb26fb84362548 */
 #define GOTEL_SQL_STANDALONE 1
 #include "engine/src/sql/main.c"
 #include "engine/src/utf8.c"

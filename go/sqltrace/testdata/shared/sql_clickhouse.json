@@ -1,0 +1,622 @@
+[
+  {
+    "name": "final prewhere",
+    "query": "SELECT id FROM builds FINAL PREWHERE project_id={project:UInt64} WHERE label='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM builds FINAL PREWHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "argmax latest",
+    "query": "SELECT project_id,argMax(name,updated_at) FROM builds WHERE owner='SECRET' GROUP BY project_id",
+    "operation": "SELECT",
+    "contains": [
+      "FROM builds WHERE",
+      "GROUP BY"
+    ],
+    "safe": true
+  },
+  {
+    "name": "aggregate states",
+    "query": "SELECT project_id,argMaxMerge(latest_name),uniqExactMerge(users) FROM build_states GROUP BY project_id",
+    "operation": "SELECT",
+    "contains": [
+      "FROM build_states GROUP BY"
+    ],
+    "safe": true
+  },
+  {
+    "name": "hour buckets",
+    "query": "SELECT toStartOfHour(ts),count(),uniqExact(user_id) FROM events WHERE ts>=toDateTime('SECRET') GROUP BY toStartOfHour(ts)",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE",
+      "GROUP BY"
+    ],
+    "safe": true
+  },
+  {
+    "name": "conditional aggregates",
+    "query": "SELECT countIf(status='SECRET'),sumIf(bytes,status='SECRET'),quantiles(0.5,0.99)(duration) FROM requests",
+    "operation": "SELECT",
+    "contains": [
+      "FROM requests"
+    ],
+    "safe": true
+  },
+  {
+    "name": "top limit by",
+    "query": "SELECT * FROM builds WHERE owner='SECRET' ORDER BY ts DESC LIMIT 3 BY project_id LIMIT 100",
+    "operation": "SELECT",
+    "contains": [
+      "FROM builds WHERE",
+      "ORDER BY",
+      "LIMIT"
+    ],
+    "safe": true
+  },
+  {
+    "name": "settings",
+    "query": "SELECT * FROM builds WHERE owner='SECRET' SETTINGS max_threads=8,max_execution_time=30",
+    "operation": "SELECT",
+    "contains": [
+      "FROM builds WHERE",
+      "SETTINGS"
+    ],
+    "safe": true
+  },
+  {
+    "name": "sample offset",
+    "query": "SELECT * FROM events SAMPLE 1/10 OFFSET 1/2 WHERE label='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events SAMPLE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "array join",
+    "query": "SELECT item FROM events ARRAY JOIN tags AS item WHERE item='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events",
+      "JOIN"
+    ],
+    "safe": true
+  },
+  {
+    "name": "left array join",
+    "query": "SELECT item FROM events LEFT ARRAY JOIN tags AS item WHERE item='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events",
+      "JOIN"
+    ],
+    "safe": true
+  },
+  {
+    "name": "global any left",
+    "query": "SELECT * FROM events e GLOBAL ANY LEFT JOIN users u ON e.user_id=u.id WHERE u.name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events AS e",
+      "JOIN users AS u"
+    ],
+    "safe": true
+  },
+  {
+    "name": "all inner",
+    "query": "SELECT * FROM events e ALL INNER JOIN users u USING(user_id) WHERE e.name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "JOIN users AS u",
+      "USING"
+    ],
+    "safe": true
+  },
+  {
+    "name": "asof",
+    "query": "SELECT * FROM events e ASOF LEFT JOIN prices p ON e.symbol=p.symbol AND e.ts>=p.ts WHERE e.symbol='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "ASOF LEFT JOIN prices AS p"
+    ],
+    "safe": true
+  },
+  {
+    "name": "semi",
+    "query": "SELECT * FROM events e LEFT SEMI JOIN users u ON e.user_id=u.id WHERE e.name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "JOIN users AS u"
+    ],
+    "safe": true
+  },
+  {
+    "name": "anti",
+    "query": "SELECT * FROM events e LEFT ANTI JOIN users u ON e.user_id=u.id WHERE e.name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "JOIN users AS u"
+    ],
+    "safe": true
+  },
+  {
+    "name": "global in",
+    "query": "SELECT * FROM events WHERE user_id GLOBAL IN (SELECT id FROM users WHERE name='SECRET')",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE",
+      "FROM users WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "scalar with",
+    "query": "WITH 'SECRET' AS needle SELECT * FROM events WHERE name=needle",
+    "operation": "SELECT",
+    "contains": [
+      "WITH",
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "cte",
+    "query": "WITH recent AS (SELECT * FROM events WHERE name='SECRET') SELECT * FROM recent",
+    "operation": "SELECT",
+    "contains": [
+      "WITH … SELECT",
+      "FROM recent"
+    ],
+    "safe": true
+  },
+  {
+    "name": "multiple ctes",
+    "query": "WITH a AS (SELECT * FROM events WHERE name='SECRET'), b AS (SELECT * FROM a) SELECT count() FROM b",
+    "operation": "SELECT",
+    "contains": [
+      "WITH … SELECT",
+      "FROM b"
+    ],
+    "safe": true
+  },
+  {
+    "name": "union",
+    "query": "SELECT id FROM events WHERE name='SECRET' UNION ALL SELECT id FROM archive WHERE name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "UNION ALL",
+      "FROM archive WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "window",
+    "query": "SELECT row_number() OVER (PARTITION BY project_id ORDER BY ts DESC) FROM events WHERE name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "qualify",
+    "query": "SELECT * FROM events WHERE name='SECRET' QUALIFY row_number() OVER (PARTITION BY project_id ORDER BY ts DESC)=1",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE",
+      "QUALIFY"
+    ],
+    "safe": true
+  },
+  {
+    "name": "totals",
+    "query": "SELECT project_id,count() FROM events WHERE name='SECRET' GROUP BY project_id WITH TOTALS HAVING count()>5",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE",
+      "GROUP BY"
+    ],
+    "safe": true
+  },
+  {
+    "name": "rollup",
+    "query": "SELECT project_id,day,count() FROM events WHERE name='SECRET' GROUP BY ROLLUP(project_id,day)",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE",
+      "GROUP BY"
+    ],
+    "safe": true
+  },
+  {
+    "name": "grouping sets",
+    "query": "SELECT project_id,day,count() FROM events WHERE name='SECRET' GROUP BY GROUPING SETS ((project_id,day),(project_id),())",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE",
+      "GROUP BY"
+    ],
+    "safe": true
+  },
+  {
+    "name": "order fill",
+    "query": "SELECT ts,count() FROM events WHERE name='SECRET' GROUP BY ts ORDER BY ts WITH FILL FROM 0 TO 100 STEP 5",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE",
+      "ORDER BY"
+    ],
+    "safe": true
+  },
+  {
+    "name": "format output",
+    "query": "SELECT * FROM events WHERE name='SECRET' FORMAT JSONEachRow",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE",
+      "FORMAT"
+    ],
+    "safe": true
+  },
+  {
+    "name": "typed nullable",
+    "query": "SELECT * FROM events WHERE name={name:Nullable(String)} AND id={id:UInt64}",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "typed arrays",
+    "query": "SELECT * FROM events WHERE id IN {ids:Array(UInt64)} AND name={name:LowCardinality(String)}",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "typed tuple",
+    "query": "SELECT {x:Tuple(String, Array(Nullable(UInt64)))},'SECRET' FROM events",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "typed decimal",
+    "query": "SELECT {x:Decimal(18, 4)}, {t:DateTime64(3, 'UTC')},'SECRET' FROM events",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "array lambda",
+    "query": "SELECT arrayFilter(x -> x != 'SECRET',tags),arrayMap(x -> x+1,ids) FROM events",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "map literal",
+    "query": "SELECT map('SECRET',123),tuple('SECRET',456),['SECRET',789] FROM events",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "json extraction",
+    "query": "SELECT JSONExtractString(payload,'SECRET'),payload.name FROM events WHERE name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "dictionary",
+    "query": "SELECT dictGet('SECRET','label',id) FROM events WHERE name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "cast",
+    "query": "SELECT CAST('SECRET' AS String),toDecimal64(123.456,3) FROM events",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "interval",
+    "query": "SELECT * FROM events WHERE ts>now()-INTERVAL 7 DAY AND name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "escaped string",
+    "query": "SELECT 'SECRET\\'more', 'SECRET\\\\tail' FROM events",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "heredoc",
+    "query": "SELECT $tag$SECRET ' /* ; $tag$ FROM events",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "numeric heredoc",
+    "query": "SELECT $123$SECRET$123$ FROM events",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "unicode literal",
+    "query": "SELECT ‘SECRET’ FROM “events”",
+    "operation": "SELECT",
+    "contains": [
+      "FROM “events”"
+    ],
+    "safe": true
+  },
+  {
+    "name": "quoted identifier",
+    "query": "SELECT `name` FROM `analytics`.`events` WHERE `name`='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM `analytics`.`events`"
+    ],
+    "safe": true
+  },
+  {
+    "name": "slash comment",
+    "query": "SELECT id // SECRET\nFROM events WHERE name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "hash comment",
+    "query": "SELECT id # SECRET\nFROM events WHERE name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "block comment",
+    "query": "SELECT /* SECRET */ id FROM events WHERE name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "hex floats",
+    "query": "SELECT 0x1.fp+3,0XFF.8P-3,0b10101,123_456,1.2e-3 FROM events",
+    "operation": "SELECT",
+    "contains": [
+      "FROM events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "insert values",
+    "query": "INSERT INTO events (id,name) VALUES (123,'SECRET'),(456,'SECRET')",
+    "operation": "INSERT",
+    "contains": [
+      "INSERT INTO events",
+      "VALUES"
+    ],
+    "safe": true
+  },
+  {
+    "name": "insert settings",
+    "query": "INSERT INTO events (id,name) SETTINGS max_partitions_per_insert_block=10000 VALUES (123,'SECRET')",
+    "operation": "INSERT",
+    "contains": [
+      "INSERT INTO events"
+    ],
+    "safe": true
+  },
+  {
+    "name": "insert select",
+    "query": "INSERT INTO archive SELECT * FROM events FINAL WHERE name='SECRET'",
+    "operation": "INSERT",
+    "contains": [
+      "INSERT INTO archive",
+      "FROM events FINAL WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "delete mutation",
+    "query": "ALTER TABLE events DELETE WHERE name='SECRET' SETTINGS mutations_sync=1",
+    "operation": "ALTER",
+    "contains": [
+      "ALTER WHERE",
+      "SETTINGS"
+    ],
+    "safe": true
+  },
+  {
+    "name": "update mutation",
+    "query": "ALTER TABLE events UPDATE name='SECRET' WHERE id=123 SETTINGS mutations_sync=2",
+    "operation": "ALTER",
+    "contains": [
+      "ALTER WHERE",
+      "SETTINGS"
+    ],
+    "safe": true
+  },
+  {
+    "name": "lightweight delete",
+    "query": "DELETE FROM events WHERE name='SECRET' SETTINGS mutations_sync=1",
+    "operation": "DELETE",
+    "contains": [
+      "DELETE FROM events WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "optimize final",
+    "query": "OPTIMIZE TABLE events FINAL DEDUPLICATE",
+    "operation": "OPTIMIZE",
+    "contains": [
+      "SQL"
+    ],
+    "safe": true
+  },
+  {
+    "name": "truncate",
+    "query": "TRUNCATE TABLE events",
+    "operation": "TRUNCATE",
+    "contains": [
+      "TRUNCATE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "create merge tree",
+    "query": "CREATE TABLE events (id UInt64,name String,ts DateTime) ENGINE=MergeTree ORDER BY (id,ts)",
+    "operation": "CREATE",
+    "contains": [
+      "CREATE ORDER BY"
+    ],
+    "safe": true
+  },
+  {
+    "name": "create materialized",
+    "query": "CREATE MATERIALIZED VIEW event_counts ENGINE=AggregatingMergeTree ORDER BY project_id AS SELECT project_id,countState() FROM events GROUP BY project_id",
+    "operation": "CREATE",
+    "contains": [
+      "CREATE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "explain",
+    "query": "EXPLAIN PIPELINE SELECT * FROM events WHERE name='SECRET'",
+    "operation": "EXPLAIN",
+    "contains": [
+      "EXPLAIN"
+    ],
+    "safe": true
+  },
+  {
+    "name": "system query",
+    "query": "SELECT query_id,elapsed FROM system.processes WHERE user='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM system.processes WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "table settings",
+    "query": "SELECT * FROM settings WHERE name='SECRET'",
+    "operation": "SELECT",
+    "contains": [
+      "FROM settings WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "multiple statements",
+    "query": "SELECT * FROM events WHERE name='SECRET'; DELETE FROM archive WHERE name='SECRET'",
+    "operation": "",
+    "contains": [
+      "FROM events WHERE",
+      "DELETE FROM archive WHERE"
+    ],
+    "safe": true
+  },
+  {
+    "name": "csv payload",
+    "query": "INSERT INTO events FORMAT CSV\n123,SECRET",
+    "safe": false
+  },
+  {
+    "name": "json payload",
+    "query": "INSERT INTO events FORMAT JSONEachRow\n{\"name\":\"SECRET\"}",
+    "safe": false
+  },
+  {
+    "name": "native payload",
+    "query": "INSERT INTO events FORMAT Native\nSECRET",
+    "safe": false
+  },
+  {
+    "name": "payload after select",
+    "query": "SELECT 1; INSERT INTO events FORMAT TSV\nSECRET",
+    "safe": false
+  },
+  {
+    "name": "unclosed string",
+    "query": "SELECT 'SECRET",
+    "safe": false
+  },
+  {
+    "name": "unclosed heredoc",
+    "query": "SELECT $123$SECRET",
+    "safe": false
+  },
+  {
+    "name": "unclosed unicode",
+    "query": "SELECT ‘SECRET",
+    "safe": false
+  },
+  {
+    "name": "unclosed typed parameter",
+    "query": "SELECT {value:Array(UInt64}",
+    "safe": false
+  },
+  {
+    "name": "unclosed comment",
+    "query": "SELECT 1 /* SECRET",
+    "safe": false
+  },
+  {
+    "name": "embedded nul",
+    "query": "SELECT 1\u0000SECRET",
+    "safe": false
+  },
+  {
+    "name": "unclosed quoted identifier",
+    "query": "SELECT * FROM `SECRET",
+    "safe": false
+  }
+]

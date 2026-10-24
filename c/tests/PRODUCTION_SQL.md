@@ -1,5 +1,16 @@
 # Production SQL regression provenance
 
+`sql_clickhouse.json` adds 60 hand-written ClickHouse queries and 11 rejected
+inputs, based on query shapes used by Beanaries and ClickHouse syntax. These
+are synthetic fixtures, not captured production queries. C, Go, and Python
+check privacy, operation and summary metadata, formatting preservation and
+idempotence, and bounded output. Coverage includes FINAL/PREWHERE, aggregate
+states, joins, ARRAY JOIN, CTEs and scalar WITH, LIMIT BY, SETTINGS, typed
+parameters, strings/comments, mutations, INSERT VALUES and SELECT, and DDL.
+INSERT FORMAT payloads and malformed lexical input must fail closed. These
+tests do not run a ClickHouse server or validate execution semantics; less
+specialized summaries (including DDL and scalar WITH) remain conservative.
+
 `stonkpile_pi5.json` contains 24 self-contained PostgreSQL query fixtures
 captured from the read-only Spaniel MCP at `http://pi5:8345/mcp` on 2026-10-22.
 Each retains its trace URL, observed `db.query.text` and `db.query.summary`, the

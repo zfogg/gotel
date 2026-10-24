@@ -492,7 +492,15 @@ static void summarize(output *b, token *t, size_t n, unsigned depth) {
       text(b, " ");
       upper(b, v);
       text(b, " ");
-      size_t end = clause_end(t, n, i + 1);
+      /* A relation may itself have a clause-keyword name (e.g. ClickHouse
+       * system.settings). Consume that first name before finding clauses. */
+      size_t start = i + 1;
+      if (start < n && identifier(t[start])) {
+        ++start;
+        while (start + 1 < n && sym(t[start], '.') && identifier(t[start + 1]))
+          start += 2;
+      }
+      size_t end = clause_end(t, n, start);
       relations(b, t + i + 1, end - i - 1, depth + 1);
       i = end;
       continue;

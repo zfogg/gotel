@@ -1,10 +1,46 @@
 import json
+import re
 from pathlib import Path
 
 import pytest
 
 from gotel import sqltrace
 from gotel.sqltrace import Dialect, SQLInspectionError
+
+CLICKHOUSE_CASES = json.loads(
+    (Path(__file__).resolve().parents[2] / "c/tests/sql_clickhouse.json").read_text(encoding="utf-8")
+)
+
+
+@pytest.mark.parametrize("case", CLICKHOUSE_CASES, ids=lambda case: case["name"])
+def test_clickhouse_shared_corpus(case):
+    sql = case["query"]
+    if not case["safe"]:
+        for limit in (1, 7, 32, 32768):
+            with pytest.raises(SQLInspectionError):
+                sqltrace.inspect(sql, dialect=Dialect.CLICKHOUSE, max_query_text_bytes=limit)
+        with pytest.raises(ValueError):
+            sqltrace.format_sql(sql, dialect=Dialect.CLICKHOUSE)
+        return
+    before = sqltrace.inspect(sql, dialect=Dialect.CLICKHOUSE)
+    assert before.operation == case["operation"]
+    assert before.statement_count == (2 if case["name"] == "multiple statements" else 1)
+    assert all(fragment in before.summary for fragment in case["contains"])
+    assert "SECRET" not in before.text + before.summary
+    formatted = sqltrace.format_sql(sql, dialect=Dialect.CLICKHOUSE)
+    assert re.sub(r"\s", "", formatted) == re.sub(r"\s", "", sql)
+    assert sqltrace.format_sql(formatted, dialect=Dialect.CLICKHOUSE) == formatted
+    after = sqltrace.inspect(formatted, dialect=Dialect.CLICKHOUSE)
+    assert (re.sub(r"\s", "", after.summary), after.operation, after.statement_count) == (
+        re.sub(r"\s", "", before.summary),
+        before.operation,
+        before.statement_count,
+    )
+    assert re.sub(r"\s", "", after.text) == re.sub(r"\s", "", before.text)
+    for limit in (1, 7, 32):
+        bounded = sqltrace.inspect(sql, dialect=Dialect.CLICKHOUSE, max_query_text_bytes=limit)
+        assert len(bounded.text.encode()) <= limit
+        assert "SECRET" not in bounded.text + bounded.summary
 
 
 @pytest.mark.parametrize("dialect", list(Dialect))
