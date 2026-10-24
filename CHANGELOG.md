@@ -30,6 +30,8 @@
   without exposing literal or comment contents in sanitized telemetry.
 - Grow SQL layout buffers for deeply nested queries while preserving the
   size-measurement and all-or-nothing caller-buffer contracts.
+- Keep short boolean groups inline while indenting longer nested predicates
+  across separate lines for readability.
 - Keep complete bounded Python SQL templates when indentation would exceed the
   collection limit, and name FastAPI spans correctly for routes registered
   after instrumentation.
