@@ -1,0 +1,67 @@
+name: Recover tested release publication
+
+on:
+  push:
+    branches: [codex/release-publication-recovery]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-v0.10.0
+  cancel-in-progress: false
+
+env:
+  SOURCE_RUN: '40056779080'
+  RELEASE_TAG: v0.10.0
+  SOURCE_SHA: 46435b38ae995034da903430b86a1bc7c34560d2
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v0.10.0
+          fetch-depth: 0
+      - name: Verify immutable tags and successful artifact builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$SOURCE_SHA"
+          test "$(git rev-parse "go/$RELEASE_TAG^{commit}")" = "$SOURCE_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" > /tmp/run.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN/jobs?per_page=100" > /tmp/jobs.json
+          python - <<'PY'
+          import json, os
+          run = json.load(open('/tmp/run.json'))
+          assert run['head_sha'] == os.environ['SOURCE_SHA']
+          assert run['event'] == 'push' and run['head_branch'] == os.environ['RELEASE_TAG']
+          jobs = [j for j in json.load(open('/tmp/jobs.json'))['jobs'] if j['name'] != 'publish']
+          assert len(jobs) == 12, [(j['name'], j['conclusion']) for j in jobs]
+          assert all(j['conclusion'] == 'success' for j in jobs)
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ env.SOURCE_RUN }}
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Publish original tested artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cd release-assets
+          test "$(find . -maxdepth 1 -name '*.zip' | wc -l)" = 13
+          test "$(find . -maxdepth 1 -name '*.whl' | wc -l)" = 12
+          test "$(find . -maxdepth 1 -name '*.tar.gz' | wc -l)" = 1
+          sha256sum *.zip *.whl *.tar.gz > SHA256SUMS
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" --notes-file "$GITHUB_WORKSPACE/.github/RELEASE_NOTES.md"
+          fi
+          gh release upload "$RELEASE_TAG" *.zip *.whl *.tar.gz SHA256SUMS --clobber

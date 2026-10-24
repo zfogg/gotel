@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Publish releases from annotated tags without conflicting with shallow checkout
+  refs when verifying the nested Go module tag.
+
 ## v0.10.0
 
 - Add Go `mcptrace` middleware for the official MCP SDK: connected request/tool

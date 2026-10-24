@@ -250,10 +250,11 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.validate.outputs.tag }}
         run: |
-          git fetch --tags origin
           tag="go/$RELEASE_TAG"
-          if git rev-parse --verify "refs/tags/$tag" >/dev/null 2>&1; then
-            test "$(git rev-list -n 1 "$tag")" = "$(git rev-parse HEAD)"
+          remote_tag="$(git ls-remote --tags origin "refs/tags/$tag")"
+          if [[ -n "$remote_tag" ]]; then
+            git fetch --no-tags origin "refs/tags/$tag:refs/tags/$tag"
+            test "$(git rev-parse "$tag^{commit}")" = "$(git rev-parse HEAD)"
           else
             git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com tag -a "$tag" -m "Go module $RELEASE_TAG"
             git push origin "refs/tags/$tag"
