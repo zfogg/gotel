@@ -32,7 +32,7 @@ the archive's architecture (`x64-windows` or `arm64-windows`).
 Each C ZIP has a `README.md` with CMake and GNU Make examples for all three
 operating systems, plus `API.md` for the source-build route and C API. To have
 CMake resolve the dependencies for you, build the matching tag from source
-with `add_subdirectory(gotel)` and link `gotel::gotel`.
+with `add_subdirectory(gotel/c)` and link `gotel::gotel`.
 
 ## TypeScript
 
