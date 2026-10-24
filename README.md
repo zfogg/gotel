@@ -350,3 +350,10 @@ TypeScript installation, prefer npm registry publication when configured or a
 Git dependency. The release ZIP contains `dist/`, `package.json`, the README,
 and the license for direct inspection or unpacking. CI uses `npm pack` while
 assembling the ZIP, but does not upload the intermediate `.tgz`.
+
+
+After publishing, update the known consumers: **ascii-chat, spaniel, ratio,
+stonkpile, and beanaries**. Beanaries consumes both Python and TypeScript; update
+its uv and pnpm manifests and lockfiles together. See the
+[consumer rollout list](.github/RELEASE_NOTES.md#consumer-updates) and
+[release skill](.agents/skills/gotel-release/SKILL.md#update-consumers).

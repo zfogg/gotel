@@ -57,3 +57,22 @@ compiler and bundle the shared SQL engine and utf8proc. Registry publication is
 separate. The Go module now lives at `github.com/zfogg/gotel/go` and resolves
 matching `go/vX.Y.Z` tags. Update Go imports and C `GOTEL_*` CMake options when
 migrating from earlier releases.
+
+
+## Consumer updates
+
+Update all known gotel consumers after publishing a release:
+
+| Repository | Integration | Dependency files |
+| --- | --- | --- |
+| ascii-chat | C | `deps/ascii-chat-deps/gotel` submodule |
+| spaniel | Go | `go.mod`, `go.sum` |
+| ratio | Go and TypeScript | `go.mod`, `go.sum`, `web/package.json` and its lockfile |
+| stonkpile | Go and TypeScript | `go.mod`, `go.sum`, `web/package.json` and its lockfile |
+| beanaries | Python and TypeScript | `apps/backend/pyproject.toml`, `apps/backend/uv.lock`, `apps/web/package.json`, `pnpm-lock.yaml` |
+
+For Beanaries, update both the uv Git source (`python/` subdirectory) and the
+TypeScript Git dependency to the published release commit, regenerate both
+lockfiles, and verify browser → API → Keycloak and Temporal worker traces.
+The [gotel-release skill](https://github.com/zfogg/gotel/blob/main/.agents/skills/gotel-release/SKILL.md)
+describes the coordinated rollout and validation steps.

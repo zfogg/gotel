@@ -16,3 +16,16 @@ Treat version tags as immutable because Go module consumers resolve them by vers
 # Update consumers
 
 The repo base is `~/src/` on Windows and `~/src/github.com/zfogg/` on macOS and Linux. Known consumers under that base are `ascii-chat` (Git submodule `deps/ascii-chat-deps/gotel`), `spaniel` (`go.mod`), `ratio` (`go.mod` and `web/package.json`), `stonkpile` (`go.mod` and `web/package.json`), and `beanaries` (`apps/backend` uv workspace and `apps/web/package.json`). Check for additional consumers when doing a rollout; this list may grow. Respect each repository's instructions and existing work. In Go consumers, update the module to the published tag, tidy modules if needed, and run focused tests or builds. In ascii-chat, advance the submodule to the release tag, configure/build with its prescribed CMake preset, and test the affected integration. Commit and push consumer updates when the user requests a rollout. Deploy running services separately when requested, then verify their version and telemetry.
+
+
+For Beanaries, update the gotel Git source in `apps/backend/pyproject.toml`
+(`subdirectory = "python"`) and the TypeScript dependency in
+`apps/web/package.json` to the published release commit. Run
+`uv lock --directory apps/backend` and `pnpm install --lockfile-only` from the
+repository root, committing `apps/backend/uv.lock` and `pnpm-lock.yaml` along
+with both manifests. Run focused backend and browser telemetry tests. For a
+live rollout, exercise the website and check Beanaries' Spaniel HTTP API for a
+`beanaries-web` root with a `beanaries-api` child, Keycloak server descendants,
+and connected Temporal workflow/activity spans on the scraper worker. Use
+Beanaries' `scripts/verify_telemetry_traces.py` with captured browser and worker
+trace IDs to verify complete ancestry and absence of error spans.
