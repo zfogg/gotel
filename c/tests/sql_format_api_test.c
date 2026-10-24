@@ -31,5 +31,25 @@ int main(void) {
   CHECK(gotel_sql_format("SELECT \xff", GOTEL_SQL_POSTGRESQL, out, sizeof(out), &length) == OTLP_ERR_INVALID_ARGUMENT);
   CHECK(!*out);
   CHECK(gotel_sql_format("", GOTEL_SQL_POSTGRESQL, out, 1, &length) == OTLP_OK && length == 0 && !*out);
+  char nested[512] = "SELECT ";
+  size_t used = strlen(nested);
+  for (int i = 0; i < 40; ++i) {
+    memcpy(nested + used, "(SELECT ", 8);
+    used += 8;
+  }
+  nested[used++] = '1';
+  for (int i = 0; i < 40; ++i)
+    nested[used++] = ')';
+  nested[used] = 0;
+  CHECK(gotel_sql_format(nested, GOTEL_SQL_POSTGRESQL, NULL, 0, &length) == OTLP_OK);
+  CHECK(length > strlen(nested) * 8 + 1024);
+  required = length;
+  char *expanded = malloc(required + 1);
+  CHECK(expanded);
+  CHECK(gotel_sql_format(nested, GOTEL_SQL_POSTGRESQL, expanded, required + 1, &length) == OTLP_OK);
+  CHECK(strlen(expanded) == required);
+  CHECK(gotel_sql_format(expanded, GOTEL_SQL_POSTGRESQL, NULL, 0, &length) == OTLP_OK);
+  CHECK(length == required);
+  free(expanded);
   return 0;
 }

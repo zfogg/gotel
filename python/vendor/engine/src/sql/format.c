@@ -562,9 +562,26 @@ otlp_status_t gotel_sql_format(const char *sql, gotel_sql_dialect_t dialect, cha
   if (count == SIZE_MAX)
     goto done;
   output b = {buf, 0, cap};
-  if (!format_layout(ts, count, &b)) {
-    status = b.overflow ? OTLP_ERR_OVERFLOW : OTLP_ERR_INVALID_ARGUMENT;
-    goto done;
+  while (!format_layout(ts, count, &b)) {
+    if (!b.overflow) {
+      status = OTLP_ERR_INVALID_ARGUMENT;
+      goto done;
+    }
+    /* Deep, valid queries can expand beyond the initial layout estimate.
+     * Grow the private staging buffer; the caller still receives all or none. */
+    if (cap > SIZE_MAX / 2) {
+      status = OTLP_ERR_OVERFLOW;
+      goto done;
+    }
+    cap *= 2;
+    char *larger = realloc(buf, cap);
+    if (!larger) {
+      status = OTLP_ERR_NOMEM;
+      goto done;
+    }
+    buf = larger;
+    *buf = 0;
+    b = (output){buf, 0, cap};
   }
   *length = b.n;
   if (out) {
