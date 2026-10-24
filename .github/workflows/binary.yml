@@ -14,8 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure C binary
-        run: cmake -S src/binary -B build/binary -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S src/binary -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build C binary
-        run: cmake --build build/binary --config Release
+        run: cmake --build build --config Release
       - name: Test C binary
-        run: ctest --test-dir build/binary -C Release --output-on-failure
+        run: ctest --test-dir build -C Release --output-on-failure
