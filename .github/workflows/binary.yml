@@ -1,0 +1,29 @@
+name: Binary
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/binary/go.mod
+          cache: false
+      - name: Test binary
+        working-directory: src/binary
+        env:
+          CGO_ENABLED: '1'
+        run: go test ./...
+      - name: Build binary
+        working-directory: src/binary
+        env:
+          CGO_ENABLED: '1'
+        run: go build -o gotel .
