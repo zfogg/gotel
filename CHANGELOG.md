@@ -30,6 +30,8 @@
 - Keep complete bounded Python SQL templates when indentation would exceed the
   collection limit, and name FastAPI spans correctly for routes registered
   after instrumentation.
+- Name browser fetch spans correctly for URL-plus-options requests and default
+  GET calls, and unregister fetch instrumentation when telemetry shuts down.
 
 ## v0.9.0
 
