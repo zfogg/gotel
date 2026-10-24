@@ -1,6 +1,6 @@
 {
   "name": "@zfogg/gotel",
-  "version": "0.8.5",
+  "version": "0.9.0",
   "description": "Reusable OpenTelemetry conventions for Go and TypeScript applications",
   "license": "MIT",
   "type": "module",

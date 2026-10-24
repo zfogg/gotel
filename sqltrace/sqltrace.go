@@ -163,6 +163,7 @@ type inspectionCacheKey struct {
 }
 
 type inspectionCacheValue struct {
+	formattedSQL   string
 	operation      string
 	summary        string
 	simple         string
@@ -327,6 +328,7 @@ func isCompilerFrame(name string) bool {
 
 // Metadata is safe, bounded information about one SQL operation.
 type Metadata struct {
+	formattedSQL string
 	// Name is the qualified, low-cardinality span name.
 	Name string
 	// Summary describes SQL operations and physical tables, not the span name.
@@ -366,6 +368,10 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	cached, ok := inspections.get(key)
 	if !ok {
 		cached.summary, cached.operation, cached.sanitized, cached.statementCount, _ = inspectNativeWithOptions(statement, options)
+		cached.formattedSQL = FormatSQLOrOriginal(options.Dialect, cached.sanitized.Text)
+		if options.MaxQueryTextBytes > 0 && len(cached.formattedSQL) > options.MaxQueryTextBytes {
+			cached.formattedSQL = cached.sanitized.Text
+		}
 		if cached.summary == "" {
 			cached.summary = "SQL"
 		}
@@ -390,7 +396,7 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	if qualified == "" {
 		qualified = namer.Name(normalizeSimpleName(simple))
 	}
-	return Metadata{Name: qualified, Summary: cached.summary, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args), StatementCount: cached.statementCount}
+	return Metadata{formattedSQL: cached.formattedSQL, Name: qualified, Summary: cached.summary, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args), StatementCount: cached.statementCount}
 }
 
 // Attributes returns standard database attributes plus safe query metadata.
@@ -409,7 +415,15 @@ func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
 		attrs = append(attrs, OperationKey.String(m.Operation))
 	}
 	if m.SanitizedSQL != "" {
-		attrs = append(attrs, QueryTextKey.String(m.SanitizedSQL))
+		query := m.formattedSQL
+		if query == "" {
+			query = FormatSQLOrOriginal(Dialect(system), m.SanitizedSQL)
+		}
+		// Preserve the collection policy's existing byte bound on expansion.
+		if len(query) > DefaultMaxQueryTextBytes && len(query) > len(m.SanitizedSQL) {
+			query = m.SanitizedSQL
+		}
+		attrs = append(attrs, QueryTextKey.String(query))
 	}
 	if m.QueryTextTruncated {
 		attrs = append(attrs, QueryTextTruncatedKey.Bool(true))

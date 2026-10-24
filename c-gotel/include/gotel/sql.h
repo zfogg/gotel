@@ -41,9 +41,20 @@ otlp_status_t gotel_sql_inspect(const char *sql, const gotel_sql_options_t *opti
  * terminator; limit is the maximum emitted bytes (zero uses 32768). */
 otlp_status_t gotel_sql_sanitize(const char *sql, gotel_sql_dialect_t dialect, bool collapse_in_lists, size_t limit,
                                  char *out, size_t capacity, bool *truncated);
+/* Layout-only SQL formatting. Comments, literals, identifiers and bind markers
+ * are preserved verbatim. No SQL is executed or sanitized. Input is UTF-8,
+ * limited to 1 MiB / 65536 tokens / 64 nesting levels. Not a SQL validator.
+ * length receives the output byte count (excluding NUL). Pass out=NULL and
+ * capacity=0 to measure. On failure a supplied output buffer is emptied. */
+otlp_status_t gotel_sql_format(const char *sql, gotel_sql_dialect_t dialect, char *out, size_t capacity,
+                               size_t *length);
 #ifndef CGOTEL_SQL_STANDALONE
 void gotel_sql_attributes(otlp_span_t *span, const gotel_sql_metadata_t *metadata, const char *system,
                           const char *namespace_name, size_t bind_count);
+/* Preserve a custom collection byte limit when formatting expands SQL.
+ * Zero uses GOTEL_SQL_TEXT_MAX. */
+void gotel_sql_attributes_with_limit(otlp_span_t *span, const gotel_sql_metadata_t *metadata, const char *system,
+                                     const char *namespace_name, size_t bind_count, size_t max_text_bytes);
 #endif
 #ifdef __cplusplus
 }

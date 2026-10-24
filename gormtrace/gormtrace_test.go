@@ -50,7 +50,7 @@ func TestPluginNamesAndSanitizesEveryOperation(t *testing.T) {
 				attrs[string(attr.Key)] = attr.Value.AsInt64()
 			}
 		}
-		if attrs["db.query.text"] != "SELECT ?" {
+		if attrs["db.query.text"] != "SELECT\n  ?" {
 			t.Fatalf("query text = %#v", attrs["db.query.text"])
 		}
 		if attrs["db.query.summary"] != "SELECT …" {

@@ -80,8 +80,9 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
     span = otlp_tracer_start_span(h->tracer, span_name);
   if (span) {
     otlp_span_set_kind(span, OTLP_SPAN_KIND_CLIENT);
-    gotel_sql_attributes(span, &metadata, "sqlite", a->options.namespace_name,
-                         (size_t)sqlite3_bind_parameter_count(statement));
+    gotel_sql_attributes_with_limit(span, &metadata, "sqlite", a->options.namespace_name,
+                                    (size_t)sqlite3_bind_parameter_count(statement),
+                                    a->options.sql.max_query_text_bytes);
     if (parent.valid && parent.sampled) {
       otlp_span_set_trace_id(span, parent.trace_id);
       otlp_span_set_parent_span_id(span, parent.span_id);

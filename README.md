@@ -1,5 +1,14 @@
 # gotel
 
+SQL layout formatting is shared with c-gotel: `sqltrace.FormatSQL(dialect, query)`
+returns formatted text and an error (the original text on error).
+`sqltrace.FormatSQLOrOriginal` is the tolerant presentation helper. Both preserve
+comments, quoted text, identifiers, and bind markers; neither executes SQL or
+substitutes values. Formatting supports PostgreSQL, DuckDB, MySQL, SQLite and a
+generic dialect, with a 1 MiB input limit and 64 nesting levels. It is a layout
+formatter, not a SQL validator. Telemetry formats only the sanitized template in
+`db.query.text`; span names and `db.query.summary` remain concise.
+
 [Latest release](https://github.com/zfogg/gotel/releases/latest) ·
 [All releases](https://github.com/zfogg/gotel/releases)
 

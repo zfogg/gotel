@@ -374,3 +374,35 @@ current blocked count, and emits a completed ERROR child span when a copied pare
 `error.type=thread.deadlock` at most once every 30 seconds. No internal threads or
 OS-specific APIs are introduced. It does not mutate another thread's active
 scope, recover deadlocks, handle fatal signals, or survive a blocked tick owner.
+
+
+## SQL formatting
+
+`gotel_sql_format(sql, dialect, out, capacity, &length)` formats layout while
+preserving comments, quoted contents, identifiers, and bind placeholders. It
+never executes SQL or substitutes values. Measure with `out=NULL, capacity=0`,
+then allocate `length+1` bytes. Input and output must not overlap. On errors,
+the output is emptied. Input is limited to 1 MiB, 65536 tokens, and 64 nested
+groups. This is intentionally a formatter, not a SQL syntax validator.
+
+The SQLite adapter and `gotel_sql_attributes` format sanitized `db.query.text`
+only; summaries and span names remain concise. The SQLite adapter preserves its
+custom collection limit. Direct callers with custom limits can use
+`gotel_sql_attributes_with_limit`; formatting failures retain sanitized text.
+
+`testdata/sql_format.json` contains 714 cases, including named statements from
+50 stonkpile SQL files with their source revision, Spaniel dashboard queries,
+and synthetic dialect/comment/placeholder regressions. The C test suite uses
+SQLGlot and sqlparse as independent lexical checks, 1000 deterministic mutations,
+and SQLite/DuckDB execution comparisons. Install test dependencies with
+`python -m pip install -r c-gotel/tests/requirements-format.txt`.
+
+The canonical SQL style uses two-space indentation, one projection/assignment
+per line, aligned clause headers, indented WHERE/HAVING/QUALIFY predicates,
+complete JOIN headers with aligned ON predicates, and separate nested CASE,
+CTE and subquery blocks. Short function calls remain inline; long/nested
+argument lists wrap. Twenty exact-output fixtures lock down the layout.
+
+After changing shared SQL C sources, run `python scripts/sync_sql_engine.py`.
+The generated fingerprint invalidates cgo's cache for sources included from
+outside its package directory; release CI verifies it is current.

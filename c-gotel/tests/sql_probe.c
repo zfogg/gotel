@@ -17,6 +17,7 @@ static int nibble(char c) {
 }
 int main(int argc, char **argv) {
   bool sanitize_only = argc == 2 && strcmp(argv[1], "--sanitize") == 0;
+  bool format_only = argc == 2 && strcmp(argv[1], "--format") == 0;
   char *line = malloc(2097200), *query = malloc(1048600), *sanitized = malloc(1048600);
   if (!line || !query || !sanitized)
     return 2;
@@ -36,6 +37,21 @@ int main(int argc, char **argv) {
       query[i / 2] = (char)(high * 16 + low);
     }
     query[n / 2] = 0;
+    if (format_only) {
+      size_t length = 0;
+      otlp_status_t status = gotel_sql_format(query, (gotel_sql_dialect_t)dialect, NULL, 0, &length);
+      size_t capacity = limit ? limit : length + 1;
+      char *formatted = calloc(capacity, 1);
+      if (!formatted)
+        return 2;
+      if (status == OTLP_OK)
+        status = gotel_sql_format(query, (gotel_sql_dialect_t)dialect, formatted, capacity, &length);
+      printf("%d %zu ", (int)status, length);
+      hex(formatted);
+      putchar('\n');
+      free(formatted);
+      continue;
+    }
     if (sanitize_only) {
       bool truncated = false;
       size_t capacity = limit ? limit + 1 : GOTEL_SQL_TEXT_MAX + 1;
