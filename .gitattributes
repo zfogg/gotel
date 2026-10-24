@@ -1,0 +1,8 @@
+# Preserve upstream tables verbatim and keep generated bundles out of review noise.
+* text=auto eol=lf
+python/vendor/** linguist-vendored -whitespace
+go/sqltrace/utf8proc* linguist-vendored
+go/sqltrace/utf8proc_vendor/** linguist-vendored -whitespace
+go/sqltrace/engine/** linguist-generated
+go/sqltrace/testdata/shared/** linguist-generated
+go/testdata/** linguist-generated

@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zfogg/gotel/httptrace"
-	"github.com/zfogg/gotel/otelhost"
+	"github.com/zfogg/gotel/go/httptrace"
+	"github.com/zfogg/gotel/go/otelhost"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )

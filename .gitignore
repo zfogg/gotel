@@ -4,3 +4,11 @@ examples/full-stack/browser/node_modules/
 examples/full-stack/browser/dist/
 examples/full-stack/compose-test.log
 __pycache__/
+
+python/.venv/
+python/build/
+python/dist/
+python/src/*.egg-info/
+*.pyd
+
+/build/

@@ -5,3 +5,7 @@
 **/.pnpm-store
 dist
 .local
+
+**/.venv
+**/__pycache__
+python/dist

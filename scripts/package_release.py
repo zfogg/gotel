@@ -26,7 +26,7 @@ def archive_name(tag: str, linkage: str, expected_arch: str | None = None) -> st
     arch = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "arm64": "arm64"}.get(machine, machine)
     if expected_arch is not None and arch != expected_arch:
         raise ValueError(f"runner architecture {arch} does not match requested {expected_arch}")
-    return f"c-gotel-{tag}-{system}-{arch}-{linkage}"
+    return f"gotel-{tag}-{system}-{arch}-{linkage}"
 
 
 def add_file(archive: zipfile.ZipFile, source: Path, destination: str) -> None:
@@ -38,32 +38,32 @@ def add_file(archive: zipfile.ZipFile, source: Path, destination: str) -> None:
 def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
               linkage: str, expected_arch: str | None = None,
               nghttp2_source: Path | None = None) -> Path:
-    if 'CGOTEL_WITH_GRPC:BOOL=ON' not in (build / 'CMakeCache.txt').read_text(encoding='utf-8'):
-        raise ValueError('C release libraries must be built with CGOTEL_WITH_GRPC=ON')
-    nghttp2_source = nghttp2_source or build / '_deps' / 'cgotel_nghttp2-src'
+    if 'GOTEL_WITH_GRPC:BOOL=ON' not in (build / 'CMakeCache.txt').read_text(encoding='utf-8'):
+        raise ValueError('C release libraries must be built with GOTEL_WITH_GRPC=ON')
+    nghttp2_source = nghttp2_source or build / '_deps' / 'gotel_nghttp2-src'
     name = archive_name(tag, linkage, expected_arch)
     path = output / f"{name}.zip"
     system = platform.system()
-    readme = ROOT / "c-gotel" / "RELEASE.md"
+    readme = ROOT / "c" / "RELEASE.md"
     if linkage == "static":
         suffix = ".lib" if system == "Windows" else ".a"
-        gotel_libs = [build / "src" / ("c-gotel.lib" if system == "Windows" else "libc-gotel.a")]
+        gotel_libs = [build / "src" / ("gotel.lib" if system == "Windows" else "libgotel.a")]
         gotel_libs.append(build / "_deps" / "otlp_c-build" / ("otlp_c.lib" if system == "Windows" else "libotlp_c.a"))
-        gotel_libs.append(build / "_deps" / "cgotel_nghttp2-build" / "lib" /
+        gotel_libs.append(build / "_deps" / "gotel_nghttp2-build" / "lib" /
                           ("nghttp2.lib" if system == "Windows" else "libnghttp2.a"))
     elif system == "Windows":
-        gotel_libs = [build / "src" / "c-gotel.dll", build / "src" / "c-gotel.lib"]
+        gotel_libs = [build / "src" / "gotel.dll", build / "src" / "gotel.lib"]
     else:
         extension = ".dylib" if system == "Darwin" else ".so"
-        pattern = "libc-gotel*.dylib" if system == "Darwin" else "libc-gotel.so*"
+        pattern = "libgotel*.dylib" if system == "Darwin" else "libgotel.so*"
         gotel_libs = sorted((build / "src").glob(pattern))
         if not gotel_libs:
-            raise FileNotFoundError(build / "src" / f"libc-gotel{extension}")
+            raise FileNotFoundError(build / "src" / f"libgotel{extension}")
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
         for source, destination in (
             (ROOT / "LICENSE", "LICENSE"),
             (readme, "README.md"),
-            (ROOT / "c-gotel" / "README.md", "API.md"),
+            (ROOT / "c" / "README.md", "API.md"),
             (otlp_source / "LICENSE", "third-party/otlp-c-LICENSE"),
             (nghttp2_source / "COPYING", "third-party/nghttp2-COPYING"),
         ):
@@ -71,7 +71,7 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
         for source in gotel_libs:
             add_file(archive, source, f"{name}/lib/{source.name}")
         for prefix, directory in (
-            ("include/gotel", ROOT / "c-gotel" / "include" / "gotel"),
+            ("include/gotel", ROOT / "c" / "include" / "gotel"),
             ("include/otlp-c", otlp_source / "include" / "otlp-c"),
         ):
             headers = sorted(directory.rglob("*.h"))
