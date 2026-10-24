@@ -210,6 +210,24 @@ static size_t format_next(format_token *ts, size_t n, size_t i) {
   return i;
 }
 static bool format_list(int c) { return c == F_SELECT || c == F_ORDER || c == F_SET || c == F_VALUES; }
+
+static bool format_short_scalar_select(format_token *ts, size_t count, size_t select) {
+  size_t end = select;
+  for (size_t j = select + 1; j < count; ++j) {
+    token t = ts[j].t;
+    if (sym(t, ';') || sym(t, ')'))
+      break;
+    if (ts[j].kind >= 3 || sym(t, ',') || boundary(t) || kw(t, "CASE") || kw(t, "SELECT") || kw(t, "WITH"))
+      return false;
+    if (sym(t, '(') || sym(t, '[') || sym(t, '{')) {
+      if (ts[j].multiline)
+        return false;
+      j = ts[j].matching;
+    }
+    end = j;
+  }
+  return end > select && ts[end].flat_width - ts[select].flat_width <= 60;
+}
 static size_t format_body(format_frame f) {
   return f.base + (format_list(f.clause) || f.clause == F_CONDITION || f.clause == F_ON ? 1 : 0);
 }
@@ -424,7 +442,7 @@ static bool format_layout(format_token *ts, size_t count, output *b) {
       ctx->active = true;
       ctx->deleting = false;
       ctx->clause = F_SELECT;
-      ctx->pending = true;
+      ctx->pending = !format_short_scalar_select(ts, count, i);
       ctx->header_end = i;
       size_t j = next;
       if (j < count && (kw(ts[j].t, "DISTINCT") || kw(ts[j].t, "ALL"))) {

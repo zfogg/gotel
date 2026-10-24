@@ -46,7 +46,7 @@ func TestSummary(t *testing.T) {
 		{"SELECT * FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON true", "SELECT … FROM \"Reporting\".\"Order History\" AS \"FROM\" JOIN \"JOIN\" ON ?"},
 		{"SELECT * FROM a, b, c WHERE a.id=b.id", "SELECT … FROM a, b, c WHERE …"},
 		{"SELECT * FROM read_parquet('secret/path')", "SELECT … FROM read_parquet(…)"},
-		{"SELECT 'secret FROM passwords' AS value", "SELECT …"},
+		{"SELECT 'secret FROM passwords' AS value", "SELECT ? AS value"},
 		{"SELECT 'unterminated", "SQL"},
 		{"EXPLAIN (", "EXPLAIN"},
 		{"COPY \"public\".\"bars\" FROM STDIN", "COPY \"public\".\"bars\""},

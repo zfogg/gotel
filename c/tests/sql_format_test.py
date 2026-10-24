@@ -21,7 +21,7 @@ fixture = json.loads((ROOT / 'testdata/sql_format.json').read_text(encoding='utf
 cases = fixture['cases']
 assert len(cases) >= 600
 assert len({c.get('source') for c in cases if c.get('source')}) >= 40
-dialects = {'generic': 0, 'sqlite': 1, 'postgresql': 2, 'duckdb': 3, 'mysql': 4}
+dialects = {'generic': 0, 'sqlite': 1, 'postgresql': 2, 'duckdb': 3, 'mysql': 4, 'clickhouse': 5}
 
 
 def format_many(inputs):
