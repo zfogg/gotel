@@ -13,17 +13,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: src/binary/go.mod
-          cache: false
-      - name: Test binary
-        working-directory: src/binary
-        env:
-          CGO_ENABLED: '1'
-        run: go test ./...
-      - name: Build binary
-        working-directory: src/binary
-        env:
-          CGO_ENABLED: '1'
-        run: go build -o gotel .
+      - name: Configure C binary
+        run: cmake -S src/binary -B build/binary -DCMAKE_BUILD_TYPE=Release
+      - name: Build C binary
+        run: cmake --build build/binary --config Release
+      - name: Test C binary
+        run: ctest --test-dir build/binary -C Release --output-on-failure
