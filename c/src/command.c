@@ -24,6 +24,11 @@ void gotel_command_args_destroy(gotel_command_args_t *args) {
 
 otlp_status_t gotel_command_args_init(gotel_command_args_t *out, const char *application, const char *command, int argc,
                                       const char *const *argv) {
+  return gotel_command_args_init_ex(out, application, command, argc, argv, true);
+}
+
+otlp_status_t gotel_command_args_init_ex(gotel_command_args_t *out, const char *application, const char *command,
+                                         int argc, const char *const *argv, bool sanitize) {
   if (!out || !application || !*application || argc < 0 || argc > 4096 || (argc && !argv))
     return OTLP_ERR_INVALID_ARGUMENT;
   gotel_command_args_t args = {0};
@@ -45,7 +50,10 @@ otlp_status_t gotel_command_args_init(gotel_command_args_t *out, const char *app
     }
     const char *text = "[REDACTED]";
     size_t length = strlen(text);
-    if (!i) {
+    if (!sanitize) {
+      text = argv[i];
+      length = strlen(text);
+    } else if (!i) {
       text = application;
       length = app_length;
     } else if (command && !strcmp(argv[i], command)) {

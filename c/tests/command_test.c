@@ -80,5 +80,10 @@ int main(void) {
   gotel_scope_t unsampled = {0};
   CHECK(gotel_command_args_set_span(&unsampled, &args) == OTLP_OK);
   gotel_command_args_destroy(&args);
+  const char *plain[] = {"/private/demo", "--password=secret", "session-value"};
+  CHECK(gotel_command_args_init_ex(&args, "demo", NULL, 3, plain, false) == OTLP_OK);
+  for (int i = 0; i < 3; ++i)
+    CHECK(!strcmp(args.argv[i], plain[i]));
+  gotel_command_args_destroy(&args);
   return 0;
 }

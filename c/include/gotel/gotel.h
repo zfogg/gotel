@@ -151,6 +151,10 @@ typedef struct {
 } gotel_command_args_t;
 otlp_status_t gotel_command_args_init(gotel_command_args_t *args, const char *application_name,
                                       const char *command_name, int argc, const char *const *argv);
+/* The default initializer sanitizes. With sanitize=false, init_ex copies argv
+ * verbatim, including the executable path and option values. */
+otlp_status_t gotel_command_args_init_ex(gotel_command_args_t *args, const char *application_name,
+                                         const char *command_name, int argc, const char *const *argv, bool sanitize);
 void gotel_command_args_destroy(gotel_command_args_t *args);
 otlp_status_t gotel_command_args_set_span(gotel_scope_t *scope, const gotel_command_args_t *args);
 
