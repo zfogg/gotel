@@ -1,8 +1,9 @@
 # gotel
 
-SQL layout formatting is shared with gotel: `sqltrace.FormatSQL(dialect, query)`
+SQL layout formatting is provided by [sequel](https://github.com/zfogg/sequel):
+`sequel.FormatSQL(dialect, query)`
 returns formatted text and an error (the original text on error).
-`sqltrace.FormatSQLOrOriginal` is the tolerant presentation helper. Both preserve
+`sequel.FormatSQLOrOriginal` is the tolerant presentation helper. Both preserve
 comments, quoted text, identifiers, and bind markers; neither executes SQL or
 substitutes values. Formatting supports PostgreSQL, DuckDB, MySQL, SQLite, ClickHouse and a
 generic dialect, with a 1 MiB input limit and 64 nesting levels. It is a layout
@@ -77,9 +78,11 @@ replace `CGOTEL_*` options with `GOTEL_*`. Native files are named `libgotel` /
 `gotel.dll`; release archives are named `gotel-vX.Y.Z-<os>-<arch>-<linkage>.zip`.
 These are breaking packaging changes; prior releases retain their original paths.
 
-The SQL engine is authored in `c/src/sql/`. Checked generated bundles make the
-Go module and Python sdist independently buildable. After editing shared SQL or
-fixtures, run `python scripts/sync_sql_engine.py`; CI checks bundle parity.
+SQL processing and the standalone CLI are owned by [sequel](https://github.com/zfogg/sequel).
+CMake fetches an immutable sequel commit; Go imports `github.com/zfogg/sequel/go`,
+and Python depends on the `sequel` distribution at the same revision. SQL processing callers import sequel directly; gotel tracing
+adapters use it internally. Sequel owns the native implementation, bindings,
+regression corpora and formatting/sanitization fuzz tests.
 
 ## Development commands
 
@@ -92,7 +95,7 @@ Run these targets from the repository root with GNU Make and uv installed:
 | `make sync` | Install the locked Python development environment and all adapters |
 | `make format` | Sort Python imports and apply Ruff formatting |
 | `make lint` | Check Python lint rules and formatting without changing files |
-| `make typecheck` | Run ty against Python source, tests, and `setup.py` |
+| `make typecheck` | Run ty against Python source, tests |
 | `make test-python` | Run Python tests |
 | `make test-go` | Run Go tests and vet |
 | `make test-typescript` | Run TypeScript type checks and tests |
@@ -103,8 +106,8 @@ Run these targets from the repository root with GNU Make and uv installed:
 Install TypeScript dependencies with `pnpm install --frozen-lockfile` before the
 TypeScript targets. C requires its native dependencies and initial CMake
 configuration; see [the C guide](c/README.md). Without Make, the Python equivalents
-are `uv run --directory python --all-extras ruff format src tests setup.py`,
-`uv run --directory python --all-extras ruff check src tests setup.py`, and
+are `uv run --directory python --all-extras ruff format src tests`,
+`uv run --directory python --all-extras ruff check src tests`, and
 `uv run --directory python --all-extras ty check`. `make format` also sorts imports.
 
 ## Go services
@@ -203,13 +206,13 @@ ordering, and row bounds. It is a structural description, not a query plan.
 Identifiers can appear in summaries, so avoid putting secrets in identifier
 names.
 
-SQL parsing lives in [`c/src/sql/`](c/src/sql/) and is compiled
-into the Go package through cgo. **`go get` does not run CMake.** Building an
+SQL parsing lives in [sequel](https://github.com/zfogg/sequel) and its Go binding
+compiles it through cgo. **`go get` does not run CMake.** Building an
 application that imports `sqltrace` or its adapters requires `CGO_ENABLED=1`
 and a C compiler. The Go package bundles pinned utf8proc source; no system
 utf8proc installation is needed. From this repository, inspect generated sqlc
 queries without running the application with
-`go -C go run ./cmd/sqlsummary -dir PATH -largest 10`.
+`go run github.com/zfogg/sequel/cmd/sqlsummary -dir PATH -largest 10`.
 
 [`mcptrace`](go/mcptrace/) instruments the official Go MCP SDK with connected
 request/tool spans, counters, and latency histograms. It bounds method/tool
@@ -263,18 +266,18 @@ the host on shutdown. The catalog bounds metric cardinality; unsampled calls
 still contribute to operation metrics. A copied context can cross a worker
 queue and become a child span without sharing a live mutable scope.
 
-For SQL, [`gotel_sql_inspect`](c/include/gotel/sql.h) returns sanitized
+For SQL, [`sequel_inspect`](https://github.com/zfogg/sequel/blob/main/include/sequel.h) returns sanitized
 text, a structural summary, the outer operation, truncation status, and the
-number of nonempty top-level statements. `gotel_sql_sanitize` exposes the same
+number of nonempty top-level statements. `sequel_sanitize` exposes the same
 scanner with a caller-sized output buffer:
 
 ```c
-#include <gotel/sql.h>
+#include <sequel.h>
 
-gotel_sql_options_t policy = {.dialect = GOTEL_SQL_POSTGRESQL};
-gotel_sql_metadata_t query;
-if (gotel_sql_inspect("SELECT * FROM items WHERE id=$1; UPDATE audit SET seen=true",
-                      &policy, &query) == OTLP_OK) {
+sequel_options_t policy = {.dialect = SEQUEL_POSTGRESQL};
+sequel_metadata_t query;
+if (sequel_inspect("SELECT * FROM items WHERE id=$1; UPDATE audit SET seen=true",
+                      &policy, &query) == SEQUEL_OK) {
   /* query.statement_count is 2; query.text contains no bind values. */
 }
 ```
@@ -284,9 +287,8 @@ interleaved comments; semicolons inside quoted text do not add a statement.
 Both C entry points fail closed if a later statement contains malformed
 quoting. The SQLite adapter attaches `db.query.text`, `db.query.summary`,
 `db.operation.name`, and statement/bind counts to spans while retaining your
-application-owned span name. Its SQL implementation is split across
-`scanner.c`, `summary.c`, `api.c`, and `common.c`, included by `src/sql/main.c`
-for both CMake and cgo.
+application-owned span name. Its SQL implementation and language bindings live in sequel; gotel owns the
+span attributes and collection policy.
 
 C resource detection adds host, OS, process, executable, command arguments,
 and SDK information to traces, logs, and metrics;
@@ -387,3 +389,18 @@ stonkpile, and beanaries**. Beanaries consumes both Python and TypeScript; updat
 its uv and pnpm manifests and lockfiles together. See the
 [consumer rollout list](.github/RELEASE_NOTES.md#consumer-updates) and
 [release skill](.agents/skills/gotel-release/SKILL.md#update-consumers).
+
+## SQL extraction into sequel
+
+SQL processing now lives in [sequel](https://github.com/zfogg/sequel). C consumers
+include `<sequel.h>` and call `sequel_inspect`, `sequel_sanitize`, or
+`sequel_format`, checking `SEQUEL_OK`. Go callers import
+`github.com/zfogg/sequel/go`; Python callers import `sequel`. Processing wrappers
+were removed from gotel. Gotel retains database span naming, telemetry metadata,
+collection policy and instrumentation. Existing Go tracing policy types alias
+sequel's types; callers obtain default policies from `sequel.DefaultSanitizeOptions`.
+
+The old executable is now `sequel format` / `sequel sanitize`; both accept stdin,
+a string, or file paths, with optional `--embedded` and `--edit-file`.
+All three gotel dependencies pin the same sequel commit. Release archives include
+sequel's public header, libraries and licenses; gotel's Python wheel is pure Python.

@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/zfogg/gotel/go"
 	"github.com/zfogg/gotel/go/sqltrace"
+	sequel "github.com/zfogg/sequel/go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -43,7 +44,7 @@ func New(config Config) *Tracer {
 		config.Namer = sqltrace.StorageNamer(config.System)
 	}
 	if config.Sanitize.Dialect == "" {
-		config.Sanitize = sqltrace.DefaultSanitizeOptions(sqltrace.DialectPostgreSQL)
+		config.Sanitize = sequel.DefaultSanitizeOptions(sqltrace.DialectPostgreSQL)
 	}
 	return &Tracer{config: config, tracer: otel.Tracer(config.Scope)}
 }

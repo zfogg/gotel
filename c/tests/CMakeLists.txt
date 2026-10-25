@@ -42,20 +42,6 @@ if(GOTEL_BUILD_TESTS)
     add_test(NAME gotel-${case} COMMAND gotel-test --case ${case})
   endforeach()
 
-  add_executable(gotel-sql-probe sql_probe.c)
-  target_link_libraries(gotel-sql-probe PRIVATE gotel::gotel)
-  add_test(NAME gotel-sql COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/sql_test.py $<TARGET_FILE:gotel-sql-probe>)
-  add_test(NAME gotel-sanitize COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/sql_sanitize_test.py $<TARGET_FILE:gotel-sql-probe>)
-  add_test(NAME gotel-clickhouse COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/sql_clickhouse_test.py $<TARGET_FILE:gotel-sql-probe>)
-  add_test(NAME gotel-format COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/sql_format_test.py $<TARGET_FILE:gotel-sql-probe>)
-  add_executable(gotel-format-api-test sql_format_api_test.c)
-  target_link_libraries(gotel-format-api-test PRIVATE gotel::gotel)
-  add_test(NAME gotel-format-api COMMAND gotel-format-api-test)
-
   add_executable(gotel-resource-probe resource_probe.c)
   target_link_libraries(gotel-resource-probe PRIVATE gotel::testing)
   add_test(NAME gotel-resource COMMAND ${Python3_EXECUTABLE}
@@ -83,6 +69,7 @@ if(GOTEL_BUILD_TESTS)
     foreach(_test IN LISTS _gotel_tests)
       set_property(TEST ${_test} APPEND PROPERTY ENVIRONMENT_MODIFICATION
         "PATH=path_list_prepend:$<TARGET_FILE_DIR:gotel>"
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:sequel::sequel>"
         "PATH=path_list_prepend:$<TARGET_FILE_DIR:otlp_c>"
         "PATH=path_list_prepend:$<TARGET_FILE_DIR:${GOTEL_UTF8PROC_TARGET}>"
         "PATH=path_list_prepend:$<TARGET_FILE_DIR:${GOTEL_PCRE2_TARGET}>")

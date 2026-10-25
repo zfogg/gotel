@@ -7,63 +7,13 @@ import time
 from collections.abc import Awaitable, Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
-from enum import IntEnum
 from typing import ParamSpec, TypeVar
 
+import sequel
 from opentelemetry import metrics, trace
 from opentelemetry.instrumentation.utils import is_instrumentation_enabled, suppress_instrumentation
 
-from . import _sql
 from .application import GotelApp
-
-
-class Dialect(IntEnum):
-    GENERIC = 0
-    SQLITE = 1
-    POSTGRESQL = 2
-    DUCKDB = 3
-    MYSQL = 4
-    CLICKHOUSE = 5
-
-
-class SQLInspectionError(ValueError):
-    pass
-
-
-@dataclass(frozen=True)
-class Query:
-    text: str
-    summary: str
-    operation: str
-    truncated: bool
-    statement_count: int
-
-
-def inspect(
-    sql: str,
-    *,
-    dialect: Dialect = Dialect.GENERIC,
-    max_query_text_bytes: int = 32768,
-    omit_query_text: bool = False,
-    keep_in_lists: bool = False,
-) -> Query:
-    try:
-        return Query(*_sql.inspect(sql, int(Dialect(dialect)), max_query_text_bytes, omit_query_text, keep_in_lists))
-    except ValueError as exc:
-        raise SQLInspectionError("SQL inspection rejected input") from exc
-
-
-def format_sql(sql: str, *, dialect: Dialect = Dialect.GENERIC) -> str:
-    return _sql.format(sql, int(Dialect(dialect)))
-
-
-def format_sql_or_original(sql: str, *, dialect: Dialect = Dialect.GENERIC) -> str:
-    try:
-        return format_sql(sql, dialect=dialect)
-    except ValueError:
-        return sql
-
 
 _operation: ContextVar[str | None] = ContextVar("gotel.sql.operation", default=None)
 _active: ContextVar[bool] = ContextVar("gotel.sql.active", default=False)
@@ -120,8 +70,8 @@ def _attributes(sql, dialect, system, namespace, policy):
     if namespace:
         attrs["db.namespace"] = namespace
     try:
-        query = inspect(sql, dialect=dialect, **policy)
-    except (SQLInspectionError, TypeError):
+        query = sequel.inspect(sql, dialect=dialect, **policy)
+    except (sequel.SQLInspectionError, TypeError):
         return attrs  # No raw SQL, exception text, or partial template on failure.
     attrs.update({"db.query.summary": query.summary, "gotel.db.query.statement_count": query.statement_count})
     if query.operation:
@@ -130,7 +80,7 @@ def _attributes(sql, dialect, system, namespace, policy):
         # Keep the complete bounded template when layout would expand past the
         # collection cap. Formatting must not introduce silent truncation.
         limit = policy.get("max_query_text_bytes", 32768) or 32768
-        formatted = query.text if query.truncated else format_sql_or_original(query.text, dialect=dialect)
+        formatted = query.text if query.truncated else sequel.format_sql_or_original(query.text, dialect=dialect)
         attrs["db.query.text"] = formatted if len(formatted.encode()) <= limit else query.text
     if query.truncated:
         attrs["gotel.db.query.truncated"] = True
@@ -156,7 +106,7 @@ class Namer:
         sql: str,
         system: str,
         namespace: str = "",
-        dialect: Dialect = Dialect.GENERIC,
+        dialect: sequel.Dialect = sequel.Dialect.GENERIC,
         **policy,
     ):
         attrs = _attributes(sql, dialect, system, namespace, policy)
@@ -195,7 +145,13 @@ class Namer:
 
 
 def instrument_sqlalchemy(
-    engine, *, namer: Namer, system: str, namespace: str = "", dialect: Dialect = Dialect.GENERIC, **policy
+    engine,
+    *,
+    namer: Namer,
+    system: str,
+    namespace: str = "",
+    dialect: sequel.Dialect = sequel.Dialect.GENERIC,
+    **policy,
 ):
     """Instrument one sync/async engine. Returns an idempotent removal callback.
 

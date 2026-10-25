@@ -13,6 +13,7 @@ import (
 	"unicode"
 
 	"github.com/zfogg/gotel/go"
+	sequel "github.com/zfogg/sequel/go"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -366,7 +367,7 @@ func Inspect(namer Namer, explicitName, statement string, args []any) Metadata {
 
 // InspectDialect extracts safe metadata using dialect's recommended policy.
 func InspectDialect(namer Namer, explicitName, statement string, args []any, dialect Dialect) Metadata {
-	return InspectWithOptions(namer, explicitName, statement, args, DefaultSanitizeOptions(dialect))
+	return InspectWithOptions(namer, explicitName, statement, args, sequel.DefaultSanitizeOptions(dialect))
 }
 
 // InspectWithOptions extracts safe metadata using an application policy.
@@ -380,15 +381,15 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	key := inspectionCacheKey{statement: statement, dialect: options.Dialect, maxBytes: options.MaxQueryTextBytes, collapse: options.CollapseInLists, omit: options.OmitQueryText}
 	cached, ok := inspections.get(key)
 	if !ok {
-		cached.summary, cached.operation, cached.sanitized, cached.statementCount, _ = inspectNativeWithOptions(statement, options)
-		cached.formattedSQL = FormatSQLOrOriginal(options.Dialect, cached.sanitized.Text)
+		cached.summary, cached.operation, cached.sanitized, cached.statementCount, _ = sequel.Inspect(statement, options)
+		cached.formattedSQL = sequel.FormatSQLOrOriginal(options.Dialect, cached.sanitized.Text)
 		if options.MaxQueryTextBytes > 0 && len(cached.formattedSQL) > options.MaxQueryTextBytes {
 			cached.formattedSQL = cached.sanitized.Text
 		}
 		if cached.summary == "" {
 			cached.summary = "SQL"
 		}
-		cached.simple = SQLCName(statement)
+		cached.simple = sequel.SQLCName(statement)
 		inspections.put(key, cached)
 	}
 	operation := cached.operation
@@ -430,7 +431,7 @@ func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
 	if m.SanitizedSQL != "" {
 		query := m.formattedSQL
 		if query == "" {
-			query = FormatSQLOrOriginal(Dialect(system), m.SanitizedSQL)
+			query = sequel.FormatSQLOrOriginal(Dialect(system), m.SanitizedSQL)
 		}
 		// Preserve the collection policy's existing byte bound on expansion.
 		if len(query) > DefaultMaxQueryTextBytes && len(query) > len(m.SanitizedSQL) {
@@ -510,26 +511,6 @@ func (s *DBSpan) End(ctx context.Context, err error, rows int64) {
 	if s.observe != nil {
 		s.observe(ctx, s.operation, result, time.Since(s.started))
 	}
-}
-
-// SQLCName extracts a sqlc -- name: QueryName directive.
-func SQLCName(statement string) string {
-	for _, line := range strings.Split(statement, "\n") {
-		line = strings.TrimSpace(line)
-		if !strings.HasPrefix(line, "-- name:") {
-			continue
-		}
-		fields := strings.Fields(strings.TrimSpace(strings.TrimPrefix(line, "-- name:")))
-		if len(fields) > 0 && validSimpleName(fields[0]) {
-			return fields[0]
-		}
-	}
-	return ""
-}
-
-// Operation returns the outer SQL operation, looking past CTE definitions.
-func Operation(statement string) string {
-	return statementOperation(DialectGeneric, statement)
 }
 
 func normalizeSimpleName(value string) string {

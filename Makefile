@@ -8,12 +8,12 @@ sync:
 	$(UV) sync --directory python --all-extras --locked
 
 format:
-	$(UV) run --directory python --all-extras --locked ruff check --select I --fix src tests setup.py
-	$(UV) run --directory python --all-extras --locked ruff format src tests setup.py
+	$(UV) run --directory python --all-extras --locked ruff check --select I --fix src tests
+	$(UV) run --directory python --all-extras --locked ruff format src tests
 
 lint:
-	$(UV) run --directory python --all-extras --locked ruff check src tests setup.py
-	$(UV) run --directory python --all-extras --locked ruff format --check src tests setup.py
+	$(UV) run --directory python --all-extras --locked ruff check src tests
+	$(UV) run --directory python --all-extras --locked ruff format --check src tests
 
 typecheck:
 	$(UV) run --directory python --all-extras --locked ty check

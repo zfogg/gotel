@@ -4,9 +4,9 @@ version = "0.11.0"
 description = "Shared OpenTelemetry conventions and native SQL inspection"
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE", "vendor/UTF8PROC_LICENSE.md"]
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
-dependencies = ["opentelemetry-api>=1.30,<2", "opentelemetry-instrumentation>=0.51b0,<1", "opentelemetry-sdk>=1.30,<2", "opentelemetry-exporter-otlp-proto-http>=1.30,<2"]
+dependencies = ["sequel @ git+https://github.com/zfogg/sequel.git@67601263c947c6344aaf5f243d87709a3d07f68d", "opentelemetry-api>=1.30,<2", "opentelemetry-instrumentation>=0.51b0,<1", "opentelemetry-sdk>=1.30,<2", "opentelemetry-exporter-otlp-proto-http>=1.30,<2"]
 
 [project.optional-dependencies]
 grpc = ["opentelemetry-exporter-otlp-proto-grpc>=1.30,<2"]
@@ -39,12 +39,8 @@ where = ["src"]
 [tool.uv]
 cache-keys = [
     { file = "pyproject.toml" },
-    { file = "setup.py" },
     { file = "MANIFEST.in" },
-    { file = "src/gotel/*.c" },
-    { file = "src/gotel/*.pyi" },
     { file = "src/gotel/py.typed" },
-    { file = "vendor/**" },
 ]
 
 [tool.pytest.ini_options]

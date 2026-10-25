@@ -11,6 +11,7 @@ import (
 
 	"github.com/zfogg/gotel/go"
 	"github.com/zfogg/gotel/go/sqltrace"
+	sequel "github.com/zfogg/sequel/go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -115,7 +116,7 @@ func New(config Config) gorm.Plugin {
 		config.Dialect = sqltrace.Dialect(strings.ToLower(config.System))
 	}
 	if config.Sanitize.Dialect == "" {
-		config.Sanitize = sqltrace.DefaultSanitizeOptions(config.Dialect)
+		config.Sanitize = sequel.DefaultSanitizeOptions(config.Dialect)
 	}
 	if config.SpanKind == trace.SpanKindUnspecified {
 		config.SpanKind = trace.SpanKindClient

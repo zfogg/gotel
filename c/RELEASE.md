@@ -13,7 +13,7 @@ Rebuild consumers against the matching headers when changing gotel versions.
 
 ## Static libraries
 
-This archive contains the Release-build static `gotel`, `otlp-c`, and `nghttp2` libraries,
+This archive contains the Release-build static `gotel`, `otlp-c`, `nghttp2`, `sequel`, and `sequel_utf8proc` libraries,
 their public headers, and their licenses. The archive name identifies the
 operating system and CPU architecture. Use a compatible C toolchain and point
 its include path at `include/`.
@@ -52,10 +52,14 @@ if(WIN32)
   set(GOTEL_LIB "${GOTEL_ROOT}/lib/gotel.lib")
   set(OTLP_LIB "${GOTEL_ROOT}/lib/otlp_c.lib")
   set(NGHTTP2_LIB "${GOTEL_ROOT}/lib/nghttp2.lib")
+  set(SEQUEL_LIB "${GOTEL_ROOT}/lib/sequel.lib")
+  set(SEQUEL_UTF8PROC_LIB "${GOTEL_ROOT}/lib/sequel_utf8proc.lib")
 else()
   set(GOTEL_LIB "${GOTEL_ROOT}/lib/libgotel.a")
   set(OTLP_LIB "${GOTEL_ROOT}/lib/libotlp_c.a")
   set(NGHTTP2_LIB "${GOTEL_ROOT}/lib/libnghttp2.a")
+  set(SEQUEL_LIB "${GOTEL_ROOT}/lib/libsequel.a")
+  set(SEQUEL_UTF8PROC_LIB "${GOTEL_ROOT}/lib/libsequel_utf8proc.a")
 endif()
 
 add_library(gotel_prebuilt STATIC IMPORTED)
@@ -72,7 +76,7 @@ add_executable(example example.c)
 target_include_directories(example PRIVATE "${GOTEL_ROOT}/include")
 target_compile_definitions(example PRIVATE GOTEL_WITH_SQLITE=1)
 target_link_libraries(example PRIVATE
-  gotel_prebuilt otlp_prebuilt "${NGHTTP2_LIB}"
+  gotel_prebuilt otlp_prebuilt "${NGHTTP2_LIB}" "${SEQUEL_LIB}" "${SEQUEL_UTF8PROC_LIB}"
   "${PCRE2_8_LIBRARY}" "${UTF8PROC_LIBRARY}"
   ${SQLite3_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto
 )
@@ -127,7 +131,7 @@ GOTEL_ROOT ?= /path/to/extracted/gotel-directory
 CC = clang
 CFLAGS += -I$(GOTEL_ROOT)/include -DGOTEL_WITH_SQLITE=1
 LDLIBS = $(GOTEL_ROOT)/lib/libgotel.a $(GOTEL_ROOT)/lib/libotlp_c.a \
-  $(GOTEL_ROOT)/lib/libnghttp2.a \
+  $(GOTEL_ROOT)/lib/libnghttp2.a $(GOTEL_ROOT)/lib/libsequel.a $(GOTEL_ROOT)/lib/libsequel_utf8proc.a \
   -lpcre2-8 -lutf8proc -lsqlite3 -lssl -lcrypto -pthread -ldl
 
 example: example.c
@@ -144,7 +148,7 @@ LDFLAGS += -L$(shell brew --prefix openssl@3)/lib \
   -L$(shell brew --prefix sqlite)/lib -L$(shell brew --prefix pcre2)/lib \
   -L$(shell brew --prefix utf8proc)/lib
 LDLIBS = $(GOTEL_ROOT)/lib/libgotel.a $(GOTEL_ROOT)/lib/libotlp_c.a \
-  $(GOTEL_ROOT)/lib/libnghttp2.a \
+  $(GOTEL_ROOT)/lib/libnghttp2.a $(GOTEL_ROOT)/lib/libsequel.a $(GOTEL_ROOT)/lib/libsequel_utf8proc.a \
   -lpcre2-8 -lutf8proc -lsqlite3 -lssl -lcrypto \
   -framework Security -framework CoreFoundation
 
@@ -166,7 +170,7 @@ VCPKG_LIB = $(VCPKG_ROOT)/installed/$(TRIPLET)/lib
 example.exe: example.c
 	clang-cl /nologo /I"$(GOTEL_ROOT)/include" /DGOTEL_WITH_SQLITE=1 $< \
   /link /OUT:$@ /LIBPATH:"$(VCPKG_LIB)" \
-  "$(GOTEL_ROOT)/lib/gotel.lib" "$(GOTEL_ROOT)/lib/otlp_c.lib" "$(GOTEL_ROOT)/lib/nghttp2.lib" \
+  "$(GOTEL_ROOT)/lib/gotel.lib" "$(GOTEL_ROOT)/lib/otlp_c.lib" "$(GOTEL_ROOT)/lib/nghttp2.lib" "$(GOTEL_ROOT)/lib/sequel.lib" "$(GOTEL_ROOT)/lib/sequel_utf8proc.lib" \
   pcre2-8.lib utf8proc.lib sqlite3.lib libssl.lib libcrypto.lib \
   shell32.lib advapi32.lib crypt32.lib ws2_32.lib user32.lib
 ```
@@ -283,3 +287,7 @@ example.exe: example.c
 For dependency resolution and platform-specific builds from source, use
 `add_subdirectory(gotel)` and link `gotel::gotel`. See `API.md` for the
 source-build route and the C API.
+
+SQL processing is provided by the bundled sequel libraries. Shared archives include
+the matching sequel shared library; keep it beside gotel or on the runtime loader
+path. Public gotel headers include `sequel.h`, shipped in every archive.

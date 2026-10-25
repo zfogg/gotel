@@ -23,7 +23,7 @@ compiler, but no CMake, Go, system utf8proc, or native telemetry library.
 Ruff and ty are development dependencies in `pyproject.toml` and pinned by
 `uv.lock`. Ruff enforces lint rules, import ordering, and consistent formatting;
 ty checks the package, tests, and build script without running them. Native SQL
-extension signatures are supplied in `_sql.pyi` so callers can be checked too.
+sequel binding signatures are supplied upstream so callers can be checked too.
 
 From the repository root:
 
@@ -38,8 +38,8 @@ make check       # Lint/types plus Python, Go, and TypeScript tests
 
 `make check` also needs Go, pnpm, and installed TypeScript dependencies. C tests
 are separate (`make test-c` after configuring `c/build`). Within `python/`, direct
-commands are `uv run --all-extras ruff check src tests setup.py`,
-`uv run --all-extras ruff format src tests setup.py`, and
+commands are `uv run --all-extras ruff check src tests`,
+`uv run --all-extras ruff format src tests`, and
 `uv run --all-extras ty check`. CI runs both tools and checks formatting.
 
 ## Lifecycle
@@ -113,10 +113,11 @@ and request hooks. Remove existing instrumentation before installing gotel.
 
 ```python
 from gotel import sqltrace
+import sequel
 
-query = sqltrace.inspect(
+query = sequel.inspect(
     "SELECT * FROM builds FINAL PREWHERE project_id={project:UInt64}",
-    dialect=sqltrace.Dialect.CLICKHOUSE,
+    dialect=sequel.Dialect.CLICKHOUSE,
 )
 print(query.text, query.summary, query.operation, query.statement_count)
 ```
@@ -150,13 +151,13 @@ remove = sqltrace.instrument_sqlalchemy(
     namer=storage,
     system="clickhouse",
     namespace="beanaries",
-    dialect=sqltrace.Dialect.CLICKHOUSE,
+    dialect=sequel.Dialect.CLICKHOUSE,
 )
 
 with storage.name("ListBuilds"):
     result = await session.execute(statement)
 
-with storage.query("InsertBuilds", sql=sql, system="clickhouse", dialect=sqltrace.Dialect.CLICKHOUSE):
+with storage.query("InsertBuilds", sql=sql, system="clickhouse", dialect=sequel.Dialect.CLICKHOUSE):
     await cursor.execute(sql, parameters)
 ```
 
@@ -196,10 +197,9 @@ and `beanaries.temporal.activity.execute.Fetch`. The optional
 captured `spans`, and assertions for names, duplicate identities, and private values.
 Use separate captures per test; no global provider reset is needed.
 
-The SQL implementation is authored only in `../c/`. Run
-`python scripts/sync_sql_engine.py` from the repository root after changing it.
-The checked bundles in `vendor/` and `../go/sqltrace/engine/` make source packages
-self-contained; CI checks their byte-for-byte parity.
+SQL inspection, formatting, types and native code come from the pinned
+[`sequel`](https://github.com/zfogg/sequel) package. Import processing functions from `sequel`; `gotel.sqltrace` owns the span adapters. SQL engine tests live in sequel;
+this package tests naming, tracing, SQLAlchemy integration and distribution imports.
 
 ## Database query names (v0.11)
 

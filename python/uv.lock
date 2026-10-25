@@ -281,6 +281,7 @@ dependencies = [
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-instrumentation" },
     { name = "opentelemetry-sdk" },
+    { name = "sequel" },
 ]
 
 [package.optional-dependencies]
@@ -326,6 +327,7 @@ requires-dist = [
     { name = "opentelemetry-instrumentation-httpx", marker = "extra == 'httpx'", specifier = ">=0.51b0,<1" },
     { name = "opentelemetry-sdk", specifier = ">=1.30,<2" },
     { name = "redis", marker = "extra == 'redis'", specifier = ">=5,<8" },
+    { name = "sequel", git = "https://github.com/zfogg/sequel.git?rev=67601263c947c6344aaf5f243d87709a3d07f68d" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'sqlalchemy'", specifier = ">=2,<3" },
     { name = "temporalio", extras = ["opentelemetry"], marker = "extra == 'temporal'", specifier = ">=1.9,<2" },
 ]
@@ -1022,6 +1024,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1c/9a/c7da96c2c96d20704cf9027f7a5121da272a8c05f1d1531ba949e3b3df04/ruff-0.17.2-py3-none-win_amd64.whl", hash = "sha256:1b59d447f197bef9ef48a22ba1a6016137753c6099e9bac9c36eb566e422424c", size = 10282826, upload-time = "2026-10-22T18:37:55.2Z" },
     { url = "https://files.pythonhosted.org/packages/81/60/a3604c79cb02777b6cb84da894104021986f06c4bc41375102cc95049a32/ruff-0.17.2-py3-none-win_arm64.whl", hash = "sha256:195ad918027f817c119310ca89a42d347887dfc28934aaa869325e9c5dc9d962", size = 9827036, upload-time = "2026-10-22T18:37:58.031Z" },
 ]
+
+[[package]]
+name = "sequel"
+version = "0.1.0"
+source = { git = "https://github.com/zfogg/sequel.git?rev=67601263c947c6344aaf5f243d87709a3d07f68d#67601263c947c6344aaf5f243d87709a3d07f68d" }
 
 [[package]]
 name = "setuptools"

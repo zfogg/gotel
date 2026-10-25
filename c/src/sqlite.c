@@ -69,8 +69,8 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
   const gotel_query_t *query = gotel_query_find(a->queries, a->count, sql);
   if (query)
     name = query->name;
-  gotel_sql_metadata_t metadata;
-  gotel_sql_inspect(sql, &a->options.sql, &metadata);
+  sequel_metadata_t metadata;
+  sequel_inspect(sql, &a->options.sql, &metadata);
   char span_name[256];
   int n = snprintf(span_name, sizeof(span_name), "%s.%s", a->prefix, name);
   if (n < 0 || (size_t)n >= sizeof(span_name))
@@ -125,7 +125,7 @@ otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *h, sqlite3 *db, con
   *out = NULL;
   if (!h || !db || !prefix || !*prefix || (!queries && count))
     return OTLP_ERR_INVALID_ARGUMENT;
-  if (options && options->sql.max_query_text_bytes > GOTEL_SQL_TEXT_MAX)
+  if (options && options->sql.max_query_text_bytes > SEQUEL_TEXT_MAX)
     return OTLP_ERR_INVALID_ARGUMENT;
   for (size_t i = 0; i < count; ++i) {
     if (!queries[i].name || !*queries[i].name || !queries[i].sql)
@@ -140,7 +140,7 @@ otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *h, sqlite3 *db, con
   *a = (gotel_sqlite_t){h, db, prefix, queries, count};
   if (options)
     a->options = *options;
-  a->options.sql.dialect = GOTEL_SQL_SQLITE;
+  a->options.sql.dialect = SEQUEL_SQLITE;
   if (sqlite3_trace_v2(db, SQLITE_TRACE_STMT | SQLITE_TRACE_PROFILE | SQLITE_TRACE_CLOSE, traced, a) != SQLITE_OK) {
     free(a);
     return OTLP_ERR_INVALID_ARGUMENT;

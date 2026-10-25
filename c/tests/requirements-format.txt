@@ -1,3 +1,0 @@
-sqlglot==30.24.0
-duckdb==2.0.0
-sqlparse==0.6.0

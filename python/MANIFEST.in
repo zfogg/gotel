@@ -1,3 +1,2 @@
 include LICENSE README.md
-recursive-include vendor *.c *.h *.md
-recursive-include src *.c *.py *.pyi py.typed
+recursive-include src *.py py.typed

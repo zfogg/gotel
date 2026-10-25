@@ -1,6 +1,7 @@
 package sqltrace
 
 import (
+	sequel "github.com/zfogg/sequel/go"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -55,11 +56,11 @@ func TestMultiStatementMalformedLaterStatementFailsClosed(t *testing.T) {
 
 func TestQueryTextDefault32KiBAndUncappedOption(t *testing.T) {
 	query := "SELECT " + strings.Repeat("a", 33*1024) + " FROM t WHERE token='SECRET'"
-	bounded, ok := SanitizeDialect(DialectPostgreSQL, query)
+	bounded, ok := sequel.SanitizeDialect(DialectPostgreSQL, query)
 	if !ok || !bounded.Truncated || len(bounded.Text) != 32*1024 || !utf8.ValidString(bounded.Text) {
 		t.Fatalf("bounded result: length=%d truncated=%v ok=%v", len(bounded.Text), bounded.Truncated, ok)
 	}
-	uncapped, ok := SanitizeWithOptions(query, SanitizeOptions{Dialect: DialectPostgreSQL, MaxQueryTextBytes: -1})
+	uncapped, ok := sequel.SanitizeWithOptions(query, SanitizeOptions{Dialect: DialectPostgreSQL, MaxQueryTextBytes: -1})
 	if !ok || uncapped.Truncated || !strings.HasSuffix(uncapped.Text, "FROM t WHERE token=?") || strings.Contains(uncapped.Text, "SECRET") {
 		t.Fatalf("uncapped result: length=%d truncated=%v ok=%v", len(uncapped.Text), uncapped.Truncated, ok)
 	}

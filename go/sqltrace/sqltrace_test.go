@@ -2,7 +2,6 @@ package sqltrace
 
 import (
 	"context"
-	"strings"
 	"testing"
 )
 
@@ -16,22 +15,6 @@ func TestInspectSQLCQuery(t *testing.T) {
 	}
 	if meta.ArgumentCount != 1 {
 		t.Fatalf("argument count = %d", meta.ArgumentCount)
-	}
-}
-
-func TestSanitizeDialects(t *testing.T) {
-	input := "/* token */ SELECT 'secret', E'private', $$hidden$$, 42, $1, ? FROM `items` WHERE id = 7 -- no"
-	got, ok := Sanitize(input)
-	if !ok {
-		t.Fatal("valid SQL rejected")
-	}
-	if want := "SELECT ?, ?, ?, ?, ?, ? FROM `items` WHERE id = ?"; got != want {
-		t.Fatalf("Sanitize = %q, want %q", got, want)
-	}
-	for _, secret := range []string{"token", "secret", "private", "hidden", "42"} {
-		if strings.Contains(got, secret) {
-			t.Fatalf("sanitized query leaked %q: %q", secret, got)
-		}
 	}
 }
 
@@ -117,21 +100,6 @@ func BenchmarkInspectCached(b *testing.B) {
 	statement := "-- name: FindWidgets :many\nSELECT * FROM widgets WHERE tenant_id = $1 AND status = $2"
 	for b.Loop() {
 		_ = InspectDialect(namer, "", statement, []any{1, "active"}, DialectPostgreSQL)
-	}
-}
-
-func TestSanitizeRejectsUnterminatedContent(t *testing.T) {
-	for _, query := range []string{"SELECT 'secret", "SELECT $$secret", "SELECT 1 /* secret"} {
-		if _, ok := Sanitize(query); ok {
-			t.Fatalf("accepted %q", query)
-		}
-	}
-}
-
-func TestDuckDBSummary(t *testing.T) {
-	got := Summary(DialectDuckDB, "SELECT id FROM spans WHERE trace_id = 'secret' ORDER BY start_ns DESC")
-	if want := "SELECT … FROM spans WHERE … ORDER BY …"; got != want {
-		t.Fatalf("Summary = %q, want %q", got, want)
 	}
 }
 

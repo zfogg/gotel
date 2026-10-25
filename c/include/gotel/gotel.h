@@ -189,7 +189,7 @@ typedef struct {
 typedef struct gotel_sqlite gotel_sqlite_t;
 typedef struct {
   const char *namespace_name;
-  gotel_sql_options_t sql;
+  sequel_options_t sql;
 } gotel_sqlite_options_t;
 /* Explicitly owns sqlite3_trace_v2's single callback slot. Attach once before
  * use; detach after statements finish and before close/host destruction.

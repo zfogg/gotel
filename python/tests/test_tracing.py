@@ -1,6 +1,7 @@
 import asyncio
 
 import pytest
+import sequel
 from opentelemetry import trace
 
 from gotel import correlation, sqltrace
@@ -52,7 +53,7 @@ def test_database_error_privacy():
                 "InsertBuilds",
                 sql="INSERT INTO builds VALUES ('secret-value')",
                 system="clickhouse",
-                dialect=sqltrace.Dialect.CLICKHOUSE,
+                dialect=sequel.Dialect.CLICKHOUSE,
             ),
         ):
             raise ValueError("driver error: secret-value")
@@ -79,9 +80,7 @@ async def test_sqlalchemy_async_success_failure_and_names():
     try:
         with Capture("beanaries") as capture:
             namer = sqltrace.Namer("beanaries.storage", tracer_provider=capture.provider)
-            remove = sqltrace.instrument_sqlalchemy(
-                engine, namer=namer, system="sqlite", dialect=sqltrace.Dialect.SQLITE
-            )
+            remove = sqltrace.instrument_sqlalchemy(engine, namer=namer, system="sqlite", dialect=sequel.Dialect.SQLITE)
             assert sqltrace.instrument_sqlalchemy(engine, namer=namer, system="sqlite") is remove
             async with engine.connect() as conn:
                 with namer.name("ListBuilds"):

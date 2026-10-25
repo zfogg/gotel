@@ -41,6 +41,13 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
     if 'GOTEL_WITH_GRPC:BOOL=ON' not in (build / 'CMakeCache.txt').read_text(encoding='utf-8'):
         raise ValueError('C release libraries must be built with GOTEL_WITH_GRPC=ON')
     nghttp2_source = nghttp2_source or build / '_deps' / 'gotel_nghttp2-src'
+    cache = {}
+    for line in (build / 'CMakeCache.txt').read_text(encoding='utf-8').splitlines():
+        if '=' in line and not line.startswith(('#', '//')):
+            key, value = line.split('=', 1)
+            cache[key.split(':', 1)[0]] = value
+    sequel_source = Path(cache.get('sequel_SOURCE_DIR', str(build / '_deps' / 'sequel-src')))
+    sequel_build = Path(cache.get('sequel_BINARY_DIR', str(build / '_deps' / 'sequel-build')))
     name = archive_name(tag, linkage, expected_arch)
     path = output / f"{name}.zip"
     system = platform.system()
@@ -51,14 +58,23 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
         gotel_libs.append(build / "_deps" / "otlp_c-build" / ("otlp_c.lib" if system == "Windows" else "libotlp_c.a"))
         gotel_libs.append(build / "_deps" / "gotel_nghttp2-build" / "lib" /
                           ("nghttp2.lib" if system == "Windows" else "libnghttp2.a"))
+        gotel_libs.extend(sequel_build / name for name in (
+            ('sequel.lib', 'sequel_utf8proc.lib') if system == 'Windows'
+            else ('libsequel.a', 'libsequel_utf8proc.a')))
     elif system == "Windows":
         gotel_libs = [build / "src" / "gotel.dll", build / "src" / "gotel.lib"]
+        gotel_libs.extend(sequel_build / name for name in ('sequel.dll', 'sequel.lib'))
     else:
         extension = ".dylib" if system == "Darwin" else ".so"
         pattern = "libgotel*.dylib" if system == "Darwin" else "libgotel.so*"
         gotel_libs = sorted((build / "src").glob(pattern))
         if not gotel_libs:
             raise FileNotFoundError(build / "src" / f"libgotel{extension}")
+        sequel_pattern = 'libsequel*.dylib' if system == 'Darwin' else 'libsequel.so*'
+        sequel_libs = sorted(sequel_build.glob(sequel_pattern))
+        if not sequel_libs:
+            raise FileNotFoundError(sequel_build / f'libsequel{extension}')
+        gotel_libs.extend(sequel_libs)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
         for source, destination in (
             (ROOT / "LICENSE", "LICENSE"),
@@ -66,9 +82,16 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
             (ROOT / "c" / "README.md", "API.md"),
             (otlp_source / "LICENSE", "third-party/otlp-c-LICENSE"),
             (nghttp2_source / "COPYING", "third-party/nghttp2-COPYING"),
+            (sequel_source / "LICENSE", "third-party/sequel-LICENSE"),
+            (sequel_source / "third_party" / "UTF8PROC_LICENSE.md", "third-party/sequel-utf8proc-LICENSE.md"),
+            (sequel_source / "include" / "sequel.h", "include/sequel.h"),
         ):
             add_file(archive, source, f"{name}/{destination}")
         for source in gotel_libs:
+            if not source.is_file():
+                # Multi-configuration generators put artifacts below the configuration.
+                source = next((source.parent / config / source.name for config in ('Release', 'Debug')
+                               if (source.parent / config / source.name).is_file()), source)
             add_file(archive, source, f"{name}/lib/{source.name}")
         for prefix, directory in (
             ("include/gotel", ROOT / "c" / "include" / "gotel"),

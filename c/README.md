@@ -187,13 +187,13 @@ its scope. `gotel_http_attributes` records method/status and client errors.
 
 ## Named SQLite queries
 
-`gotel/sql.h` provides SQL inspection independently of the SQLite adapter and
+Sequel's `<sequel.h>` provides SQL inspection independently of the SQLite adapter and
 does not require linking SQLite. It supports common SQL plus PostgreSQL,
 DuckDB, SQLite, and MySQL quoting/placeholder rules. Its scanner removes comments
 and replaces string/blob/numeric/boolean/null literals and bind placeholders.
 It never uses expanded SQL or reads bind values. Malformed quoting fails closed.
 
-`gotel_sql_inspect` returns distinct fields: `text` is the sanitized SQL template,
+`sequel_inspect` returns distinct fields: `text` is the sanitized SQL template,
 `summary` is a structural skeleton of CTEs, sources, aliases, joins, nested
 queries, clauses and row bounds, `operation` is the first SQL verb, and
 `statement_count` counts nonempty top-level statements in the call. Text
@@ -201,11 +201,11 @@ defaults to 32768 bytes, independently of the 32768-byte summary budget; both st
 on UTF-8 boundaries. Static integer row bounds may appear in the summary but
 are sanitized in query text. Input is limited to 1 MiB and structural recursion
 to 64 levels. This is a telemetry parser, not SQL syntax validation or execution.
-`gotel_sql_sanitize` exposes the same fail-closed text scanner with a caller-sized
+`sequel_sanitize` exposes the same fail-closed text scanner with a caller-sized
 buffer; Go uses it for custom and uncapped query-text policies. Both APIs scan
 every statement and reject a malformed later statement without emitting text.
 Semicolons in quoted content or comments do not increase `statement_count`.
-The implementation is split under `src/sql/`: `scanner.c`, `summary.c`,
+In the sequel repository, the implementation is split under `src/sql/`: `scanner.c`, `summary.c`,
 `api.c`, and `common.c` are included by `main.c`. CMake compiles only `main.c`;
 the Go cgo package includes the same file, so it runs the identical parser.
 
@@ -221,7 +221,7 @@ SQL regression tests include 665 cases generated from Go's tests and SQL command
 query examples from pi5 Spaniel/stonkpile (eight each short, medium and long),
 2,000 secret-payload mutations, malformed grammar, and size/UTF-8 boundaries.
 The checked-in JSON fixtures need no Go installation or live service at test
-time. Regenerate the Go corpus with `go -C go run ./cmd/sqlreference`;
+time. The SQL corpus and its generator now live in sequel;
 the same generator accepts input/output JSON paths for inspecting other queries.
 Resource and SQLite tests decode real protobuf envelopes from local collectors.
 
@@ -378,7 +378,7 @@ scope, recover deadlocks, handle fatal signals, or survive a blocked tick owner.
 
 ## SQL formatting
 
-`gotel_sql_format(sql, dialect, out, capacity, &length)` formats layout while
+`sequel_format(sql, dialect, out, capacity, &length)` formats layout while
 preserving comments, quoted contents, identifiers, and bind placeholders. It
 never executes SQL or substitutes values. Measure with `out=NULL, capacity=0`,
 then allocate `length+1` bytes. Input and output must not overlap. On errors,
@@ -390,19 +390,12 @@ only; summaries and span names remain concise. The SQLite adapter preserves its
 custom collection limit. Direct callers with custom limits can use
 `gotel_sql_attributes_with_limit`; formatting failures retain sanitized text.
 
-`testdata/sql_format.json` contains 714 cases, including named statements from
-50 stonkpile SQL files with their source revision, Spaniel dashboard queries,
-and synthetic dialect/comment/placeholder regressions. The C test suite uses
-SQLGlot and sqlparse as independent lexical checks, 1000 deterministic mutations,
-and SQLite/DuckDB execution comparisons. Install test dependencies with
-`python -m pip install -r c/tests/requirements-format.txt`.
+The SQL engine, C regression tests, query corpora and formatter oracles now live
+in [sequel](https://github.com/zfogg/sequel). Gotel's remaining SQL tests check
+SQLite span integration.
 
-The canonical SQL style uses two-space indentation, one projection/assignment
-per line, aligned clause headers, indented WHERE/HAVING/QUALIFY predicates,
-complete JOIN headers with aligned ON predicates, and separate nested CASE,
-CTE and subquery blocks. Short function calls remain inline; long/nested
-argument lists wrap. Twenty exact-output fixtures lock down the layout.
-
-After changing shared SQL C sources, run `python scripts/sync_sql_engine.py`.
-The generated fingerprint invalidates cgo's cache for sources included from
-outside its package directory; release CI verifies it is current.
+CMake fetches a pinned sequel revision and links `sequel::sequel` publicly.
+Consumers may supply that target themselves or use
+`FETCHCONTENT_SOURCE_DIR_SEQUEL` for a local checkout. The default fetched build
+contains only the library. The installed sequel header defines all `sequel_*`
+functions and types. `<gotel/sql.h>` contains only the span-attribute adapters.

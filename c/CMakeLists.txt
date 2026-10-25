@@ -9,6 +9,14 @@ set(GOTEL_SQLITE_TARGET "" CACHE STRING "Existing SQLite3 CMake target")
 
 include(cmake/TextDependencies.cmake)
 
+# SQL processing is owned by sequel; allow an existing target or FetchContent override.
+if(NOT TARGET sequel::sequel)
+  FetchContent_Declare(sequel
+    GIT_REPOSITORY https://github.com/zfogg/sequel.git
+    GIT_TAG 67601263c947c6344aaf5f243d87709a3d07f68d)
+  FetchContent_MakeAvailable(sequel)
+endif()
+
 # gotel uses otlp-c's internal attribute and TLS helpers. Keep otlp-c in
 # the same link image even when gotel itself is a shared library.
 set(_gotel_shared ${BUILD_SHARED_LIBS})

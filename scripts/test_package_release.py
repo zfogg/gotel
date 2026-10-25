@@ -22,9 +22,12 @@ def check(build, linkage):
             names = archive.namelist()
             assert any(n.endswith('/third-party/nghttp2-COPYING') for n in names), names
             assert any(n.endswith('/include/gotel/gotel.h') for n in names), names
+            assert any(n.endswith('/include/sequel.h') for n in names), names
+            assert any(n.endswith('/third-party/sequel-LICENSE') for n in names), names
             assert not any(n.endswith('/testing.h') for n in names), names
             if linkage == 'static':
-                assert sum('/lib/' in n for n in names) == 3, names
+                assert sum('/lib/' in n for n in names) == 5, names
+                assert any(n.endswith(('/lib/libsequel.a', '/lib/sequel.lib')) for n in names), names
                 assert any(n.endswith(('/lib/libnghttp2.a', '/lib/nghttp2.lib')) for n in names), names
             else:
                 assert not any(n.endswith(('/lib/libnghttp2.a', '/lib/nghttp2.lib')) for n in names), names
