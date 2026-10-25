@@ -76,6 +76,18 @@ These attributes are resources on **every** trace, log, and metric envelope.
 `exporter.resource_attributes` override detected values; environment resource
 overrides remain opt-in through the existing exporter environment helper.
 
+Use `gotel_command_args_init_policy` to choose `GOTEL_COMMAND_REDACT_ALL`,
+`GOTEL_COMMAND_REDACT_SELECTED`, or `GOTEL_COMMAND_REDACT_NONE`. Supply
+`gotel_command_rule_t` entries for exact flag spellings, including short aliases.
+Rules declare required, optional, or absent values and either redact the value
+or remove the flag and value entirely. Removal applies independently of the
+redaction mode. Optional separate values consume a following non-option;
+required values consume the next argument even if it begins with `-`. Long
+assignments and attached short values are supported. Sensitive short options
+inside clusters match conservatively; removal drops the whole token.
+`--` ends rule processing. Selected mode preserves unlisted flags and positionals.
+None mode copies arguments verbatim except for explicit removal rules.
+
 Use `gotel_command_args_init(&args, application_name, command_name, argc, argv)`
 to create an owned, sanitized argument list. It retains the supplied application
 and command names and long-option names, removes `=value` suffixes, and replaces

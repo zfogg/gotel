@@ -155,6 +155,40 @@ otlp_status_t gotel_command_args_init(gotel_command_args_t *args, const char *ap
  * verbatim, including the executable path and option values. */
 otlp_status_t gotel_command_args_init_ex(gotel_command_args_t *args, const char *application_name,
                                          const char *command_name, int argc, const char *const *argv, bool sanitize);
+typedef enum {
+  GOTEL_COMMAND_REDACT_NONE,
+  GOTEL_COMMAND_REDACT_SELECTED,
+  GOTEL_COMMAND_REDACT_ALL
+} gotel_command_redaction_t;
+typedef enum {
+  GOTEL_COMMAND_VALUE_NONE,
+  GOTEL_COMMAND_VALUE_REQUIRED,
+  GOTEL_COMMAND_VALUE_OPTIONAL
+} gotel_command_value_t;
+typedef enum { GOTEL_COMMAND_REDACT, GOTEL_COMMAND_REMOVE } gotel_command_action_t;
+typedef struct {
+  const char *flag; /* Exact spelling, e.g. --password or -K. */
+  gotel_command_value_t value;
+  gotel_command_action_t action;
+} gotel_command_rule_t;
+typedef struct {
+  gotel_command_redaction_t mode;
+  const gotel_command_rule_t *rules;
+  size_t rule_count;
+  /* Exact argument values to redact, including application-specific positionals.
+   * Ignored in NONE mode. Does not match substrings or values inside flags. */
+  const char *const *sensitive_values;
+  size_t sensitive_value_count;
+} gotel_command_policy_t;
+/* REMOVE rules always apply, even in NONE mode. SELECTED redacts only matching
+ * rules; ALL also hides arbitrary values and positionals. Required values consume
+ * the next argument even if it starts with '-'. Optional separate values consume
+ * only a following non-option. -- ends flag processing. Attached short values
+ * (-Ksecret) and long assignments (--key=secret) are supported. Sensitive short
+ * options within clusters match conservatively; removal drops the whole token. */
+otlp_status_t gotel_command_args_init_policy(gotel_command_args_t *args, const char *application_name,
+                                             const char *command_name, int argc, const char *const *argv,
+                                             const gotel_command_policy_t *policy);
 void gotel_command_args_destroy(gotel_command_args_t *args);
 otlp_status_t gotel_command_args_set_span(gotel_scope_t *scope, const gotel_command_args_t *args);
 

@@ -85,5 +85,45 @@ int main(void) {
   for (int i = 0; i < 3; ++i)
     CHECK(!strcmp(args.argv[i], plain[i]));
   gotel_command_args_destroy(&args);
+  const gotel_command_rule_t rules[] = {
+      {"--password", GOTEL_COMMAND_VALUE_REQUIRED, GOTEL_COMMAND_REDACT},
+      {"-K", GOTEL_COMMAND_VALUE_REQUIRED, GOTEL_COMMAND_REDACT},
+      {"--remove", GOTEL_COMMAND_VALUE_REQUIRED, GOTEL_COMMAND_REMOVE},
+      {"--optional", GOTEL_COMMAND_VALUE_OPTIONAL, GOTEL_COMMAND_REMOVE},
+      {"--hide", GOTEL_COMMAND_VALUE_NONE, GOTEL_COMMAND_REMOVE},
+  };
+  gotel_command_policy_t policy = {.mode = GOTEL_COMMAND_REDACT_SELECTED, .rules = rules, .rule_count = 5};
+  const char *filtered[] = {"demo",     "--width=80", "--password=secret",  "-Ksecret",   "--password", "-secret",
+                            "--remove", "private",    "--optional=private", "--optional", "private",    "--optional",
+                            "--hide",   "--",         "--password=literal"};
+  const char *visible[] = {"demo",       "--width=80", "--password", "-K",
+                           "--password", "[REDACTED]", "--",         "--password=literal"};
+  CHECK(gotel_command_args_init_policy(&args, "demo", NULL, 15, filtered, &policy) == OTLP_OK);
+  CHECK(args.argc == 8);
+  for (int i = 0; i < args.argc; ++i)
+    CHECK(!strcmp(args.argv[i], visible[i]));
+  gotel_command_args_destroy(&args);
+  const char *positional[] = {"demo", "localhost:1234", "--optional", "--width=80", "-vKsecret", "--remove"};
+  const char *sensitive[] = {"localhost:1234"};
+  policy.sensitive_values = sensitive;
+  policy.sensitive_value_count = 1;
+  CHECK(gotel_command_args_init_policy(&args, "demo", NULL, 6, positional, &policy) == OTLP_OK);
+  CHECK(args.argc == 4 && !strcmp(args.argv[1], "[REDACTED]") && !strcmp(args.argv[2], "--width=80") &&
+        !strcmp(args.argv[3], "-vK"));
+  gotel_command_args_destroy(&args);
+  // A required raw value must not be interpreted as another removal rule.
+  const char *literal[] = {"demo", "--password", "--hide"};
+  policy.mode = GOTEL_COMMAND_REDACT_NONE;
+  CHECK(gotel_command_args_init_policy(&args, "demo", NULL, 3, literal, &policy) == OTLP_OK);
+  CHECK(args.argc == 3 && !strcmp(args.argv[2], "--hide"));
+  gotel_command_args_destroy(&args);
+  policy.mode = GOTEL_COMMAND_REDACT_NONE;
+  CHECK(gotel_command_args_init_policy(&args, "demo", NULL, 15, filtered, &policy) == OTLP_OK);
+  CHECK(args.argc == 8 && !strcmp(args.argv[2], "--password=secret") && !strcmp(args.argv[5], "-secret"));
+  gotel_command_args_destroy(&args);
+  policy.mode = GOTEL_COMMAND_REDACT_ALL;
+  CHECK(gotel_command_args_init_policy(&args, "demo", NULL, 15, filtered, &policy) == OTLP_OK);
+  CHECK(args.argc == 8 && !strcmp(args.argv[1], "--width"));
+  gotel_command_args_destroy(&args);
   return 0;
 }
