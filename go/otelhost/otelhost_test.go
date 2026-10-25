@@ -2,8 +2,10 @@ package otelhost
 
 import (
 	"context"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"os"
 	goruntime "runtime"
+	"sync"
 	"testing"
 
 	"go.opentelemetry.io/otel"
@@ -80,5 +82,78 @@ func TestSpanNamePrefixOption(t *testing.T) {
 			t.Fatal(exporter.GetSpans()[0].Name)
 		}
 		_ = runtime.Shutdown(context.Background())
+	}
+}
+
+type traceBatchRecorder struct {
+	mu      sync.Mutex
+	batches [][]sdktrace.ReadOnlySpan
+}
+
+func (r *traceBatchRecorder) ExportSpans(_ context.Context, spans []sdktrace.ReadOnlySpan) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.batches = append(r.batches, append([]sdktrace.ReadOnlySpan(nil), spans...))
+	return nil
+}
+func (*traceBatchRecorder) Shutdown(context.Context) error { return nil }
+
+func TestStartExportsCompletedTraceTogether(t *testing.T) {
+	exporter := &traceBatchRecorder{}
+	host, err := Start(t.Context(), Config{ServiceName: "worker", Signals: Traces, TraceExporter: exporter})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer host.Shutdown(context.Background())
+	tracer := host.TracerProvider.Tracer("test")
+	ctx, root := tracer.Start(t.Context(), "background job")
+	for i := 0; i < 600; i++ {
+		_, child := tracer.Start(ctx, "http.client.GET example.test/bars")
+		child.End()
+	}
+	if err := host.TracerProvider.ForceFlush(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	exporter.mu.Lock()
+	early := len(exporter.batches)
+	exporter.mu.Unlock()
+	if early != 0 {
+		t.Fatalf("exported %d batches while the parent was still running", early)
+	}
+	_, outstanding := tracer.Start(ctx, "storage.Save")
+	root.End()
+	if err := host.TracerProvider.ForceFlush(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	exporter.mu.Lock()
+	early = len(exporter.batches)
+	exporter.mu.Unlock()
+	if early != 0 {
+		t.Fatal("exported before the last child ended")
+	}
+	outstanding.End()
+	if err := host.TracerProvider.ForceFlush(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	exporter.mu.Lock()
+	defer exporter.mu.Unlock()
+	if len(exporter.batches) != 1 || len(exporter.batches[0]) != 602 {
+		t.Fatalf("want one complete 602-span trace, got %d batches", len(exporter.batches))
+	}
+	ids := map[string]bool{}
+	roots := 0
+	for _, span := range exporter.batches[0] {
+		ids[span.SpanContext().SpanID().String()] = true
+		if !span.Parent().IsValid() {
+			roots++
+		}
+	}
+	if roots != 1 {
+		t.Fatalf("roots=%d, want 1", roots)
+	}
+	for _, span := range exporter.batches[0] {
+		if span.Parent().IsValid() && !ids[span.Parent().SpanID().String()] {
+			t.Fatal("missing parent in completed batch")
+		}
 	}
 }

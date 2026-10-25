@@ -138,6 +138,13 @@ Import `github.com/zfogg/gotel/go/otelhost` for that example. If your service
 already configures the OpenTelemetry SDK, keep its providers and use gotel's
 instrumentation packages independently.
 
+The host exports each completed local trace together, after its parent and all
+started descendants have ended. Finished children of a running background job
+stay buffered instead of appearing as an orphaned, steadily growing waterfall.
+`ForceFlush` drains completed traces without publishing an unfinished trace.
+The whole-trace processor bounds each trace and its export queue to 8,192 spans;
+oversized traces are dropped together and counted in telemetry drop metrics.
+
 ### Give HTTP operations useful names
 
 [`httptrace`](go/httptrace/) works with `otelhttp` and `net/http` without requiring

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/zfogg/gotel/go"
+	"github.com/zfogg/gotel/go/traceprocessor"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	goruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -147,7 +148,16 @@ func Start(ctx context.Context, config Config) (_ *Runtime, err error) {
 				}
 				exporter = gotel.WithoutApplicationPrefix(exporter, application)
 			}
-			opts = append(opts, sdktrace.WithBatcher(exporter))
+			// Export a completed local trace as one batch. The SDK span batcher
+			// publishes finished children before a long-running parent ends,
+			// leaving collectors with orphan rows and a growing waterfall.
+			application := config.ApplicationName
+			if application == "" {
+				application = config.ServiceName
+			}
+			opts = append(opts, sdktrace.WithSpanProcessor(traceprocessor.New(traceprocessor.Config{
+				Application: gotel.NewApplication(application), Exporter: exporter,
+			})))
 		}
 		runtime.TracerProvider = sdktrace.NewTracerProvider(opts...)
 		otel.SetTracerProvider(runtime.TracerProvider)
