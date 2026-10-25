@@ -42,6 +42,11 @@ if(GOTEL_BUILD_TESTS)
     add_test(NAME gotel-${case} COMMAND gotel-test --case ${case})
   endforeach()
 
+  add_executable(gotel-command-test command_test.c)
+  target_link_libraries(gotel-command-test PRIVATE gotel::testing)
+  target_include_directories(gotel-command-test PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/otlp-tls ${otlp_c_SOURCE_DIR}/src)
+  add_test(NAME gotel-command-args COMMAND gotel-command-test)
+
   add_executable(gotel-resource-probe resource_probe.c)
   target_link_libraries(gotel-resource-probe PRIVATE gotel::testing)
   add_test(NAME gotel-resource COMMAND ${Python3_EXECUTABLE}

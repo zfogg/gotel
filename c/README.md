@@ -76,6 +76,17 @@ These attributes are resources on **every** trace, log, and metric envelope.
 `exporter.resource_attributes` override detected values; environment resource
 overrides remain opt-in through the existing exporter environment helper.
 
+Use `gotel_command_args_init(&args, application_name, command_name, argc, argv)`
+to create an owned, sanitized argument list. It retains the supplied application
+and command names and long-option names, removes `=value` suffixes, and replaces
+other positional arguments and short flags with `[REDACTED]`.
+Pass `args.argc`/`args.argv` to the host options, then call
+`gotel_command_args_set_span(&scope, &args)` to attach `process.command`,
+`cli.command.name`, and the same argument array to a command span.
+Call `gotel_command_args_destroy(&args)` afterward; both destinations deep-copy
+the values. Initialize a zeroed `gotel_command_args_t`; initialization leaves it
+unchanged on error. Explicit `argc`/`argv` without the helper remain raw.
+
 Set `argc`/`argv` to supply application-redacted command arguments; their values
 are deep-copied during `gotel_create`. NULL `argv` discovers native arguments
 on Windows, Linux, and macOS. `omit_command_args` suppresses detection of command

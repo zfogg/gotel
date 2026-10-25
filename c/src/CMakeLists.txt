@@ -1,4 +1,4 @@
-set(_gotel_sources gotel.c env.c http.c sql.c resource.c utf8.c)
+set(_gotel_sources gotel.c env.c http.c sql.c resource.c command.c utf8.c)
 if(BUILD_SHARED_LIBS)
   add_library(gotel SHARED ${_gotel_sources})
 else()

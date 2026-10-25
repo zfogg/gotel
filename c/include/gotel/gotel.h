@@ -139,6 +139,21 @@ gotel_span_snapshot_t gotel_current_span_snapshot(void);
  * observation time as its end. A later normal completion may update that span.
  * No attributes are read from the live span on another thread. */
 otlp_status_t gotel_publish_span_snapshot(gotel_host_t *host, const gotel_span_snapshot_t *snapshot);
+/* Owned, sanitized CLI metadata. Initialize a zeroed value, reuse argc/argv in
+ * gotel_options_t, then attach it to the command scope. Both destinations copy
+ * their values, so destroy after host creation and span attachment. Only the
+ * supplied application/command names and long-option names are retained;
+ * option values, short flags and arbitrary positionals become [REDACTED]. */
+typedef struct {
+  int argc;
+  const char **argv;
+  const char *application_name, *command_name;
+} gotel_command_args_t;
+otlp_status_t gotel_command_args_init(gotel_command_args_t *args, const char *application_name,
+                                      const char *command_name, int argc, const char *const *argv);
+void gotel_command_args_destroy(gotel_command_args_t *args);
+otlp_status_t gotel_command_args_set_span(gotel_scope_t *scope, const gotel_command_args_t *args);
+
 void gotel_attr_string(gotel_scope_t *scope, const char *key, const char *value);
 void gotel_attr_int(gotel_scope_t *scope, const char *key, int64_t value);
 /* Explicit source metadata is available to adapters that already capture the
