@@ -1,12 +1,14 @@
-## Query naming changes in v0.11.0
+## SQL processing moved to sequel in v0.12.0
 
-SQL spans use `storage.<database>.<QueryName>`; PostgreSQL uses `postgres` in
-span names and `postgresql` in semantic attributes. Python gains static
-per-execution `sqltrace.call`/`call_sync` helpers, task-local naming, statement
-overrides, and distinct names for eager relationships and ORM flush writes.
-Go adapters default to database-specific namespaces. Explicit custom namers
-remain supported. Redis spans are `storage.redis.GET` (uppercase command) and
-`storage.redis.PIPELINE`, without an application prefix.
+Import [sequel](https://github.com/zfogg/sequel) directly for SQL formatting,
+sanitization, raw inspection and summaries. The C API uses `<sequel.h>` and
+`sequel_*` names; Go imports `github.com/zfogg/sequel/go`; Python imports `sequel`.
+Gotel's tracing adapters use those bindings internally. Standalone processing
+wrappers were removed from gotel, and its Python package is now pure Python.
+
+The sequel CLI exposes `format` and `sanitize`, accepting stdin, SQL strings or
+multiple paths. Both support `--embedded` and `--edit-file`; sanitization can
+remove comments, replace literals and bind markers, or do both.
 
 ## C libraries
 
@@ -18,9 +20,9 @@ include path at `include/`.
 
 Native OTLP/gRPC support is included in all C releases. Select it with
 `options.protocol = "grpc"`; HTTP/protobuf remains the default export protocol.
-Static ZIPs contain `gotel`, `otlp-c`, and `nghttp2` archives, linked in that order. Shared ZIPs contain the
+Static ZIPs contain `gotel`, `otlp-c`, `nghttp2`, `sequel`, and `sequel_utf8proc` archives. Shared ZIPs contain the
 `gotel` `.so`/`.dylib` and its versioned names, or on Windows `gotel.dll`
-and its `.lib` import library. `otlp-c` and nghttp2 are linked into the shared library, so neither needs a
+and its `.lib` import library. Shared archives also include the matching sequel library. `otlp-c` and nghttp2 are linked into the shared library, so neither needs a
 separate runtime library. The nghttp2 license is included in both ZIP types.
 The shared ZIPs do not bundle third-party runtime libraries: install matching
 PCRE2, utf8proc, OpenSSL, and SQLite libraries and make their `.so`, `.dylib`,
@@ -61,12 +63,11 @@ The version tag is the Go module release. Use
 `go get github.com/zfogg/gotel/go@vX.Y.Z` with this release's version. No
 compiled Go archive is published.
 
-Python assets contain the `gotel` native wheels and source distribution
-(import name `gotel`). Install wheels with uv or pip; source builds need a C
-compiler and bundle the shared SQL engine and utf8proc. Registry publication is
-separate. The Go module now lives at `github.com/zfogg/gotel/go` and resolves
-matching `go/vX.Y.Z` tags. Update Go imports and C `GOTEL_*` CMake options when
-migrating from earlier releases.
+Python assets contain the pure Python `gotel` wheel and source distribution.
+Install with uv; the pinned sequel dependency builds its C extension when a
+matching native wheel is unavailable. GitHub publication does not publish to
+PyPI or npm. Go consumers use matching immutable `go/vX.Y.Z` tags.
+
 
 
 ## Consumer updates

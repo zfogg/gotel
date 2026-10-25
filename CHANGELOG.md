@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.12.0
+
+- Extract SQL formatting, sanitization, summaries, native code, language bindings,
+  CLI and engine regression tests into sequel. Gotel's CMake, Go and Python
+  adapters consume the same pinned sequel revision.
+- Remove standalone SQL-processing APIs from gotel. Import sequel directly for
+  those operations; gotel retains span naming, metadata and instrumentation.
+- Package sequel headers, libraries and licenses in C release archives. Gotel's
+  Python distribution is now pure Python with a native sequel dependency.
+
 ## v0.11.0
 
 - Add canonical SQL namespaces `storage.postgres`, `storage.sqlite`,
