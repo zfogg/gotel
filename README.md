@@ -79,7 +79,7 @@ are covered as well as ordinary operation spans.
 
 - **Go:** set `otelhost.Config{ApplicationName: "myapp", DisableSpanNamePrefix: true}`.
   `ApplicationName` defaults to `ServiceName`. For gotel's custom retention
-  processor, set `traceprocessor.Config.DisableSpanNamePrefix`; it uses the
+  processor, set `processor.Config.DisableSpanNamePrefix`; it uses the
   configured `Application`. Other custom exporters can use
   `gotel.WithoutApplicationPrefix(exporter, "myapp")`.
 - **Python:** set `otelhost.Config(application_name="myapp", disable_span_name_prefix=True)`.
@@ -144,6 +144,10 @@ are `uv run --directory python --all-extras ruff format src tests`,
 
 ## Go services
 
+Tracing adapters live under `github.com/zfogg/gotel/go/tracers/`, with short
+package names such as `http`, `sql`, `gorm` and `redis`. See the
+[package migration map](go/tracers/) for the new import paths.
+
 Install the module in your Go application:
 
 ```sh
@@ -179,7 +183,7 @@ oversized traces are dropped together and counted in telemetry drop metrics.
 
 ### Give HTTP operations useful names
 
-[`httptrace`](go/httptrace/) works with `otelhttp` and `net/http` without requiring
+[`http`](go/tracers/http/) works with `otelhttp` and `net/http` without requiring
 a particular router. A request to `/items/123` can appear as
 `catalog.http.server.GET /items/{id}` instead of creating a new span name for
 every item. Client names retain the destination host, port, and path while
@@ -187,19 +191,19 @@ excluding credentials, query strings, and fragments. Numeric IDs, UUIDs, and
 long hex IDs in client paths become `{id}`.
 
 ```go
-names := httptrace.Namer{Prefix: "catalog"}
+names := gotelhttp.Namer{Prefix: "catalog"}
 client := &http.Client{Transport: names.Transport(http.DefaultTransport)}
 handler := names.Handler(mux, "catalog")
 ```
 
-Import `github.com/zfogg/gotel/go/httptrace`. Go `ServeMux` supplies the resolved
+Import `gotelhttp "github.com/zfogg/gotel/go/tracers/http"` alongside `net/http`. Go `ServeMux` supplies the resolved
 route through `Request.Pattern`. For another router, give `RouteMiddleware` a
 callback that returns its route template, or call `SetServerRoute` on the
 existing span. Neither hook creates another span or wraps the response writer.
 
 ### See a database call without exposing its values
 
-[`sqltrace`](go/sqltrace/) keeps the application operation name separate from SQL
+[`sql`](go/tracers/sql/) keeps the application operation name separate from SQL
 structure. A `ListWidgets` call can have a stable span name such as
 `catalog.storage.ListWidgets` alongside `db.query.text`, a structural
 `db.query.summary`, the database system and namespace, and bind and statement
@@ -209,13 +213,13 @@ statements sent in one call. Bind **values** are never added to those attributes
 For a GORM application with an existing `db` connection:
 
 ```go
-namer := sqltrace.MustNamer("catalog.storage")
-err := db.Use(gormtrace.New(gormtrace.Config{
+namer := gotelsql.MustNamer("catalog.storage")
+err := db.Use(gotelgorm.New(gotelgorm.Config{
     Scope:     "catalog/storage",
     Namer:     namer,
     System:    "postgresql",
     Namespace: "catalog",
-    Dialect:   sqltrace.DialectPostgreSQL,
+    Dialect:   gotelsql.DialectPostgreSQL,
 }))
 if err != nil {
     return err
@@ -225,11 +229,12 @@ queryCtx := namer.WithName(ctx, "ListWidgets")
 err = db.WithContext(queryCtx).Find(&widgets).Error
 ```
 
-Import `github.com/zfogg/gotel/go/sqltrace` and
-`github.com/zfogg/gotel/go/gormtrace`. [`pgxtrace`](go/pgxtrace/) covers pgx queries,
+Import the adapters as `gotelsql "github.com/zfogg/gotel/go/tracers/sql"` and
+`gotelgorm "github.com/zfogg/gotel/go/tracers/gorm"` to distinguish them from
+`database/sql` and GORM. [`pgx`](go/tracers/pgx/) covers pgx queries,
 COPY, batches, prepare, and connect. For `database/sql`, use
-`sqltrace.QueryContext`, `QueryRowContext`, or `ExecContext`; they end spans at
-the appropriate point in the rows' lifecycle. `sqltrace.StartSpan` covers
+`gotelsql.QueryContext`, `QueryRowContext`, or `ExecContext`; they end spans at
+the appropriate point in the rows' lifecycle. `gotelsql.StartSpan` covers
 custom database operations, and [`dbmetrics`](go/dbmetrics/) provides the
 `db.client.operation.duration` histogram.
 
@@ -247,18 +252,18 @@ names.
 
 SQL parsing lives in [sequel](https://github.com/zfogg/sequel) and its Go binding
 compiles it through cgo. **`go get` does not run CMake.** Building an
-application that imports `sqltrace` or its adapters requires `CGO_ENABLED=1`
+application that imports `sql` or its adapters requires `CGO_ENABLED=1`
 and a C compiler. The Go package bundles pinned utf8proc source; no system
 utf8proc installation is needed. From this repository, inspect generated sqlc
 queries without running the application with
 `go run github.com/zfogg/sequel/cmd/sqlsummary -dir PATH -largest 10`.
 
-[`mcptrace`](go/mcptrace/) instruments the official Go MCP SDK with connected
+[`mcp`](go/tracers/mcp/) instruments the official Go MCP SDK with connected
 request/tool spans, counters, and latency histograms. It bounds method/tool
 labels and omits arguments, results, and error contents.
 
-Other Go packages include [`redistrace`](go/redistrace/),
-[`temporaltrace`](go/temporaltrace/), [`slogadapter`](go/slogadapter/), and shared
+Other Go packages include [`redis`](go/tracers/redis/),
+[`temporal`](go/tracers/temporal/), [`slogadapter`](go/slogadapter/), and shared
 span/shutdown helpers in the root package.
 
 ## C - gotel
@@ -392,7 +397,7 @@ and a C worker process. A browser runner makes a real request; a verifier then
 checks Spaniel for a connected trace containing spans from all three service
 names. The example shows trace context passing through HTTP and a process
 boundary, and gives you a local waterfall to inspect. See the
-[C library guide](c/README.md), the [SQL fixtures](go/sqltrace/testdata/),
+[C library guide](c/README.md), the [SQL fixtures](go/tracers/sql/testdata/),
 and [LICENSE](LICENSE) for further detail.
 
 ## Releases

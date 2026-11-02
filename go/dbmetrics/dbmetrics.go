@@ -1,12 +1,12 @@
 // Package dbmetrics provides reusable, low-cardinality database client metrics
-// compatible with sqltrace, pgxtrace, and gormtrace observers.
+// compatible with sql, pgx, and gorm observers.
 package dbmetrics
 
 import (
 	"context"
 	"time"
 
-	"github.com/zfogg/gotel/go/sqltrace"
+	gotelsql "github.com/zfogg/gotel/go/tracers/sql"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -31,7 +31,7 @@ type Config struct {
 	Attributes    []attribute.KeyValue
 }
 
-// Recorder owns a database duration histogram and exposes a sqltrace.Observer.
+// Recorder owns a database duration histogram and exposes a gotelsql.Observer.
 type Recorder struct {
 	duration   metric.Float64Histogram
 	attributes []attribute.KeyValue
@@ -58,10 +58,10 @@ func New(config Config) (*Recorder, error) {
 	}
 	attrs := append([]attribute.KeyValue(nil), config.Attributes...)
 	if config.System != "" {
-		attrs = append(attrs, sqltrace.SystemKey.String(config.System))
+		attrs = append(attrs, gotelsql.SystemKey.String(config.System))
 	}
 	if config.Namespace != "" {
-		attrs = append(attrs, sqltrace.NamespaceKey.String(config.Namespace))
+		attrs = append(attrs, gotelsql.NamespaceKey.String(config.Namespace))
 	}
 	return &Recorder{duration: duration, attributes: attrs}, nil
 }
@@ -84,16 +84,16 @@ func (r *Recorder) Observe(ctx context.Context, operation, result string, elapse
 	}
 	attrs := make([]attribute.KeyValue, 0, len(r.attributes)+2)
 	attrs = append(attrs, r.attributes...)
-	attrs = append(attrs, sqltrace.OperationKey.String(operation), resultKey.String(result))
+	attrs = append(attrs, gotelsql.OperationKey.String(operation), resultKey.String(result))
 	r.duration.Record(ctx, elapsed.Seconds(), metric.WithAttributes(attrs...))
 }
 
-// Observer returns Observe as a sqltrace.Observer.
-func (r *Recorder) Observer() sqltrace.Observer { return r.Observe }
+// Observer returns Observe as a gotelsql.Observer.
+func (r *Recorder) Observer() gotelsql.Observer { return r.Observe }
 
 // Chain calls each non-nil observer in order. It lets an application retain a
 // domain-specific catalog metric alongside gotel's standard duration metric.
-func Chain(observers ...sqltrace.Observer) sqltrace.Observer {
+func Chain(observers ...gotelsql.Observer) gotelsql.Observer {
 	return func(ctx context.Context, operation, result string, elapsed time.Duration) {
 		for _, observer := range observers {
 			if observer != nil {

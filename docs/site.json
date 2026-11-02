@@ -5,6 +5,42 @@
   "description": "Shared OpenTelemetry conventions for C, Python, Go and TypeScript applications.",
   "python_project": "python",
   "go_directory": "go",
-  "languages": {"c": "C", "python": "Python", "go": "Go", "typescript": "TypeScript"},
-  "smoke": {"c": ["gotel_8h.html", "sql_8h.html", "testing_8h.html"], "python": ["gotel.html", "gotel/application.html", "gotel/otelhost.html", "gotel/httptrace.html", "gotel/sqltrace.html", "gotel/redistrace.html", "gotel/temporaltrace.html", "gotel/logging.html", "gotel/testing.html"], "go": ["pkg/github.com/zfogg/gotel/go.html", "pkg/github.com/zfogg/gotel/go/otelhost.html", "pkg/github.com/zfogg/gotel/go/sqltrace.html"], "typescript": "functions/browserHttpClientSpanName.html"}
+  "languages": {
+    "c": "C",
+    "python": "Python",
+    "go": "Go",
+    "typescript": "TypeScript"
+  },
+  "smoke": {
+    "c": [
+      "gotel_8h.html",
+      "sql_8h.html",
+      "testing_8h.html"
+    ],
+    "python": [
+      "gotel.html",
+      "gotel/application.html",
+      "gotel/otelhost.html",
+      "gotel/httptrace.html",
+      "gotel/sqltrace.html",
+      "gotel/redistrace.html",
+      "gotel/temporaltrace.html",
+      "gotel/logging.html",
+      "gotel/testing.html"
+    ],
+    "go": [
+      "pkg/github.com/zfogg/gotel/go.html",
+      "pkg/github.com/zfogg/gotel/go/otelhost.html",
+      "pkg/github.com/zfogg/gotel/go/tracers.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/gorm.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/http.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/mcp.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/pgx.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/processor.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/redis.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/sql.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/temporal.html"
+    ],
+    "typescript": "functions/browserHttpClientSpanName.html"
+  }
 }

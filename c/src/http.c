@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 static otlp_status_t identifier(const char *s, size_t n, bool *result) {
-  /* Keep the same anchored ASCII ID policy as Go's httptrace.boundedClientPath. */
+  /* Keep the same anchored ASCII ID policy as Go's tracers/http.boundedClientPath. */
   static const char pattern[] =
       "\\A(?:[0-9]+|[0-9a-f]{24,}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\\z";
   int error;

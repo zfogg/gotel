@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/zfogg/gotel/go/httptrace"
+	gotelhttp "github.com/zfogg/gotel/go/tracers/http"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -44,7 +44,7 @@ func (a Application) Start(ctx context.Context, component, name string, attrs ..
 	return a.Scope().Start(ctx, component, name, attrs...)
 }
 
-func (a Application) HTTP() httptrace.Namer { return httptrace.Namer{Prefix: a.prefix} }
+func (a Application) HTTP() gotelhttp.Namer { return gotelhttp.Namer{Prefix: a.prefix} }
 
 func (a Application) StorageName(system, operation string) string {
 	system = strings.ToLower(strings.TrimSpace(system))

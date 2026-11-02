@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/zfogg/gotel/go"
-	"github.com/zfogg/gotel/go/traceprocessor"
+	gotelprocessor "github.com/zfogg/gotel/go/tracers/processor"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	goruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -155,7 +155,7 @@ func Start(ctx context.Context, config Config) (_ *Runtime, err error) {
 			if application == "" {
 				application = config.ServiceName
 			}
-			opts = append(opts, sdktrace.WithSpanProcessor(traceprocessor.New(traceprocessor.Config{
+			opts = append(opts, sdktrace.WithSpanProcessor(gotelprocessor.New(gotelprocessor.Config{
 				Application: gotel.NewApplication(application), Exporter: exporter,
 			})))
 		}

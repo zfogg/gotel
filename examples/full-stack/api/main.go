@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zfogg/gotel/go/httptrace"
 	"github.com/zfogg/gotel/go/otelhost"
+	gotelhttp "github.com/zfogg/gotel/go/tracers/http"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -46,7 +46,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	mux.HandleFunc("POST /api/count", countWords)
-	handler := (httptrace.Namer{Prefix: "demo.api"}).Handler(mux, "demo-api")
+	handler := (gotelhttp.Namer{Prefix: "demo.api"}).Handler(mux, "demo-api")
 	server := &http.Server{Addr: ":8080", Handler: handler, ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		<-ctx.Done()
