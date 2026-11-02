@@ -54,9 +54,9 @@ func TestMultiStatementMalformedLaterStatementFailsClosed(t *testing.T) {
 	}
 }
 
-func TestQueryTextDefault32KiBAndUncappedOption(t *testing.T) {
+func TestQueryTextSharedDefaultAndExplicitLimit(t *testing.T) {
 	query := "SELECT " + strings.Repeat("a", 33*1024) + " FROM t WHERE token='SECRET'"
-	bounded, ok := sequel.SanitizeDialect(DialectPostgreSQL, query)
+	bounded, ok := sequel.SanitizeWithOptions(query, SanitizeOptions{Dialect: DialectPostgreSQL, MaxQueryTextBytes: 32 * 1024})
 	if !ok || !bounded.Truncated || len(bounded.Text) != 32*1024 || !utf8.ValidString(bounded.Text) {
 		t.Fatalf("bounded result: length=%d truncated=%v ok=%v", len(bounded.Text), bounded.Truncated, ok)
 	}
@@ -65,7 +65,7 @@ func TestQueryTextDefault32KiBAndUncappedOption(t *testing.T) {
 		t.Fatalf("uncapped result: length=%d truncated=%v ok=%v", len(uncapped.Text), uncapped.Truncated, ok)
 	}
 	meta := InspectDialect(MustNamer("app.storage"), "", query, nil, DialectPostgreSQL)
-	if !meta.QueryTextTruncated || len(meta.SanitizedSQL) != 32*1024 || meta.StatementCount != 1 {
+	if meta.QueryTextTruncated || len(meta.SanitizedSQL) <= 32*1024 || meta.StatementCount != 1 {
 		t.Fatalf("metadata: length=%d truncated=%v count=%d", len(meta.SanitizedSQL), meta.QueryTextTruncated, meta.StatementCount)
 	}
 }

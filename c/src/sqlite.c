@@ -73,8 +73,10 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
   sequel_inspect(sql, &a->options.sql, &metadata);
   char span_name[256];
   int n = snprintf(span_name, sizeof(span_name), "%s.%s", a->prefix, name);
-  if (n < 0 || (size_t)n >= sizeof(span_name))
+  if (n < 0 || (size_t)n >= sizeof(span_name)) {
+    sequel_metadata_free(&metadata);
     return 0;
+  }
   otlp_span_t *span = NULL;
   if ((h->options.signals & GOTEL_TRACES) && !(parent.valid && !parent.sampled))
     span = otlp_tracer_start_span(h->tracer, gotel_span_name(h, span_name));
@@ -83,6 +85,7 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
     gotel_sql_attributes_with_limit(span, &metadata, "sqlite", a->options.namespace_name,
                                     (size_t)sqlite3_bind_parameter_count(statement),
                                     a->options.sql.max_query_text_bytes);
+    gotel_sql_diagnostics(span, sql, SEQUEL_SQLITE);
     if (parent.valid && parent.sampled) {
       otlp_span_set_trace_id(span, parent.trace_id);
       otlp_span_set_parent_span_id(span, parent.span_id);
@@ -111,6 +114,7 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
       otlp_metric_free(m);
     }
   }
+  sequel_metadata_free(&metadata);
   return 0;
 }
 otlp_status_t gotel_sqlite_attach(gotel_host_t *h, sqlite3 *db, const char *prefix, const gotel_query_t *queries,

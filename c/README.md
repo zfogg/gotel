@@ -226,14 +226,28 @@ It never uses expanded SQL or reads bind values. Malformed quoting fails closed.
 `summary` is a structural skeleton of CTEs, sources, aliases, joins, nested
 queries, clauses and row bounds, `operation` is the first SQL verb, and
 `statement_count` counts nonempty top-level statements in the call. Text
-defaults to 32768 bytes, independently of the 32768-byte summary budget; both stay
-on UTF-8 boundaries. Static integer row bounds may appear in the summary but
-are sanitized in query text. Input is limited to 1 MiB and structural recursion
+defaults to `SEQUEL_TEXT_MAX` (1 GiB), independently of the
+`SEQUEL_SUMMARY_MAX` (1 GiB) summary budget; both stay on UTF-8 boundaries.
+Storage grows with actual output rather than reserving these budgets. Release
+every inspected metadata value with `sequel_metadata_free`, including failed
+inspections, before reuse. Static integer row bounds may appear in the summary but
+are sanitized in query text. Input is limited to `SEQUEL_INPUT_MAX` (1 GiB) and structural recursion
 to 64 levels. This is a telemetry parser, not SQL syntax validation or execution.
 `sequel_sanitize` exposes the same fail-closed text scanner with a caller-sized
 buffer; Go uses it for custom and uncapped query-text policies. Both APIs scan
 every statement and reject a malformed later statement without emitting text.
 Semicolons in quoted content or comments do not increase `statement_count`.
+
+`gotel_sql_diagnostics(span, original_sql, dialect)` records lexical and delimiter
+issues in `db.query.diagnostics`, even when query text is omitted. The attribute
+is an empty string array for clean input, or an array of JSON strings containing
+diagnostic codes, severity, byte offsets, line/column ranges, completion state,
+messages, explanations and hints. Spaniel decodes these entries into objects.
+The payload never includes SQL snippets or bind values. Call it after
+`gotel_sql_attributes`, which can only diagnose its already sanitized input.
+The SQLite adapter does this automatically using `sqlite3_sql`, never expanded
+SQL. SQLite rejects malformed statements during preparation before its trace
+callbacks run; applications can use this helper to diagnose those failed attempts.
 In the sequel repository, the implementation is split under `src/sql/`: `scanner.c`, `summary.c`,
 `api.c`, and `common.c` are included by `main.c`. CMake compiles only `main.c`;
 the Go cgo package includes the same file, so it runs the identical parser.
@@ -411,7 +425,7 @@ scope, recover deadlocks, handle fatal signals, or survive a blocked tick owner.
 preserving comments, quoted contents, identifiers, and bind placeholders. It
 never executes SQL or substitutes values. Measure with `out=NULL, capacity=0`,
 then allocate `length+1` bytes. Input and output must not overlap. On errors,
-the output is emptied. Input is limited to 1 MiB, 65536 tokens, and 64 nested
+the output is emptied. Input is limited to 1 GiB and 64 nested
 groups. This is intentionally a formatter, not a SQL syntax validator.
 
 The SQLite adapter and `gotel_sql_attributes` format sanitized `db.query.text`

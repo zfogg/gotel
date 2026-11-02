@@ -236,3 +236,18 @@ and target table, so separate SQL definitions stay distinguishable.
 Go consumers use `sqltrace.StorageNamer("postgresql")` with pgx/GORM
 instrumentation. C SQLite consumers pass `"storage.sqlite"` as the attachment
 prefix. Custom namespaces remain explicit overrides in all adapters.
+
+
+## Structured database diagnostics
+
+SQL spans include `db.query.diagnostics` for the original SQL, even when query
+text collection is disabled or sanitization rejects the input. Clean SQL emits
+an empty array. A lexical or delimiter issue emits a JSON diagnostic entry with
+its code, severity, UTF-8 byte range, line/column range, completion state,
+explanation and hint. The current Sequel checker reports the first issue; it
+does not validate database grammar or execute a query.
+
+OTel SDKs transport entries as a string array containing JSON objects; Spaniel
+normalizes this into an array of structured objects in stored/API span attributes.
+Diagnostic text never includes raw SQL or bind values. Use Sequel's `Diagnose`
+(Go) or `diagnose` (Python) directly for SQL editing and validation feedback.

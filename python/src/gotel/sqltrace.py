@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import re
 import time
 from collections.abc import Awaitable, Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import asdict
 from typing import ParamSpec, TypeVar
 
 import sequel
@@ -66,10 +68,13 @@ def call_sync(operation: str, execute: Callable[_P, _T], /, *args: _P.args, **kw
 
 
 def _attributes(sql, dialect, system, namespace, policy):
-    attrs = {"db.system.name": system}
+    attrs = {"db.system.name": system, "db.query.diagnostics": []}
     if namespace:
         attrs["db.namespace"] = namespace
     try:
+        diagnostic = sequel.diagnose(sql, dialect=dialect)
+        if diagnostic.code != "none":
+            attrs["db.query.diagnostics"] = [json.dumps(asdict(diagnostic), separators=(",", ":"))]
         query = sequel.inspect(sql, dialect=dialect, **policy)
     except (sequel.SQLInspectionError, TypeError):
         return attrs  # No raw SQL, exception text, or partial template on failure.
@@ -79,7 +84,10 @@ def _attributes(sql, dialect, system, namespace, policy):
     if query.text:
         # Keep the complete bounded template when layout would expand past the
         # collection cap. Formatting must not introduce silent truncation.
-        limit = policy.get("max_query_text_bytes", 32768) or 32768
+        limit = (
+            policy.get("max_query_text_bytes", sequel.DEFAULT_MAX_QUERY_TEXT_BYTES)
+            or sequel.DEFAULT_MAX_QUERY_TEXT_BYTES
+        )
         formatted = query.text if query.truncated else sequel.format_sql_or_original(query.text, dialect=dialect)
         attrs["db.query.text"] = formatted if len(formatted.encode()) <= limit else query.text
     if query.truncated:

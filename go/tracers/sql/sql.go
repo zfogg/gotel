@@ -5,6 +5,7 @@ package sql
 import (
 	"container/list"
 	"context"
+	"encoding/json"
 	"fmt"
 	"runtime"
 	"strings"
@@ -23,6 +24,9 @@ const (
 	QueryTextKey = attribute.Key("db.query.text")
 	// QuerySummaryKey contains a bounded operation-and-table SQL summary.
 	QuerySummaryKey = attribute.Key("db.query.summary")
+	// QueryDiagnosticsKey carries JSON-encoded Sequel diagnostics in a string array.
+	// Clean SQL emits an empty array. Spaniel exposes the entries as objects.
+	QueryDiagnosticsKey = attribute.Key("db.query.diagnostics")
 	// BindCountKey contains the number of bind arguments without colliding with
 	// db.query.parameter.<key>, which is reserved for actual parameter values.
 	BindCountKey = attribute.Key("gotel.db.query.bind_count")
@@ -177,6 +181,7 @@ type inspectionCacheKey struct {
 }
 
 type inspectionCacheValue struct {
+	diagnostic     sequel.Diagnostic
 	formattedSQL   string
 	operation      string
 	summary        string
@@ -357,6 +362,9 @@ type Metadata struct {
 	ArgumentCount int
 	// StatementCount excludes empty statements and ignores semicolons in literals or comments.
 	StatementCount int
+	// Diagnostics contains the first lexical/delimiter issue from the original SQL,
+	// or an empty array when none was found. Messages never contain input SQL.
+	Diagnostics []sequel.Diagnostic
 }
 
 // Inspect extracts sqlc names, SQL operation, a sanitized template, and the
@@ -381,6 +389,7 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	key := inspectionCacheKey{statement: statement, dialect: options.Dialect, maxBytes: options.MaxQueryTextBytes, collapse: options.CollapseInLists, omit: options.OmitQueryText}
 	cached, ok := inspections.get(key)
 	if !ok {
+		cached.diagnostic = sequel.Diagnose(options.Dialect, statement)
 		cached.summary, cached.operation, cached.sanitized, cached.statementCount, _ = sequel.Inspect(statement, options)
 		cached.formattedSQL = sequel.FormatSQLOrOriginal(options.Dialect, cached.sanitized.Text)
 		if options.MaxQueryTextBytes > 0 && len(cached.formattedSQL) > options.MaxQueryTextBytes {
@@ -410,12 +419,22 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	if qualified == "" {
 		qualified = namer.Name(normalizeSimpleName(simple))
 	}
-	return Metadata{formattedSQL: cached.formattedSQL, Name: qualified, Summary: cached.summary, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args), StatementCount: cached.statementCount}
+	diagnostics := make([]sequel.Diagnostic, 0, 1)
+	if cached.diagnostic.Code != "none" {
+		diagnostics = append(diagnostics, cached.diagnostic)
+	}
+	return Metadata{formattedSQL: cached.formattedSQL, Name: qualified, Summary: cached.summary, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args), StatementCount: cached.statementCount, Diagnostics: diagnostics}
 }
 
 // Attributes returns standard database attributes plus safe query metadata.
 func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
 	attrs := []attribute.KeyValue{BindCountKey.Int(m.ArgumentCount), StatementCountKey.Int(m.StatementCount)}
+	diagnostics := make([]string, len(m.Diagnostics))
+	for i, diagnostic := range m.Diagnostics {
+		encoded, _ := json.Marshal(diagnostic)
+		diagnostics[i] = string(encoded)
+	}
+	attrs = append(attrs, QueryDiagnosticsKey.StringSlice(diagnostics))
 	if m.Summary != "" {
 		attrs = append(attrs, QuerySummaryKey.String(m.Summary))
 	}

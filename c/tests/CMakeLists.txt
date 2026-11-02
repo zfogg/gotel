@@ -52,6 +52,11 @@ if(GOTEL_BUILD_TESTS)
   add_test(NAME gotel-resource COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/resource_test.py $<TARGET_FILE:gotel-resource-probe>)
 
+  add_executable(gotel-sql-probe sql_probe.c)
+  target_link_libraries(gotel-sql-probe PRIVATE gotel::testing)
+  add_test(NAME gotel-sql COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/sql_test.py $<TARGET_FILE:gotel-sql-probe>)
+
   if(GOTEL_WITH_SQLITE)
     add_executable(gotel-sqlite-probe sqlite_probe.c)
     target_link_libraries(gotel-sqlite-probe PRIVATE gotel::testing)
@@ -67,7 +72,7 @@ if(GOTEL_BUILD_TESTS)
   add_test(NAME gotel-python-testing COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/test_testing.py)
   add_test(NAME gotel-wire COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/wire.py $<TARGET_FILE:gotel-test> ${GOTEL_WITH_SQLITE} ${CMAKE_BUILD_TYPE})
+    ${CMAKE_CURRENT_SOURCE_DIR}/wire.py $<TARGET_FILE:gotel-test> ${GOTEL_WITH_SQLITE} $<CONFIG>)
 
   if(WIN32)
     get_property(_gotel_tests DIRECTORY PROPERTY TESTS)

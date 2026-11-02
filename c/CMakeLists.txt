@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(gotel VERSION 0.12.0 LANGUAGES C)
+project(gotel VERSION 0.13.0 LANGUAGES C)
 option(GOTEL_BUILD_DOCS "Enable API documentation and publication targets" OFF)
 if(GOTEL_BUILD_DOCS)
   include(../docs/targets.cmake)
@@ -17,7 +17,7 @@ include(cmake/TextDependencies.cmake)
 if(NOT TARGET sequel::sequel)
   FetchContent_Declare(sequel
     GIT_REPOSITORY https://github.com/zfogg/sequel.git
-    GIT_TAG 67601263c947c6344aaf5f243d87709a3d07f68d)
+    GIT_TAG 77a21f8c8dee0672609b5a9be3a0958e1871fe07)
   FetchContent_MakeAvailable(sequel)
 endif()
 

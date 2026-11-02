@@ -1,6 +1,6 @@
 {
   "name": "@zfogg/gotel",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Reusable OpenTelemetry conventions for Go, C, Python, and TypeScript applications",
   "license": "MIT",
   "type": "module",
@@ -18,8 +18,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepack": "pnpm build",
-    "test": "vitest run",
-    "check": "tsc -p tsconfig.json --noEmit && vitest run"
+    "test": "vitest run typescript",
+    "check": "tsc -p tsconfig.json --noEmit && vitest run typescript"
   },
   "peerDependencies": {
     "@opentelemetry/api": ">=1.9.0 <1.10.0",

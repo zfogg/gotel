@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## v0.13.0
+
+- Move Go instrumentation to `github.com/zfogg/gotel/go/tracers/{http,sql,gorm,pgx,mcp,redis,temporal,processor}`.
+  Package names match their last path component; migrate imports and use aliases
+  when they overlap with standard library or client packages.
+- Upgrade Sequel to shared 1 GiB SQL input, text and summary byte limits and
+  dynamically growing token storage. C inspection metadata now requires
+  `sequel_metadata_free` after use; language bindings handle this automatically.
+- Emit `db.query.diagnostics` on SQL spans: an empty string array for clean SQL,
+  otherwise JSON-encoded structured Sequel diagnostic results for the original
+  SQL. Spaniel normalizes the transport entries into objects. Messages, explanations
+  and hints exclude SQL literals and bind values, including on failed sanitization.
+
 ## v0.12.0
 
 - Extract SQL formatting, sanitization, summaries, native code, language bindings,

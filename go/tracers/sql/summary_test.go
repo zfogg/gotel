@@ -24,7 +24,7 @@ func TestSummaryPoliciesAndBounds(t *testing.T) {
 		t.Fatalf("summary depends on query text truncation: %+v", m)
 	}
 	summary := sequel.Summary(DialectPostgreSQL, "SELECT * FROM "+strings.Repeat("表", 12000))
-	if len(summary) > DefaultMaxSummaryBytes || !utf8.ValidString(summary) || !strings.HasSuffix(summary, "…") {
+	if len(summary) > DefaultMaxSummaryBytes || !utf8.ValidString(summary) || !strings.HasSuffix(summary, strings.Repeat("表", 12000)) {
 		t.Fatalf("unbounded/invalid summary: %q", summary)
 	}
 	if got := sequel.Summary(DialectGeneric, "SELECT * FROM a,b,c,d,e,f,g"); got != "SELECT … FROM a, b, c, d, e, f, g" {
