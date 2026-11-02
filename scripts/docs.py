@@ -108,17 +108,20 @@ MIT licensed.</footer></main></body></html>\n''',
     for language in CONFIG["languages"]:
         for page in (output / language).rglob("*.html"):
             text = page.read_text(encoding="utf-8")
-            if 'id="language-nav"' in text:
-                continue
             prefix = "../" * len(page.relative_to(output).parent.parts)
             links = f'<a href="{prefix}index.html">{CONFIG["name"]} docs</a>' + "".join(
-                f'<a href="{prefix}{key}/">{label}</a>' for key, label in CONFIG["languages"].items()
+                f'<a href="{prefix}{key}/"' + (' aria-current="page"' if key == language else "") + f">{label}</a>"
+                for key, label in CONFIG["languages"].items()
             )
+            nav = f'<nav id="language-nav" aria-label="Documentation languages">{links}</nav>'
+            if 'id="language-nav"' in text:
+                text = re.sub(r'<nav id="language-nav".*?</nav>', nav, text, count=1, flags=re.DOTALL)
+                page.write_text(text, encoding="utf-8")
+                continue
             style = f'<link rel="stylesheet" href="{prefix}site.css">'
             text, closed_head = re.subn(r"</head>", style + "</head>", text, count=1, flags=re.IGNORECASE)
             if not closed_head:  # Golds uses HTML's optional closing tags.
                 text = re.sub(r"<body\b", style + "\n<body", text, count=1, flags=re.IGNORECASE)
-            nav = f'<nav id="language-nav" aria-label="Documentation languages">{links}</nav>'
             text, closed_body = re.subn(r"</body>", nav + "</body>", text, count=1, flags=re.IGNORECASE)
             if not closed_body:
                 text += nav + "\n"

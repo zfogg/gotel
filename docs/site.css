@@ -12,6 +12,7 @@ body.docs-home { margin:0; padding:0; background:var(--bg); color:var(--fg); fon
 .docs-home .language span,.docs-home footer { color:var(--muted); font-size:.9rem; }
 .docs-home a { color:var(--accent); }
 .docs-home pre { overflow:auto; padding:1.5rem; border:1px solid var(--line); border-radius:12px; background:var(--card); font-size:.9rem; }
-#language-nav { position:fixed; bottom:12px; left:12px; max-width:calc(100vw - 56px); z-index:10000; display:flex; gap:12px; flex-wrap:wrap; padding:10px 16px; border:1px solid #82938a; border-radius:10px; background:#182b23; box-shadow:0 3px 12px #0003; font:14px/1.5 system-ui,sans-serif; }
+#language-nav { position:fixed; top:auto; bottom:12px; left:auto; right:12px; width:max-content; height:auto; min-height:0; max-height:calc(100vh - 24px); max-width:calc(100vw - 24px); box-sizing:border-box; margin:0; z-index:10000; display:flex; align-items:center; gap:12px; flex-wrap:wrap; overflow:auto; padding:10px 16px; border:1px solid #82938a; border-radius:10px; background:#182b23; box-shadow:0 3px 12px #0003; font:14px/1.5 system-ui,sans-serif; }
 #language-nav a { color:#f0f7ee; text-decoration:none; }
 #language-nav a:hover { text-decoration:underline; }
+#language-nav a[aria-current="page"] { font-weight:700; text-decoration:underline; text-underline-offset:3px; }
