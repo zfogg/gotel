@@ -87,7 +87,7 @@ def assemble(output):
 <meta name="description" content="{description}"><title>{name} documentation</title>
 <link rel="stylesheet" href="site.css"></head><body class="docs-home"><main>
 <p class="eyebrow">Developer documentation</p><h1>{name}</h1><p class="lead">{description}</p>
-<div class="languages">{cards}</div><h2>One project. Every language.</h2>
+<div class="languages">{cards}</div>
 <p>Choose a language for its public types, functions and usage guidance.
 These references are generated from the source and published together on every main-branch update.</p>
 <p><a href="https://github.com/{repository}#readme">Getting started &amp; command-line guide</a> ·
