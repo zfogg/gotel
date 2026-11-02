@@ -114,13 +114,14 @@ MIT licensed.</footer></main></body></html>\n''',
             links = f'<a href="{prefix}index.html">{CONFIG["name"]} docs</a>' + "".join(
                 f'<a href="{prefix}{key}/">{label}</a>' for key, label in CONFIG["languages"].items()
             )
-            text = re.sub(r"</head>", f'<link rel="stylesheet" href="{prefix}site.css"></head>', text, count=1)
-            text = re.sub(
-                r"</body>",
-                f'<nav id="language-nav" aria-label="Documentation languages">{links}</nav></body>',
-                text,
-                count=1,
-            )
+            style = f'<link rel="stylesheet" href="{prefix}site.css">'
+            text, closed_head = re.subn(r"</head>", style + "</head>", text, count=1, flags=re.IGNORECASE)
+            if not closed_head:  # Golds uses HTML's optional closing tags.
+                text = re.sub(r"<body\b", style + "\n<body", text, count=1, flags=re.IGNORECASE)
+            nav = f'<nav id="language-nav" aria-label="Documentation languages">{links}</nav>'
+            text, closed_body = re.subn(r"</body>", nav + "</body>", text, count=1, flags=re.IGNORECASE)
+            if not closed_body:
+                text += nav + "\n"
             page.write_text(text, encoding="utf-8")
 
 
@@ -148,7 +149,10 @@ def verify_local(output):
     known = {}
     pages = list(output.rglob("*.html"))
     for page in pages:
-        for target in Links(page.read_text(encoding="utf-8")).targets:
+        text = page.read_text(encoding="utf-8")
+        if page.parent != output and ('id="language-nav"' not in text or "site.css" not in text):
+            raise ValueError(f"Missing shared navigation/styles: {page.relative_to(output)}")
+        for target in Links(text).targets:
             url = urlsplit(target)
             if url.scheme or url.netloc or not url.path:
                 continue
