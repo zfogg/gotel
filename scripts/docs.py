@@ -186,7 +186,7 @@ def verify_public(url, expected, wait):
                 entry = fetch(urljoin(url, f"{language}/")).decode()
                 if not entry or "language-nav" not in entry:
                     raise ValueError(f"Missing navigation at {language}/")
-                for path in ([smoke] if isinstance(smoke, str) else smoke):
+                for path in [smoke] if isinstance(smoke, str) else smoke:
                     page = fetch(urljoin(url, f"{language}/{path}")).decode()
                     if "language-nav" not in page:
                         raise ValueError(f"Missing API/navigation at {language}/{path}")
