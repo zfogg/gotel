@@ -1,5 +1,11 @@
 # gotel for Python
 
+[Documentation](https://zfogg.github.io/gotel/) ·
+[C API](https://zfogg.github.io/gotel/c/) ·
+[Python API](https://zfogg.github.io/gotel/python/) ·
+[Go API](https://zfogg.github.io/gotel/go/) ·
+[TypeScript API](https://zfogg.github.io/gotel/typescript/)
+
 A uv-managed package providing application-owned OpenTelemetry operation names,
 OTLP traces/logs/metrics, and SQL inspection using gotel's shared C engine.
 Requires Python 3.11 or newer. The distribution is `gotel`; imports use `gotel`.

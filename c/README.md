@@ -1,5 +1,11 @@
 # gotel
 
+[Documentation](https://zfogg.github.io/gotel/) ·
+[C API](https://zfogg.github.io/gotel/c/) ·
+[Python API](https://zfogg.github.io/gotel/python/) ·
+[Go API](https://zfogg.github.io/gotel/go/) ·
+[TypeScript API](https://zfogg.github.io/gotel/typescript/)
+
 The optional watchdog exports a copied parent metadata snapshot alongside its
 deadlock error child. Producers capture `gotel_current_span_snapshot()` before
 blocking and return it in `gotel_watchdog_snapshot_t.parent_snapshot` together

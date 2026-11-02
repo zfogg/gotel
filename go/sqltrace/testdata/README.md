@@ -1,5 +1,11 @@
 # SQL summary regression corpus
 
+[Documentation](https://zfogg.github.io/gotel/) ·
+[C API](https://zfogg.github.io/gotel/c/) ·
+[Python API](https://zfogg.github.io/gotel/python/) ·
+[Go API](https://zfogg.github.io/gotel/go/) ·
+[TypeScript API](https://zfogg.github.io/gotel/typescript/)
+
 `stonkpile/*.sql` is a snapshot of all 43 sqlc query files (540 named queries)
 from github.com/zfogg/stonkpile at commit
 `c8217e8103c39873eb78f378823d8d9a3c44bc95`, copied on 2026-10-20.

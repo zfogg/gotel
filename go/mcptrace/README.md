@@ -1,5 +1,11 @@
 # MCP telemetry
 
+[Documentation](https://zfogg.github.io/gotel/) ·
+[C API](https://zfogg.github.io/gotel/c/) ·
+[Python API](https://zfogg.github.io/gotel/python/) ·
+[Go API](https://zfogg.github.io/gotel/go/) ·
+[TypeScript API](https://zfogg.github.io/gotel/typescript/)
+
 `mcptrace` instruments the official `github.com/modelcontextprotocol/go-sdk/mcp`
 server. It records a server span, request counter, and duration histogram for each
 received method, including tool-result errors and panics. Panics are rethrown.

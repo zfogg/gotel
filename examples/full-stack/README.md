@@ -1,5 +1,11 @@
 # Browser â†’ Go â†’ C, collected by Spaniel
 
+[Documentation](https://zfogg.github.io/gotel/) ·
+[C API](https://zfogg.github.io/gotel/c/) ·
+[Python API](https://zfogg.github.io/gotel/python/) ·
+[Go API](https://zfogg.github.io/gotel/go/) ·
+[TypeScript API](https://zfogg.github.io/gotel/typescript/)
+
 This example follows one user action across three runtimes. A TypeScript page
 instruments `fetch`, the Go API handles `POST /api/count`, and the API starts a
 C word-count worker as a child process. The API passes W3C trace context to
