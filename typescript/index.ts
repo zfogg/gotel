@@ -14,6 +14,7 @@ import {
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web'
 import type { Attributes, Span } from '@opentelemetry/api'
 
+/** Inputs used to produce a bounded, application-qualified HTTP operation name. */
 export interface BrowserHttpSpanNameOptions {
   applicationOrigin: string
   method: string
@@ -21,6 +22,7 @@ export interface BrowserHttpSpanNameOptions {
   responseUrl: string
 }
 
+/** Fetch instrumentation options with Gotel naming and origin classification. */
 export type BrowserFetchInstrumentationOptions = Omit<
   FetchInstrumentationConfig,
   'applyCustomAttributesOnSpan' | 'requestHook'
@@ -29,6 +31,7 @@ export type BrowserFetchInstrumentationOptions = Omit<
   prefix: string
 }
 
+/** Name an HTTP client span without query strings, fragments or common path IDs. */
 export function browserHttpClientSpanName({
   applicationOrigin,
   method,
@@ -54,6 +57,7 @@ function boundedClientPath(path: string): string {
     .join('/')
 }
 
+/** Create standard OTel fetch instrumentation with bounded Gotel operation names. */
 export function createBrowserFetchInstrumentation({
   applicationOrigin = globalThis.location.origin,
   prefix,
@@ -85,6 +89,7 @@ export function createBrowserFetchInstrumentation({
   })
 }
 
+/** Browser provider, resource, batching, exporter and fetch configuration. */
 export interface BrowserTelemetryOptions {
   /** Omit prefix + "." from emitted span names; resources/scopes stay intact. */
   disableSpanNamePrefix?: boolean
@@ -119,15 +124,16 @@ export function withoutApplicationPrefix(exporter: SpanExporter, application: st
   }
 }
 
+/** Authentication state callback and the underlying application-owned exporter. */
 export interface AuthenticatedExporterOptions {
   authenticated: () => boolean
   exporter: SpanExporter
 }
 
-// AuthenticatedSpanExporter drops queued browser spans after logout while the
-// server independently enforces authentication on every export.
+/** Drops queued browser spans after logout. The server must still authenticate exports. */
 export class AuthenticatedSpanExporter implements SpanExporter {
   constructor(private readonly options: AuthenticatedExporterOptions) {}
+  /** Export while authenticated; otherwise complete successfully without sending. */
   export(spans: Parameters<SpanExporter['export']>[0], callback: Parameters<SpanExporter['export']>[1]) {
     if (!this.options.authenticated()) { callback({ code: 0 }); return }
     this.options.exporter.export(spans, callback)
@@ -136,6 +142,7 @@ export class AuthenticatedSpanExporter implements SpanExporter {
   forceFlush() { return this.options.exporter.forceFlush?.() ?? Promise.resolve() }
 }
 
+/** Merge service identity, environment and explicit attributes with default resources. */
 export function browserTelemetryResource(options: Pick<BrowserTelemetryOptions, 'serviceName' | 'serviceVersion' | 'environment' | 'attributes'>): Resource {
   return defaultResource().merge(resourceFromAttributes({
     'service.name': options.serviceName,
@@ -148,9 +155,10 @@ export function browserTelemetryResource(options: Pick<BrowserTelemetryOptions, 
 const providers = new Map<string, WebTracerProvider>()
 const unregister = new Map<string, () => void>()
 
-// startBrowserTelemetry owns the standard browser resource, provider, batch
-// processor, and fetch instrumentation. Applications retain exporter policy by
-// supplying traceExporter (for example, an authenticated exporter wrapper).
+/** Start browser resources, provider, batching and fetch instrumentation once per service.
+ * Applications may supply traceExporter to retain exporter policy. Clean up with
+ * shutdownBrowserTelemetry to unregister instrumentation and release the provider.
+ */
 export function startBrowserTelemetry({
   prefix,
   disableSpanNamePrefix = false,
@@ -185,6 +193,7 @@ export function startBrowserTelemetry({
   return provider
 }
 
+/** Unregister fetch instrumentation and shut down the cached service provider. */
 export async function shutdownBrowserTelemetry(serviceName: string): Promise<void> {
   const provider = providers.get(serviceName)
   if (!provider) return

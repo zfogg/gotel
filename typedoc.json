@@ -1,0 +1,12 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["typescript/index.ts"],
+  "tsconfig": "tsconfig.json",
+  "name": "Gotel TypeScript API",
+  "readme": "docs/typescript.md",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "disableSources": false,
+  "treatWarningsAsErrors": true,
+  "validation": {"invalidLink": true, "notExported": false}
+}

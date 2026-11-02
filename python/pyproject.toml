@@ -32,6 +32,9 @@ dev = [
     "ty>=0.0.91",
     "setuptools>=77",
 ]
+docs = [
+    "pdoc==16.0.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

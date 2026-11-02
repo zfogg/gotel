@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.24)
 project(gotel VERSION 0.12.0 LANGUAGES C)
+option(GOTEL_BUILD_DOCS "Enable API documentation and publication targets" OFF)
+if(GOTEL_BUILD_DOCS)
+  include(../docs/targets.cmake)
+endif()
 
 include(FetchContent)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)

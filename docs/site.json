@@ -1,0 +1,10 @@
+{
+  "name": "Gotel",
+  "package": "gotel",
+  "repository": "zfogg/gotel",
+  "description": "Shared OpenTelemetry conventions for C, Python, Go and TypeScript applications.",
+  "python_project": "python",
+  "go_directory": "go",
+  "languages": {"c": "C", "python": "Python", "go": "Go", "typescript": "TypeScript"},
+  "smoke": {"c": "gotel_8h.html", "python": "gotel.html", "go": "pkg/github.com/zfogg/gotel/go.html", "typescript": "functions/browserHttpClientSpanName.html"}
+}

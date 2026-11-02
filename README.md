@@ -1,5 +1,37 @@
 # gotel
 
+[Documentation](https://zfogg.github.io/gotel/) ·
+[C API](https://zfogg.github.io/gotel/c/) ·
+[Python API](https://zfogg.github.io/gotel/python/) ·
+[Go API](https://zfogg.github.io/gotel/go/) ·
+[TypeScript API](https://zfogg.github.io/gotel/typescript/)
+
+The hosted references use Doxygen, pdoc, Golds and TypeDoc with shared language
+navigation. To build them locally, install Doxygen, Go, uv and pnpm, then run:
+
+```sh
+pnpm install --frozen-lockfile
+cmake -S docs -B build/docs
+cmake --build build/docs --target docs --parallel 2
+uv run --project python python -m http.server 8000 --directory build/docs/site
+```
+
+Open `http://localhost:8000/`. This docs-only CMake project avoids configuring
+the C runtime and its native dependencies. Individual targets are `docs-c`,
+`docs-python`, `docs-go` and `docs-typescript`; `docs-site` assembles shared
+navigation and `docs-check` validates language entry points and page/asset links.
+The native C build also exposes them with `GOTEL_BUILD_DOCS=ON`.
+Set `DOCS_OUTPUT_DIR` to override the destination.
+
+The Documentation workflow checks pull requests and publishes `main` to GitHub
+Pages, then verifies the live language endpoints, API pages and deployed commit.
+After committing and pushing, `cmake --build build/docs --target docs-publish`
+uses authenticated GitHub CLI access to dispatch that workflow, wait and verify.
+Deployment is restricted to remote `main`; dispatch the workflow directly for
+other build-only refs.
+Generated HTML is not committed. Edit public source comments and the guides in
+`docs/` to update documentation.
+
 SQL layout formatting is provided by [sequel](https://github.com/zfogg/sequel):
 `sequel.FormatSQL(dialect, query)`
 returns formatted text and an error (the original text on error).

@@ -1,0 +1,64 @@
+name: Documentation
+run-name: "Documentation ${{ inputs.request_id || github.sha }}"
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: Publication request identifier (used by docs-publish)
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+          cache: false
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Configure documentation targets
+        run: cmake -S docs -B build/docs
+      - name: Build and validate every language
+        run: cmake --build build/docs --target docs --parallel 2
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/docs/site
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Deploy documentation
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify published entry points and API pages
+        run: python scripts/docs.py verify --url "${{ steps.deployment.outputs.page_url }}" --revision "${{ github.sha }}" --wait 180

@@ -1,3 +1,6 @@
+/** @file gotel.h
+ * @brief Public Gotel OpenTelemetry lifecycle and instrumentation.
+ */
 #ifndef GOTEL_H
 #define GOTEL_H
 #include <otlp-c/otlp.h>
@@ -24,7 +27,7 @@ typedef struct {
   bool valid, sampled, realtime;
 } gotel_context_t;
 
-/* Immutable metadata copied by the owning thread before it blocks. Contains no
+/** Immutable metadata copied by the owning thread before it blocks. Contains no
  * live span pointers; publishing it never ends or mutates the original scope. */
 typedef struct {
   gotel_context_t context;
@@ -33,27 +36,27 @@ typedef struct {
   char name[224];
 } gotel_span_snapshot_t;
 
-/* Optional lock-cycle watchdog, polled by the single tick owner on its own thread.
+/** Optional lock-cycle watchdog, polled by the single tick owner on its own thread.
  * Snapshot must be bounded, nonblocking, and release all application locks before
  * returning. False means unavailable, not healthy. No signal-handler use. */
 typedef struct {
   size_t blocked_threads;
   uint64_t wait_ns;
   bool limited;
-  gotel_context_t parent; /* Copied context of a blocked operation, or zero for root. */
+  gotel_context_t parent; /** Copied context of a blocked operation, or zero for root. */
   gotel_span_snapshot_t parent_snapshot;
 } gotel_watchdog_snapshot_t;
 typedef struct {
   bool (*snapshot)(void *context, gotel_watchdog_snapshot_t *output);
   void *context;
-  /* Runs on the tick owner after snapshot; must also be bounded/nonblocking. */
+  /** Runs on the tick owner after snapshot; must also be bounded/nonblocking. */
   void (*decorate)(void *context, gotel_scope_t *scope);
-  size_t operation, metric; /* Non-realtime operation and GAUGE catalog indices. */
+  size_t operation, metric; /** Non-realtime operation and GAUGE catalog indices. */
 } gotel_watchdog_options_t;
 
 typedef struct {
   otlp_exporter_opts_t exporter;
-  /* NULL uses system roots. A PEM bundle replaces system roots. Verification is always enabled. */
+  /** NULL uses system roots. A PEM bundle replaces system roots. Verification is always enabled. */
   const char *tls_ca_file;
   unsigned signals;
   double realtime_sample_rate;
@@ -65,11 +68,11 @@ typedef struct {
   size_t operation_count;
   const gotel_metric_t *metrics;
   size_t metric_count;
-  /* Structured exporter events may run on producer or exporter threads.
+  /** Structured exporter events may run on producer or exporter threads.
    * Callbacks must be thread-safe and must not reenter the exporter. */
   otlp_event_fn exporter_event;
   void *exporter_event_context;
-  /* Resource detection matches otelhost: host, OS, process and SDK identity.
+  /** Resource detection matches otelhost: host, OS, process and SDK identity.
    * Explicit exporter.resource_attributes override detected scalar attributes.
    * argv is copied at create; NULL discovers native process arguments. Supply
    * a redacted argv when command arguments may contain credentials. */
@@ -77,23 +80,23 @@ typedef struct {
   const char *const *argv;
   bool omit_command_args;
   bool disable_resource_detection;
-  /* Set by gotel_options_apply_env; enables signal-specific header overrides. */
+  /** Set by gotel_options_apply_env; enables signal-specific header overrides. */
   bool use_environment;
   gotel_watchdog_options_t watchdog;
-  /* NULL or "http/protobuf" (default), or "grpc" when built with GOTEL_WITH_GRPC.
+  /** NULL or "http/protobuf" (default), or "grpc" when built with GOTEL_WITH_GRPC.
    * gRPC endpoints are http(s)://host:port, without an HTTP signal path. */
   const char *protocol;
-  /* Omit application_name + "." from span names only. NULL application_name
+  /** Omit application_name + "." from span names only. NULL application_name
    * uses exporter.service_name. Disabled by default; metrics/scopes are unchanged. */
   bool disable_span_name_prefix;
   const char *application_name;
 } gotel_options_t;
-/* Options are copied; exporter strings/resources are copied during create.
+/** Options are copied; exporter strings/resources are copied during create.
  * The operation catalog and its names must remain alive until destroy. No internal threads.
  * Stop and join all producers before drain/destroy. Tick/drain: one owner only. */
 otlp_status_t gotel_create(const gotel_options_t *options, gotel_host_t **output);
 void gotel_destroy(gotel_host_t *host);
-/* Fixed catalogs bound cardinality. Record is thread-safe and allocates no memory;
+/** Fixed catalogs bound cardinality. Record is thread-safe and allocates no memory;
  * tick/drain snapshot cumulative values. Counter values must be nonnegative.
  * Catalogs must remain alive until destroy. Histograms require sorted finite bounds. */
 otlp_status_t gotel_metric_record(gotel_host_t *host, size_t metric, double value);
@@ -107,9 +110,9 @@ typedef struct {
   otlp_env_storage_t exporter;
   otlp_resource_attr_t resources[64];
 } gotel_env_storage_t;
-/* Apply standard OTEL environment variables over caller defaults. Storage must
+/** Apply standard OTEL environment variables over caller defaults. Storage must
  * live through gotel_create; create copies exporter strings and resources.
- * A base URL keeps its path prefix and gains /v1/<signal>. Apply explicit
+ * A base URL keeps its path prefix and gains `/v1/<signal>`. Apply explicit
  * application overrides after this call. Empty environment values are unset. */
 otlp_status_t gotel_options_apply_env(gotel_options_t *options, gotel_env_storage_t *storage,
                                       const char *default_base_endpoint);
@@ -127,7 +130,7 @@ typedef struct gotel_scope {
   size_t operation;
   bool active, attached, failed;
 } gotel_scope_t;
-/* An explicit parent can cross a queue/thread boundary by value. NULL inherits
+/** An explicit parent can cross a queue/thread boundary by value. NULL inherits
  * the current thread scope. Realtime roots sample independently of CLI spans. */
 void gotel_begin(gotel_host_t *host, gotel_scope_t *scope, size_t operation, const gotel_context_t *parent);
 void gotel_end(gotel_scope_t *scope);
@@ -135,11 +138,11 @@ void gotel_current_error(const char *type, const char *message);
 void gotel_error(gotel_scope_t *scope, const char *type, const char *message);
 gotel_context_t gotel_current_context(void);
 gotel_span_snapshot_t gotel_current_span_snapshot(void);
-/* Publishes an explicitly marked partial observation with the original IDs and
+/** Publishes an explicitly marked partial observation with the original IDs and
  * observation time as its end. A later normal completion may update that span.
  * No attributes are read from the live span on another thread. */
 otlp_status_t gotel_publish_span_snapshot(gotel_host_t *host, const gotel_span_snapshot_t *snapshot);
-/* Owned, sanitized CLI metadata. Initialize a zeroed value, reuse argc/argv in
+/** Owned, sanitized CLI metadata. Initialize a zeroed value, reuse argc/argv in
  * gotel_options_t, then attach it to the command scope. Both destinations copy
  * their values, so destroy after host creation and span attachment. Only the
  * supplied application/command names and long-option names are retained;
@@ -151,7 +154,7 @@ typedef struct {
 } gotel_command_args_t;
 otlp_status_t gotel_command_args_init(gotel_command_args_t *args, const char *application_name,
                                       const char *command_name, int argc, const char *const *argv);
-/* The default initializer sanitizes. With sanitize=false, init_ex copies argv
+/** The default initializer sanitizes. With sanitize=false, init_ex copies argv
  * verbatim, including the executable path and option values. */
 otlp_status_t gotel_command_args_init_ex(gotel_command_args_t *args, const char *application_name,
                                          const char *command_name, int argc, const char *const *argv, bool sanitize);
@@ -167,7 +170,7 @@ typedef enum {
 } gotel_command_value_t;
 typedef enum { GOTEL_COMMAND_REDACT, GOTEL_COMMAND_REMOVE } gotel_command_action_t;
 typedef struct {
-  const char *flag; /* Exact spelling, e.g. --password or -K. */
+  const char *flag; /** Exact spelling, e.g. --password or -K. */
   gotel_command_value_t value;
   gotel_command_action_t action;
 } gotel_command_rule_t;
@@ -175,12 +178,12 @@ typedef struct {
   gotel_command_redaction_t mode;
   const gotel_command_rule_t *rules;
   size_t rule_count;
-  /* Exact argument values to redact, including application-specific positionals.
+  /** Exact argument values to redact, including application-specific positionals.
    * Ignored in NONE mode. Does not match substrings or values inside flags. */
   const char *const *sensitive_values;
   size_t sensitive_value_count;
 } gotel_command_policy_t;
-/* REMOVE rules always apply, even in NONE mode. SELECTED redacts only matching
+/** REMOVE rules always apply, even in NONE mode. SELECTED redacts only matching
  * rules; ALL also hides arbitrary values and positionals. Required values consume
  * the next argument even if it starts with '-'. Optional separate values consume
  * only a following non-option. -- ends flag processing. Attached short values
@@ -194,14 +197,14 @@ otlp_status_t gotel_command_args_set_span(gotel_scope_t *scope, const gotel_comm
 
 void gotel_attr_string(gotel_scope_t *scope, const char *key, const char *value);
 void gotel_attr_int(gotel_scope_t *scope, const char *key, int64_t value);
-/* Explicit source metadata is available to adapters that already capture the
+/** Explicit source metadata is available to adapters that already capture the
  * original call site. The old six-argument symbol remains for existing binaries. */
 void gotel_log_at(gotel_host_t *host, otlp_severity_t severity, const char *body, const char *file, int line,
                   const char *function);
 void gotel_log(gotel_host_t *host, otlp_severity_t severity, const char *body, const char *file, int line,
                const char *function);
 
-/* Three arguments capture the call site in development builds. The legacy
+/** Three arguments capture the call site in development builds. The legacy
  * six-argument form accepts an existing location. Optimized builds omit both
  * forms' source locations so __FILE__ paths are not embedded by these calls.
  * Define GOTEL_LOG_SOURCE_ENABLED explicitly to override the NDEBUG default. */
@@ -226,7 +229,7 @@ void gotel_log(gotel_host_t *host, otlp_severity_t severity, const char *body, c
 #define gotel_log(...)                                                                                                 \
   GOTEL_LOG_DISPATCH(__VA_ARGS__, GOTEL_LOG_EXPLICIT, GOTEL_LOG_INVALID, GOTEL_LOG_INVALID, GOTEL_LOG_AUTO)            \
   (__VA_ARGS__)
-/* Safe bounded HTTP naming. Returns overflow rather than truncating identities.
+/** Safe bounded HTTP naming. Returns overflow rather than truncating identities.
  * Client URL excludes userinfo/query/fragment and normalizes common ID segments.
  * Server target is a caller-supplied route template, never a raw request path. */
 otlp_status_t gotel_http_name(char *output, size_t capacity, const char *prefix, bool server, const char *method,
@@ -244,13 +247,13 @@ typedef struct {
   const char *namespace_name;
   sequel_options_t sql;
 } gotel_sqlite_options_t;
-/* Explicitly owns sqlite3_trace_v2's single callback slot. Attach once before
+/** Explicitly owns sqlite3_trace_v2's single callback slot. Attach once before
  * use; detach after statements finish and before close/host destruction.
  * Queries/prefix must remain alive through detach. Close automatically detaches.
  * No expanded SQL is read. */
 otlp_status_t gotel_sqlite_attach(gotel_host_t *host, sqlite3 *db, const char *prefix, const gotel_query_t *queries,
                                   size_t count, gotel_sqlite_t **out);
-/* Options are copied; namespace_name has the same lifetime as prefix/queries.
+/** Options are copied; namespace_name has the same lifetime as prefix/queries.
  * The adapter always uses SQLite quoting; other SQL consumers use sql.h. */
 otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *host, sqlite3 *db, const char *prefix,
                                                const gotel_query_t *queries, size_t count,
