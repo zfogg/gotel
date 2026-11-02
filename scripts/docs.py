@@ -75,6 +75,7 @@ def build_typescript(output):
 
 def assemble(output):
     output.mkdir(parents=True, exist_ok=True)
+    version = revision()
     (output / "site.css").write_bytes((ROOT / "docs/site.css").read_bytes())
     name, description, repository = (html.escape(CONFIG[key]) for key in ("name", "description", "repository"))
     cards = "".join(
@@ -85,7 +86,7 @@ def assemble(output):
         f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="{description}"><title>{name} documentation</title>
-<link rel="stylesheet" href="site.css"></head><body class="docs-home"><main>
+<link rel="stylesheet" href="site.css?v={version}"></head><body class="docs-home"><main>
 <p class="eyebrow">Developer documentation</p><h1>{name}</h1><p class="lead">{description}</p>
 <div class="languages">{cards}</div>
 <p>Choose a language for its public types, functions and usage guidance.
@@ -116,9 +117,12 @@ MIT licensed.</footer></main></body></html>\n''',
             nav = f'<nav id="language-nav" aria-label="Documentation languages">{links}</nav>'
             if 'id="language-nav"' in text:
                 text = re.sub(r'<nav id="language-nav".*?</nav>', nav, text, count=1, flags=re.DOTALL)
+                text = re.sub(
+                    r'(href="[^"]*site\.css)(?:\?[^"]*)?(\")', lambda match: match[1] + f"?v={version}" + match[2], text
+                )
                 page.write_text(text, encoding="utf-8")
                 continue
-            style = f'<link rel="stylesheet" href="{prefix}site.css">'
+            style = f'<link rel="stylesheet" href="{prefix}site.css?v={version}">'
             text, closed_head = re.subn(r"</head>", style + "</head>", text, count=1, flags=re.IGNORECASE)
             if not closed_head:  # Golds uses HTML's optional closing tags.
                 text = re.sub(r"<body\b", style + "\n<body", text, count=1, flags=re.IGNORECASE)
