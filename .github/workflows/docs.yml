@@ -28,6 +28,8 @@ jobs:
           go-version-file: go/go.mod
           cache: false
       - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
       - name: Install Doxygen
         run: sudo apt-get update && sudo apt-get install -y doxygen
       - uses: pnpm/action-setup@v4

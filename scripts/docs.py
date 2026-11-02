@@ -2,8 +2,10 @@
 
 import argparse
 import html
+import importlib
 import json
 import os
+import pkgutil
 import re
 import subprocess
 import sys
@@ -31,10 +33,19 @@ def build_python(output):
     import pdoc
     import pdoc.render
 
-    pdoc.render.configure(docformat="markdown", show_source=True, footer_text=f"{CONFIG['name']} Python API")
-    pdoc.pdoc(CONFIG["package"], output_directory=output / "python")
-    # Serve the package API directly at /python/, rather than a meta-refresh page.
-    (output / "python/index.html").write_bytes((output / f"python/{CONFIG['package']}.html").read_bytes())
+    package = importlib.import_module(CONFIG["package"])
+    modules = [CONFIG["package"]] + sorted(
+        info.name
+        for info in pkgutil.walk_packages(package.__path__, package.__name__ + ".")
+        if all(not part.startswith("_") for part in info.name.split("."))
+    )
+    pdoc.render.configure(
+        docformat="markdown",
+        show_source=True,
+        footer_text=f"{CONFIG['name']} Python API",
+        template_directory=ROOT / "docs/pdoc",
+    )
+    pdoc.pdoc(*modules, output_directory=output / "python")
 
 
 def build_go(output):
@@ -128,7 +139,8 @@ class Links(HTMLParser):
 def verify_local(output):
     required = ["index.html", "site.css", "build.json", ".nojekyll"]
     for language, smoke in CONFIG["smoke"].items():
-        required.extend((f"{language}/index.html", f"{language}/{smoke}"))
+        required.append(f"{language}/index.html")
+        required.extend(f"{language}/{page}" for page in ([smoke] if isinstance(smoke, str) else smoke))
     for path in required:
         if not (output / path).is_file():
             raise ValueError(f"Missing documentation output: {path}")
@@ -174,9 +186,10 @@ def verify_public(url, expected, wait):
                 entry = fetch(urljoin(url, f"{language}/")).decode()
                 if not entry or "language-nav" not in entry:
                     raise ValueError(f"Missing navigation at {language}/")
-                page = fetch(urljoin(url, f"{language}/{smoke}")).decode()
-                if "language-nav" not in page:
-                    raise ValueError(f"Missing API/navigation at {language}/{smoke}")
+                for path in ([smoke] if isinstance(smoke, str) else smoke):
+                    page = fetch(urljoin(url, f"{language}/{path}")).decode()
+                    if "language-nav" not in page:
+                        raise ValueError(f"Missing API/navigation at {language}/{path}")
             print(f"Verified live documentation at {url} ({expected[:12]})", flush=True)
             return
         except (OSError, ValueError, KeyError) as error:

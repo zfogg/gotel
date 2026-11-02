@@ -6,5 +6,5 @@
   "python_project": "python",
   "go_directory": "go",
   "languages": {"c": "C", "python": "Python", "go": "Go", "typescript": "TypeScript"},
-  "smoke": {"c": "gotel_8h.html", "python": "gotel.html", "go": "pkg/github.com/zfogg/gotel/go.html", "typescript": "functions/browserHttpClientSpanName.html"}
+  "smoke": {"c": ["gotel_8h.html", "sql_8h.html", "testing_8h.html"], "python": ["gotel.html", "gotel/application.html", "gotel/otelhost.html", "gotel/httptrace.html", "gotel/sqltrace.html", "gotel/redistrace.html", "gotel/temporaltrace.html", "gotel/logging.html", "gotel/testing.html"], "go": ["pkg/github.com/zfogg/gotel/go.html", "pkg/github.com/zfogg/gotel/go/otelhost.html", "pkg/github.com/zfogg/gotel/go/sqltrace.html"], "typescript": "functions/browserHttpClientSpanName.html"}
 }
