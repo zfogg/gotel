@@ -25,6 +25,7 @@ class CacheStats:
     memory and max_bytes is the configured budget. Zero max_bytes disables
     retention; allocator bookkeeping is excluded.
     """
+
     hits: int
     misses: int
     evictions: int
@@ -224,8 +225,10 @@ def attributes(sql, dialect, system, namespace, policy):
     # cached success. Unknown/unhashable policy objects also skip retention.
     # Retain only plain immutable policy scalars; user objects can own arbitrary
     # allocations that sys.getsizeof cannot account for recursively.
-    cacheable = policy.get("cancelled") is None and type(sql) is str and all(
-        type(value) in {bool, int, str, type(None)} for value in policy.values()
+    cacheable = (
+        policy.get("cancelled") is None
+        and type(sql) is str
+        and all(type(value) in {bool, int, str, type(None)} for value in policy.values())
     )
     key = (sql, dialect, tuple(sorted(policy.items())))
     if cacheable:
