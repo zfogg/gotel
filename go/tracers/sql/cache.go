@@ -104,6 +104,7 @@ func (c *inspectionCache) put(key inspectionCacheKey, value inspectionCacheValue
 	}
 	// Detach small substrings from arbitrarily large caller allocations.
 	key.statement = strings.Clone(key.statement)
+	key.dialect = Dialect(strings.Clone(string(key.dialect)))
 	value.simple = strings.Clone(value.simple)
 	if old, ok := c.entries[key]; ok {
 		c.remove(old)
