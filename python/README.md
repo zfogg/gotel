@@ -199,6 +199,11 @@ and `beanaries.temporal.activity.execute.Fetch`. The optional
 
 ## Tests and source ownership
 
+Native psycopg/ClickHouse adapters, transaction/pool lifetimes, explicit outcomes,
+critical/realtime sampling and Temporal attempt/link metadata are documented in
+[the adapter guide](../docs/adapters.md). These modules preserve native driver
+arguments, results and errors; optional drivers remain application dependencies.
+
 `gotel.testing.Capture` provides isolated in-memory providers, an `application`,
 captured `spans`, and assertions for names, duplicate identities, and private values.
 Use separate captures per test; no global provider reset is needed.

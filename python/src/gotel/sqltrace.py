@@ -16,6 +16,7 @@ from opentelemetry import metrics, trace
 from opentelemetry.instrumentation.utils import is_instrumentation_enabled, suppress_instrumentation
 
 from .application import GotelApp
+from .outcomes import Outcome, apply, classify
 
 _operation: ContextVar[str | None] = ContextVar("gotel.sql.operation", default=None)
 _active: ContextVar[bool] = ContextVar("gotel.sql.active", default=False)
@@ -115,9 +116,12 @@ class Namer:
         system: str,
         namespace: str = "",
         dialect: sequel.Dialect = sequel.Dialect.GENERIC,
+        bind_count: int | None = None,
         **policy,
     ):
         attrs = _attributes(sql, dialect, system, namespace, policy)
+        if bind_count is not None:
+            attrs["gotel.db.query.bind_count"] = bind_count
         operation = operation or _operation.get() or "Query"
         if _batch.get():
             # One ORM flush can write several tables. Keep those query identities
@@ -140,16 +144,41 @@ class Namer:
             set_status_on_exception=False,
         ) as span:
             token = _active.set(True)
+            outcome = Outcome.SUCCESS
             try:
                 with suppress_instrumentation():
                     yield span
             except BaseException as exc:
-                span.set_attribute("error.type", type(exc).__qualname__)
-                span.set_status(trace.Status(trace.StatusCode.ERROR))
+                outcome = classify(exc)
+                apply(span, outcome, exc)
+                if outcome == Outcome.ERROR:
+                    # Native driver messages can contain SQL/bind values. Keep
+                    # validated SQLSTATE/numeric codes and positions only.
+                    try:
+                        state = getattr(exc, "sqlstate", None)
+                        code = getattr(exc, "code", None)
+                        if isinstance(state, str) and re.fullmatch(r"[0-9A-Z]{5}", state):
+                            span.set_attribute("db.response.status_code", state)
+                        elif isinstance(code, int) and 0 <= code <= 2147483647:
+                            span.set_attribute("db.response.status_code", str(code))
+                        position = getattr(getattr(exc, "diag", None), "statement_position", None)
+                        if (
+                            isinstance(position, str)
+                            and position.isascii()
+                            and position.isdigit()
+                            and len(position) <= 10
+                        ):
+                            span.set_attribute("db.response.error.position", int(position))
+                    except Exception:
+                        pass  # A driver's diagnostic accessor cannot replace its original exception.
                 raise
             finally:
+                if outcome == Outcome.SUCCESS:
+                    apply(span, outcome)
                 _active.reset(token)
-                self.duration.record(time.monotonic() - started, {"db.system.name": system})
+                self.duration.record(
+                    time.monotonic() - started, {"db.system.name": system, "operation.outcome": outcome.value}
+                )
 
 
 def instrument_sqlalchemy(
@@ -189,12 +218,17 @@ def instrument_sqlalchemy(
     def before(conn, cursor, statement, parameters, execution_context, executemany):
         if _active.get() or not is_instrumentation_enabled():
             return
+        binds = parameters
+        if executemany and isinstance(binds, (list, tuple)):
+            binds = binds[0] if binds else ()
+        bind_count = len(binds) if isinstance(binds, (dict, list, tuple)) else None
         scope = namer.query(
             execution_context.execution_options.get("gotel_query_name"),
             sql=statement,
             system=system,
             namespace=namespace,
             dialect=dialect,
+            bind_count=bind_count,
             **policy,
         )
         batch_token = _batch.set(

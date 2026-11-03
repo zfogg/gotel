@@ -13,7 +13,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/zfogg/gotel/go"
+	"github.com/zfogg/gotel/go/outcome"
 	sequel "github.com/zfogg/sequel/go"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -484,6 +484,7 @@ type SpanConfig struct {
 // DBSpan is a manually instrumented database operation. End must be called
 // exactly once after the database call finishes.
 type DBSpan struct {
+	once      sync.Once
 	span      trace.Span
 	started   time.Time
 	operation string
@@ -518,18 +519,21 @@ func (s *DBSpan) End(ctx context.Context, err error, rows int64) {
 	if s == nil || s.span == nil {
 		return
 	}
-	if rows >= 0 {
-		s.span.SetAttributes(attribute.Int64("db.response.returned_rows", rows))
-	}
-	result := "ok"
-	if err != nil {
-		result = "error"
-		s.span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
-	}
-	gotel.End(s.span, err)
-	if s.observe != nil {
-		s.observe(ctx, s.operation, result, time.Since(s.started))
-	}
+	s.once.Do(func() {
+		if rows >= 0 {
+			s.span.SetAttributes(attribute.Int64("db.response.returned_rows", rows))
+		}
+		completion := outcome.Classify(ctx, err)
+		result := string(completion)
+		if completion == outcome.Success {
+			result = "ok"
+		}
+		outcome.Apply(s.span, completion, err)
+		s.span.End()
+		if s.observe != nil {
+			s.observe(ctx, s.operation, result, time.Since(s.started))
+		}
+	})
 }
 
 func normalizeSimpleName(value string) string {

@@ -47,6 +47,10 @@ if(GOTEL_BUILD_TESTS)
   target_include_directories(gotel-command-test PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/otlp-tls ${otlp_c_SOURCE_DIR}/src)
   add_test(NAME gotel-command-args COMMAND gotel-command-test)
 
+  add_executable(gotel-policy-test policy_test.c)
+  target_link_libraries(gotel-policy-test PRIVATE gotel::testing)
+  add_test(NAME gotel-policy COMMAND gotel-policy-test)
+
   add_executable(gotel-resource-probe resource_probe.c)
   target_link_libraries(gotel-resource-probe PRIVATE gotel::testing)
   add_test(NAME gotel-resource COMMAND ${Python3_EXECUTABLE}
@@ -58,6 +62,10 @@ if(GOTEL_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/sql_test.py $<TARGET_FILE:gotel-sql-probe>)
 
   if(GOTEL_WITH_SQLITE)
+    add_executable(gotel-sqlite-prepare-probe sqlite_prepare_probe.c)
+    target_link_libraries(gotel-sqlite-prepare-probe PRIVATE gotel::testing)
+    add_test(NAME gotel-sqlite-prepare COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/sqlite_prepare_test.py $<TARGET_FILE:gotel-sqlite-prepare-probe>)
     add_executable(gotel-sqlite-probe sqlite_probe.c)
     target_link_libraries(gotel-sqlite-probe PRIVATE gotel::testing)
     add_test(NAME gotel-sqlite COMMAND ${Python3_EXECUTABLE}

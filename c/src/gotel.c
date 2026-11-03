@@ -132,6 +132,7 @@ otlp_status_t gotel_create(const gotel_options_t *o, gotel_host_t **out) {
   otlp_exporter_set_event_logger(h->exporter, o->exporter_event, o->exporter_event_context);
   atomic_init(&h->sequence, 0);
   atomic_init(&h->rate_window, 0);
+  atomic_init(&h->retained_window, 0);
   for (size_t i = 0; i < o->operation_count; ++i) {
     atomic_init(&h->measurements[i].count, 0);
     atomic_init(&h->measurements[i].errors, 0);
@@ -195,6 +196,60 @@ static bool sample(gotel_host_t *h, uint64_t now) {
   }
 }
 gotel_context_t gotel_current_context(void) { return current ? current->context : (gotel_context_t){0}; }
+
+gotel_context_t gotel_operation_parent(gotel_context_t parent, gotel_parent_mode_t mode) {
+  if (mode == GOTEL_PARENT_INDEPENDENT)
+    return (gotel_context_t){0};
+  if (mode == GOTEL_PARENT_BOUNDED && parent.valid)
+    parent.realtime = true;
+  return parent;
+}
+
+bool gotel_begin_retained(gotel_host_t *h, gotel_scope_t *s, size_t op, const gotel_context_t *explicit_parent) {
+  if (!s)
+    return false;
+  memset(s, 0, sizeof(*s));
+  if (!h || op >= h->options.operation_count || h->options.operations[op].realtime)
+    return false;
+  gotel_context_t parent = explicit_parent ? *explicit_parent : gotel_current_context();
+  if (parent.valid && parent.sampled) {
+    gotel_begin(h, s, op, &parent);
+    return s->active;
+  }
+  uint64_t second = (h->options.monotonic_ns() / UINT64_C(1000000000)) & UINT64_C(0xffffffff);
+  uint64_t old = atomic_load(&h->retained_window);
+  uint32_t cap = h->options.realtime_max_per_second ? h->options.realtime_max_per_second : 10;
+  for (;;) {
+    uint64_t used = (old >> 32) == second ? (old & UINT64_C(0xffffffff)) : 0;
+    if (used >= cap)
+      return false;
+    uint64_t next = (second << 32) | (used + 1);
+    if (atomic_compare_exchange_weak(&h->retained_window, &old, next))
+      break;
+  }
+  gotel_context_t root = {0};
+  gotel_begin(h, s, op, &root);
+  gotel_attr_int(s, "gotel.observation.retained", 1);
+  if (parent.valid && s->span) {
+    otlp_span_add_link(s->span, parent.trace_id, parent.span_id);
+  }
+  return s->active;
+}
+
+void gotel_outcome(gotel_scope_t *s, gotel_outcome_t result, const char *error_type) {
+  if (!s || !s->active)
+    return;
+  static const char *const names[] = {"success", "error", "cancelled", "deferred"};
+  if ((unsigned)result >= sizeof(names) / sizeof(names[0]))
+    result = GOTEL_OUTCOME_ERROR;
+  s->failed = result == GOTEL_OUTCOME_ERROR;
+  gotel_attr_string(s, "operation.outcome", names[result]);
+  if (s->span) {
+    otlp_span_set_status(s->span, s->failed ? OTLP_STATUS_CODE_ERROR : OTLP_STATUS_CODE_UNSET, "");
+    if (s->failed)
+      gotel_attr_string(s, "error.type", error_type ? error_type : "unknown");
+  }
+}
 gotel_span_snapshot_t gotel_current_span_snapshot(void) {
   gotel_span_snapshot_t snapshot = {0};
   if (!current || !current->active)
@@ -263,6 +318,7 @@ void gotel_begin(gotel_host_t *h, gotel_scope_t *s, size_t op, const gotel_conte
   if (sampled && (h->options.signals & GOTEL_TRACES)) {
     s->span = otlp_tracer_start_span(h->tracer, gotel_span_name(h, h->options.operations[op].name));
     if (s->span) {
+      otlp_span_set_attribute_string(s->span, "operation.outcome", "success");
       if (inherited) {
         otlp_span_set_trace_id(s->span, parent.trace_id);
         otlp_span_set_parent_span_id(s->span, parent.span_id);
@@ -307,6 +363,7 @@ void gotel_error(gotel_scope_t *s, const char *type, const char *message) {
   s->failed = true;
   if (!s->span)
     return;
+  gotel_attr_string(s, "operation.outcome", "error");
   otlp_span_set_status(s->span, OTLP_STATUS_CODE_ERROR, message);
   otlp_span_set_attribute_string(s->span, "error.type", type ? type : "unknown");
 }
