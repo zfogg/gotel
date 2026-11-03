@@ -115,8 +115,7 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
     otlp_span_mark_end(span);
     otlp_span_set_end_time(span, end);
     otlp_span_set_start_time(span, end >= duration ? end - duration : 0);
-    otlp_exporter_emit(h->exporter, span);
-    otlp_span_free(span);
+    gotel_submit_span(h, span);
   }
   if (h->options.signals & GOTEL_METRICS) {
     static const double bounds[] = {.0001, .0005, .001, .0025, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10};
@@ -235,8 +234,7 @@ static void prepare_failed(gotel_sqlite_t *a, const char *sql, int bytes, int re
     otlp_span_mark_end(span);
     otlp_span_set_end_time(span, end);
     otlp_span_set_start_time(span, end >= duration ? end - duration : 0);
-    otlp_exporter_emit(h->exporter, span);
-    otlp_span_free(span);
+    gotel_submit_span(h, span);
   }
   if (h->options.signals & GOTEL_METRICS) {
     static const double bounds[] = {.0001, .001, .01, .1, 1, 10};

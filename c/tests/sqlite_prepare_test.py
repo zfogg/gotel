@@ -1,7 +1,9 @@
 """Wire assertions for native SQLite preparation without duplicate successes."""
 
+import struct
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testing/python"))
@@ -45,3 +47,16 @@ with Collector() as collector:
             assert b"db.query.text" not in attributes if mode == "omit" else True
             assert protobuf(span[15][0])[3] == [2]
 print("SQLite prepare errors, byte bounds, tails, privacy, detach/close and PROFILE-only success passed")
+
+with tempfile.TemporaryDirectory() as directory:
+    path = Path(directory) / "sqlite.pb"
+    subprocess.run([sys.argv[1], str(path), "capture"], check=True, timeout=10)
+    payload = path.read_bytes()
+    spans = records([("/v1/traces", payload)], "/v1/traces")
+    assert len(spans) == 4
+    assert len([span for span in spans if span[5] == [b"fixture.storage.Good"]]) == 1
+    failures = [span for span in spans if attrs(span).get(b"operation.outcome") == b"error"]
+    assert len(failures) == 2, "prepare failures bypassed common capture submission"
+    for span in failures:
+        assert struct.unpack("<Q", span[8][0])[0] == 1700000000000000000, "submit overwrote explicit end time"
+    assert b"FAIL_SECRET" not in payload and b"LITERAL_SECRET" not in payload

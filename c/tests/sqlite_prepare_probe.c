@@ -17,6 +17,9 @@ int main(int argc, char **argv) {
   options.application_name = "fixture";
   options.exporter.service_name = "prepare-fixture";
   options.exporter.endpoint = argv[1];
+  bool capture_mode = !strcmp(argv[2], "capture");
+  if (capture_mode)
+    options.exporter.endpoint = "http://127.0.0.1:1/v1/traces";
   options.exporter.queue_capacity = 64;
   options.exporter.batch_ms = 1;
   options.exporter.flush_timeout_ms = 1000;
@@ -28,6 +31,11 @@ int main(int argc, char **argv) {
   gotel_test_clock_set(1000000000, 1700000000000000000ULL);
   gotel_host_t *host = NULL;
   CHECK(gotel_create(&options, &host) == OTLP_OK);
+  gotel_test_capture_t *capture = NULL;
+  if (capture_mode) {
+    capture = gotel_test_capture_create(1024 * 1024);
+    CHECK(capture && gotel_test_capture_attach(host, capture) == OTLP_OK);
+  }
   sqlite3 *db = NULL;
   CHECK(sqlite3_open(":memory:", &db) == SQLITE_OK);
   sqlite3_stmt *statement = NULL;
@@ -69,6 +77,16 @@ int main(int argc, char **argv) {
   CHECK(sqlite3_close(db) == SQLITE_OK);
   CHECK(gotel_sqlite_prepare(NULL, "SELECT 1", &statement) == SQLITE_MISUSE);
   CHECK(gotel_drain(host) == OTLP_OK);
+  if (capture) {
+    gotel_test_capture_detach(host);
+    const uint8_t *data = NULL;
+    size_t size = 0;
+    CHECK(gotel_test_capture_read(capture, &data, &size) == OTLP_OK);
+    FILE *output = fopen(argv[1], "wb");
+    CHECK(output && fwrite(data, 1, size, output) == size);
+    CHECK(fclose(output) == 0);
+    gotel_test_capture_destroy(capture);
+  }
   gotel_destroy(host);
   return 0;
 }
