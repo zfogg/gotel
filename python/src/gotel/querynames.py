@@ -227,6 +227,66 @@ def check_python(paths: Iterable[str | Path], config: PythonConfig = PythonConfi
                 self.generic_visit(node)
                 self.scope = previous
 
+            def visit_Lambda(self, node: ast.Lambda):
+                previous = self.scope
+                outer[node] = previous
+                bindings[node], imported[node] = {}, {}
+                self.scope = node
+                for arg in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs):
+                    bindings[node][arg.arg] = [None]
+                for arg in (node.args.vararg, node.args.kwarg):
+                    if arg:
+                        bindings[node][arg.arg] = [None]
+                self.generic_visit(node)
+                self.scope = previous
+
+            def comprehension(self, node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp):
+                previous = self.scope
+                outer[node] = previous
+                bindings[node], imported[node] = {}, {}
+                self.scope = node
+                for generator in node.generators:
+                    self.unknown_target(generator.target)
+                self.generic_visit(node)
+                self.scope = previous
+
+            def visit_ListComp(self, node: ast.ListComp):
+                self.comprehension(node)
+
+            def visit_SetComp(self, node: ast.SetComp):
+                self.comprehension(node)
+
+            def visit_DictComp(self, node: ast.DictComp):
+                self.comprehension(node)
+
+            def visit_GeneratorExp(self, node: ast.GeneratorExp):
+                self.comprehension(node)
+
+            def visit_Global(self, node: ast.Global):
+                for name in node.names:
+                    bindings[tree].setdefault(name, []).append(None)
+
+            def visit_Nonlocal(self, node: ast.Nonlocal):
+                for name in node.names:
+                    scope = outer.get(self.scope, tree)
+                    while name not in bindings[scope] and scope in outer:
+                        scope = outer[scope]
+                    bindings[scope].setdefault(name, []).append(None)
+
+            def visit_With(self, node: ast.With | ast.AsyncWith):
+                for item in node.items:
+                    if item.optional_vars:
+                        self.unknown_target(item.optional_vars)
+                self.generic_visit(node)
+
+            def visit_AsyncWith(self, node: ast.AsyncWith):
+                self.visit_With(node)
+
+            def visit_ExceptHandler(self, node: ast.ExceptHandler):
+                if node.name:
+                    bindings[self.scope].setdefault(node.name, []).append(None)
+                self.generic_visit(node)
+
             def unknown_target(self, target: ast.AST):
                 for child in ast.walk(target):
                     if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Store):
