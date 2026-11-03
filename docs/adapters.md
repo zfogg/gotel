@@ -123,6 +123,19 @@ unattached connections call SQLite directly. Attach/detach/close must be seriali
 with use of that connection. Duplicate attachment is rejected. CLOSE removes
 the registry entry; borrowed catalog/prefix/namespace lifetimes are unchanged.
 
+`gotel_sqlite_options_t.analysis` optionally points to unified Sequel options.
+Attach copies the struct; callback/userdata pointers remain borrowed through
+detach/close. The pointer itself is needed only during attach. NULL retains the
+existing text/format policy and omits source maps and bind descriptors while
+recording fingerprints, diagnostics and absence reasons. An explicit policy
+selects input/output/memory/work budgets, maps, descriptors and cancellation;
+zero limits preserve Sequel's defaults, including the 1 GiB input ceiling.
+The adapter forces SQLite dialect. Legacy `sql.omit_query_text` remains a privacy
+floor, and a nonzero legacy text limit further bounds the analysis display limit.
+Resource failure/cancellation suppresses unsafe metadata and never alters native
+SQLite results. Duration metrics use bounded operation/catalog names, without
+fingerprints, maps, bind descriptors, query templates or SQL summaries as labels.
+
 `gotel_operation_parent` is a pure copied-context helper: INHERIT preserves the
 parent, INDEPENDENT returns an invalid root, and BOUNDED marks a valid parent as
 owning one sampling decision across nested realtime stages. It allocates and

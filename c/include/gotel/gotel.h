@@ -331,6 +331,15 @@ typedef struct gotel_sqlite gotel_sqlite_t;
 typedef struct {
   const char *namespace_name;
   sequel_options_t sql;
+  /** Optional unified-analysis policy, copied during attach. NULL preserves
+   * legacy text/format policy and omits maps/bind descriptors. Non-NULL enables
+   * caller-selected budgets, maps, descriptors and cancellation. SQLite dialect
+   * is always forced. Legacy omit_query_text remains a privacy floor; a nonzero
+   * legacy text limit further bounds the analysis text limit. Callback/context
+   * pointers remain caller-owned and must live until detach/close; the options
+   * struct itself need only live through attach. Analysis failure never changes
+   * a driver's return code. No expanded SQL or bind values are read. */
+  const sequel_analysis_options_t *analysis;
 } gotel_sqlite_options_t;
 
 /** Explicitly owns sqlite3_trace_v2's single callback slot. Attach once before

@@ -204,3 +204,22 @@ func TestTransactionRetryBoundsAndOriginalFailure(t *testing.T) {
 		t.Fatal("cancellation retried or original error replaced")
 	}
 }
+
+func TestTransactionRetryPanicEndsAttemptAndPropagates(t *testing.T) {
+	tracer, r := lifecycleCapture(t)
+	failure := errors.New("PRIVATE panic payload")
+	func() {
+		defer func() {
+			if recover() != failure {
+				t.Fatal("panic changed")
+			}
+		}()
+		_ = tracer.Retry(context.Background(), RetryConfig{MaxAttempts: 3, Retryable: func(error) bool { return true }}, func(context.Context, int) error { panic(failure) })
+	}()
+	if len(r.Ended()) != 1 || r.Ended()[0].Status().Code != codes.Error {
+		t.Fatal("panic leaked attempt span")
+	}
+	if strings.Contains(fmt.Sprint(r.Ended()[0].Attributes(), r.Ended()[0].Events()), "PRIVATE") {
+		t.Fatal("panic payload leaked")
+	}
+}

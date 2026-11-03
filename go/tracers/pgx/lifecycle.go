@@ -252,8 +252,7 @@ func (t *Tracer) Retry(ctx context.Context, config RetryConfig, execute func(con
 		if st.span != nil {
 			st.span.SetAttributes(attribute.Int("db.transaction.attempt", attempt), attribute.Bool("db.transaction.retry", attempt > 1))
 		}
-		err := execute(spanCtx, attempt)
-		t.end(spanCtx, st, err, -1)
+		err := t.executeAttempt(spanCtx, st, execute, attempt)
 		if err == nil || attempt >= config.MaxAttempts || config.Retryable == nil || !config.Retryable(err) || outcome.Classify(ctx, err) == outcome.Cancelled || ctx.Err() != nil {
 			return err
 		}
@@ -271,6 +270,17 @@ func (t *Tracer) Retry(ctx context.Context, config RetryConfig, execute func(con
 			}
 		}
 	}
+}
+
+func (t *Tracer) executeAttempt(ctx context.Context, st spanState, execute func(context.Context, int) error, attempt int) (err error) {
+	defer func() {
+		if panicked := recover(); panicked != nil {
+			t.end(ctx, st, errors.New("transaction attempt panic"), -1)
+			panic(panicked)
+		}
+		t.end(ctx, st, err, -1)
+	}()
+	return execute(ctx, attempt)
 }
 
 var _ pgxpool.AcquireTracer = (*Tracer)(nil)

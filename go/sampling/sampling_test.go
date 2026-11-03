@@ -113,3 +113,13 @@ func TestRetainedObservationIndependentLinkedBounded(t *testing.T) {
 		}
 	}
 }
+
+func TestLimiterBoundsZeroValuedInjectedClock(t *testing.T) {
+	var limit limiter
+	if !limit.allow(time.Time{}, 1) || limit.allow(time.Time{}, 1) {
+		t.Fatal("zero clock reset the retention cap")
+	}
+	if !limit.allow(time.Time{}.Add(time.Second), 1) {
+		t.Fatal("zero clock did not advance")
+	}
+}

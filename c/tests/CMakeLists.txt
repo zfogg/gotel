@@ -68,6 +68,10 @@ if(GOTEL_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/sql_test.py $<TARGET_FILE:gotel-sql-probe>)
 
   if(GOTEL_WITH_SQLITE)
+    add_executable(gotel-sqlite-analysis-probe sqlite_analysis_probe.c)
+    target_link_libraries(gotel-sqlite-analysis-probe PRIVATE gotel::testing)
+    add_test(NAME gotel-sqlite-analysis COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/sqlite_analysis_test.py $<TARGET_FILE:gotel-sqlite-analysis-probe>)
     add_executable(gotel-sqlite-prepare-probe sqlite_prepare_probe.c)
     target_link_libraries(gotel-sqlite-prepare-probe PRIVATE gotel::testing)
     add_test(NAME gotel-sqlite-prepare COMMAND ${Python3_EXECUTABLE}

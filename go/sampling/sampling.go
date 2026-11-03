@@ -129,14 +129,16 @@ func (p *Policy) Description() string { return "gotel.policy(" + p.config.Delega
 
 type limiter struct {
 	sync.Mutex
-	window time.Time
-	count  uint32
+	window      time.Time
+	count       uint32
+	initialized bool
 }
 
 func (l *limiter) allow(now time.Time, cap uint32) bool {
 	l.Lock()
 	defer l.Unlock()
-	if l.window.IsZero() || now.Sub(l.window) >= time.Second {
+	if !l.initialized || now.Sub(l.window) >= time.Second {
+		l.initialized = true
 		l.window = now
 		l.count = 0
 	}
