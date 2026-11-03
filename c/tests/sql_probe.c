@@ -20,7 +20,8 @@ static bool cancel_analysis(void *unused) {
 
 static void emit_analysis(gotel_host_t *host, int index, const char *sql, sequel_analysis_options_t policy) {
   sequel_analysis_t analysis = {0};
-  sequel_analyze(sql, &policy, &analysis);
+  /* Fixture length is known before cancellation; _n need not scan a NUL tail. */
+  sequel_analyze_n(sql, strlen(sql), &policy, &analysis);
   gotel_scope_t scope;
   gotel_begin(host, &scope, 0, NULL);
   otlp_span_set_attribute_int(scope.span, "test.case", index);

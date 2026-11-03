@@ -74,6 +74,11 @@ C callers zero-initialize `sequel_analysis_options_t`, set the corresponding
 custom text cap when formatting expands the template. Attribute setters copy
 their input; the analysis remains caller-owned.
 
+When the caller already knows the byte length, prefer `sequel_analyze_n`: it
+preserves that length even if cancellation happens immediately. The C
+NUL-terminated wrapper polls cancellation while discovering length; an early
+failure reports only the discovered prefix, which can be zero.
+
 `gotel.db.query.source_map` is JSON:
 
 ```json

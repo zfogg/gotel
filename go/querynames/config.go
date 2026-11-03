@@ -6,6 +6,7 @@ import (
 	"context"
 	"go/ast"
 	"go/types"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -114,11 +115,11 @@ func matchesType(t types.Type, rule Type) bool {
 	if n == nil || n.Obj().Pkg() == nil || rule.Name != "" && n.Obj().Name() != rule.Name {
 		return false
 	}
-	path := n.Obj().Pkg().Path()
+	importPath := n.Obj().Pkg().Path()
 	if strings.HasSuffix(rule.Package, "/**") {
-		return strings.HasPrefix(path, strings.TrimSuffix(rule.Package, "**"))
+		return strings.HasPrefix(importPath, strings.TrimSuffix(rule.Package, "**"))
 	}
-	ok, _ := filepath.Match(rule.Package, path)
+	ok, _ := path.Match(rule.Package, importPath)
 	return ok
 }
 
@@ -140,14 +141,14 @@ func (c *checker) catalogType(t types.Type) bool {
 	return false
 }
 
-func matchPath(path string, patterns []string) bool {
-	path = filepath.ToSlash(path)
+func matchPath(filename string, patterns []string) bool {
+	filename = filepath.ToSlash(filename)
 	for _, pattern := range patterns {
-		if strings.HasSuffix(pattern, "/") && strings.Contains(path, pattern) {
+		if strings.HasSuffix(pattern, "/") && strings.Contains(filename, pattern) {
 			return true
 		}
-		for p := path; ; {
-			if ok, _ := filepath.Match(pattern, p); ok {
+		for p := filename; ; {
+			if ok, _ := path.Match(pattern, p); ok {
 				return true
 			}
 			i := strings.IndexByte(p, '/')

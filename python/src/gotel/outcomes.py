@@ -12,6 +12,7 @@ from opentelemetry import trace
 
 class Outcome(StrEnum):
     """Bounded completion values; these do not replace returned driver errors."""
+
     SUCCESS = "success"
     ERROR = "error"
     CANCELLED = "cancelled"
