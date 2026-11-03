@@ -26,10 +26,15 @@ struct gotel_host {
   atomic_uint_fast64_t sequence, rate_window;
   uint64_t last_metrics_ns, epoch_ns;
   uint64_t watchdog_poll_ns, watchdog_report_ns;
+  void (*span_observer)(void *context, gotel_host_t *host, const otlp_span_t *span);
+  void *span_observer_context;
 };
 
 /** Submit a completed span to the host exporter. */
 void gotel_emit_span(gotel_host_t *host, otlp_span_t *span);
+
+/** Observe, submit and free a span whose end timestamp is already set. */
+otlp_status_t gotel_submit_span(gotel_host_t *host, otlp_span_t *span);
 
 /** Populate the host resource with detected process and system metadata. */
 otlp_status_t gotel_resource_detect(gotel_host_t *host);
