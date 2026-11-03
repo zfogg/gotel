@@ -7,7 +7,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/redis/go-redis/v9 v9.21.0
-	github.com/zfogg/sequel v0.0.0-20261103011957-f85ed6484f4c
+	github.com/zfogg/sequel v0.0.0-20261103014322-b9b9db190fd3
 	go.opentelemetry.io/contrib/bridges/otelslog v0.19.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.69.0

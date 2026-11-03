@@ -18,6 +18,18 @@ from ._sqlanalysis import attributes as _analysis_attributes
 from ._sqlanalysis import configure_inspection_cache as configure_inspection_cache
 from ._sqlanalysis import inspection_cache_stats as inspection_cache_stats
 from .application import GotelApp
+
+__all__ = [
+    "CacheStats",
+    "Namer",
+    "call",
+    "call_sync",
+    "configure_inspection_cache",
+    "inspection_cache_stats",
+    "instrument_sqlalchemy",
+    "name",
+    "storage_prefix",
+]
 from .outcomes import Outcome, apply, classify
 
 _operation: ContextVar[str | None] = ContextVar("gotel.sql.operation", default=None)
