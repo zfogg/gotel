@@ -110,6 +110,27 @@ def run(db):
     assert "duplicate_site" in {issue.code for issue in check_python([path]).issues}
 
 
+def test_python_comprehension_lambda_and_global_writes_cannot_authorize_names(tmp_path):
+    path = write(
+        tmp_path,
+        "queries.py",
+        """
+from gotel import sqltrace as sql
+OPERATION = "LooksStatic"
+def mutate(value):
+    global OPERATION
+    OPERATION = value
+def run(db, names):
+    [sql.call(OPERATION, db.execute, "SELECT 1") for OPERATION in names]
+    invoke = lambda OPERATION: sql.call(OPERATION, db.execute, "SELECT 1")
+    sql.call(OPERATION, db.execute, "SELECT 1")
+""",
+    )
+    report = check_python([path])
+    assert report.count == 3
+    assert [issue.code for issue in report.issues] == ["unnamed"] * 3
+
+
 def test_registry_bounds_and_identity():
     registry = Registry(1)
     registry.observe("Read", "SELECT 1")
