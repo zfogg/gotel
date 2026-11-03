@@ -48,7 +48,7 @@ with Collector() as collector:
         assert isinstance(diagnostics, list)
         if case >= 8:
             assert attributes["gotel.db.query.diagnostic_schema_version"] == 1
-            assert attributes["gotel.db.query.original_length"] > 0
+            assert attributes["gotel.db.query.original_length"] > 0, (case, attributes)
             if case == 8:
                 assert attributes["gotel.db.query.fingerprint"].startswith("sequel:v1:postgresql:")
                 envelope = json.loads(attributes["gotel.db.query.source_map"])
