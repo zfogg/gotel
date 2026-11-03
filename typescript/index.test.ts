@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-import { browserHttpClientSpanName, createBrowserFetchInstrumentation } from "./index";
+import { browserHttpClientSpanName, createBrowserFetchInstrumentation, withoutPrivateHttpUrls } from "./index";
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 
 describe("browserHttpClientSpanName", () => {
@@ -104,6 +104,41 @@ describe('optional application span prefix', () => {
     expect(exported.spanContext()).toEqual(span.spanContext());
     expect(exported.instrumentationScope.name).toBe('demo/http');
     expect((span as unknown as {name:string}).name).toBe('demo.http.client.GET example.com/items');
+    await provider.shutdown();
+  });
+});
+
+describe('browser URL privacy', () => {
+  it('sanitizes exported URL attributes and events without mutating recorded spans', async () => {
+    const { InMemorySpanExporter, SimpleSpanProcessor } = await import('@opentelemetry/sdk-trace-base');
+    const output = new InMemorySpanExporter();
+    const provider = new WebTracerProvider({spanProcessors:[new SimpleSpanProcessor(withoutPrivateHttpUrls(output))]});
+    const original = 'https://user:password@api.example/items/123?token=secret#private';
+    const span = provider.getTracer('browser').startSpan('fetch', {attributes:{
+      'url.full': original, 'http.url': original, 'url.query': 'token=secret',
+      'url.fragment': 'private', 'http.target': '/items/123?token=secret#private', 'http.response.status_code': 200,
+    }});
+    span.addEvent('redirect', {'url.full': original});
+    span.end();
+    await provider.forceFlush();
+    const exported = output.getFinishedSpans()[0];
+    expect(exported.attributes).toEqual({
+      'url.full': 'https://api.example/items/123', 'http.url': 'https://api.example/items/123',
+      'http.target': '/items/123', 'http.response.status_code': 200,
+    });
+    expect(exported.events[0].attributes).toEqual({'url.full': 'https://api.example/items/123'});
+    expect((span as unknown as {attributes:Record<string,unknown>}).attributes['url.full']).toBe(original);
+    expect(exported.spanContext()).toEqual(span.spanContext());
+    await provider.shutdown();
+  });
+
+  it.each(['not a URL with secret', 'data:text/plain,secret', 'javascript:secret'])('fails closed for %s', async value => {
+    const { InMemorySpanExporter, SimpleSpanProcessor } = await import('@opentelemetry/sdk-trace-base');
+    const output = new InMemorySpanExporter();
+    const provider = new WebTracerProvider({spanProcessors:[new SimpleSpanProcessor(withoutPrivateHttpUrls(output))]});
+    provider.getTracer('browser').startSpan('fetch', {attributes:{'url.full':value}}).end();
+    await provider.forceFlush();
+    expect(output.getFinishedSpans()[0].attributes['url.full']).toBe('[redacted]');
     await provider.shutdown();
   });
 });

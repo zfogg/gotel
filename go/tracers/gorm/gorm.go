@@ -168,6 +168,8 @@ type Config struct {
 	// Sanitize customizes the safe SQL template policy. Dialect is filled from
 	// the Dialect field when omitted.
 	Sanitize gotelsql.SanitizeOptions
+	// Analysis enables unified per-call budgets and optional bind descriptors.
+	Analysis *sequel.AnalysisOptions
 	// SpanKind defaults to client. INTERNAL is useful for embedded databases
 	// such as DuckDB that execute in the application process.
 	SpanKind trace.SpanKind
@@ -282,7 +284,19 @@ func (p *plugin) after(op string) func(*gorm.DB) {
 		if !ok {
 			return
 		}
-		metadata := gotelsql.InspectWithOptions(p.config.Namer, "", db.Statement.SQL.String(), db.Statement.Vars, p.config.Sanitize)
+		var metadata gotelsql.Metadata
+		if p.config.Analysis != nil {
+			options := *p.config.Analysis
+			if options.Context == nil {
+				options.Context = db.Statement.Context
+			}
+			if options.Dialect == "" {
+				options.Dialect = p.config.Dialect
+			}
+			metadata = gotelsql.InspectAnalysis(p.config.Namer, "", db.Statement.SQL.String(), db.Statement.Vars, options)
+		} else {
+			metadata = gotelsql.InspectWithOptions(p.config.Namer, "", db.Statement.SQL.String(), db.Statement.Vars, p.config.Sanitize)
+		}
 		// Preserve the name selected before GORM built SQL, but attach the final
 		// sanitized template and actual bind count.
 		attrs := metadata.Attributes(p.system(db), p.config.Namespace)

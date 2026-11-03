@@ -12,7 +12,7 @@ import {
   type ReadableSpan,
 } from '@opentelemetry/sdk-trace-base'
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web'
-import type { Attributes, Span } from '@opentelemetry/api'
+import { trace, type Attributes, type Span } from '@opentelemetry/api'
 
 /** Inputs used to produce a bounded, application-qualified HTTP operation name. */
 export interface BrowserHttpSpanNameOptions {
@@ -57,6 +57,51 @@ function boundedClientPath(path: string): string {
     .join('/')
 }
 
+function privateUrlRemoved(value: string): string {
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return '[redacted]'
+    url.username = ''
+    url.password = ''
+    url.search = ''
+    url.hash = ''
+    return url.href
+  } catch {
+    return '[redacted]'
+  }
+}
+
+function publicHttpAttributes(attributes: Attributes): Attributes {
+  const output = { ...attributes }
+  for (const key of ['url.full', 'http.url']) {
+    if (typeof output[key] === 'string') output[key] = privateUrlRemoved(output[key])
+  }
+  for (const key of ['url.query', 'url.fragment']) delete output[key]
+  if (typeof output['http.target'] === 'string') output['http.target'] = output['http.target'].split(/[?#]/, 1)[0]
+  return output
+}
+
+/** Remove URL credentials, queries and fragments at export, including attributes
+ * written after fetch hooks. Original spans and application requests stay intact.
+ */
+export function withoutPrivateHttpUrls(exporter: SpanExporter): SpanExporter {
+  return {
+    export(spans, callback) {
+      exporter.export(spans.map((span): ReadableSpan => {
+        const attributes = publicHttpAttributes(span.attributes)
+        const events = span.events.map(event => ({ ...event, attributes: event.attributes ? publicHttpAttributes(event.attributes) : undefined }))
+        return new Proxy(span, { get(target, property, receiver) {
+          if (property === 'attributes') return attributes
+          if (property === 'events') return events
+          return Reflect.get(target, property, receiver)
+        } })
+      }), callback)
+    },
+    shutdown: () => exporter.shutdown(),
+    forceFlush: () => exporter.forceFlush?.() ?? Promise.resolve(),
+  }
+}
+
 /** Create standard OTel fetch instrumentation with bounded Gotel operation names. */
 export function createBrowserFetchInstrumentation({
   applicationOrigin = globalThis.location.origin,
@@ -69,6 +114,9 @@ export function createBrowserFetchInstrumentation({
     const attributes = (span as Span & { readonly attributes?: Attributes }).attributes ?? {}
     const url = responseUrl || (request instanceof Request ? request.url : attributes['url.full'] ?? attributes['http.url'])
     if (typeof url !== 'string' || !url) return
+    for (const key of ['url.full', 'http.url']) {
+      if (typeof attributes[key] === 'string') span.setAttribute(key, privateUrlRemoved(attributes[key]))
+    }
     span.updateName(browserHttpClientSpanName({
       applicationOrigin,
       method: request.method ?? String(attributes['http.request.method'] ?? attributes['http.method'] ?? 'GET'),
@@ -176,7 +224,7 @@ export function startBrowserTelemetry({
 	const existing = providers.get(serviceName)
 	if (existing) return existing
 	const applicationResource = browserTelemetryResource({ serviceName, serviceVersion, environment, attributes })
-  const originalExporter = traceExporter ?? new OTLPTraceExporter({ url: traceExportUrl })
+  const originalExporter = withoutPrivateHttpUrls(traceExporter ?? new OTLPTraceExporter({ url: traceExportUrl }))
   const exporter = disableSpanNamePrefix ? withoutApplicationPrefix(originalExporter, prefix) : originalExporter
   const provider = new WebTracerProvider({
     resource: resource ? applicationResource.merge(resource) : applicationResource,
@@ -184,6 +232,7 @@ export function startBrowserTelemetry({
   })
   provider.register()
   const remove = registerInstrumentations({
+    tracerProvider: provider,
     instrumentations: [
       createBrowserFetchInstrumentation({ ...fetch, applicationOrigin, prefix }),
     ],
@@ -200,5 +249,11 @@ export async function shutdownBrowserTelemetry(serviceName: string): Promise<voi
   providers.delete(serviceName)
   unregister.get(serviceName)?.()
   unregister.delete(serviceName)
+  const current = trace.getTracerProvider()
+  if ('getDelegate' in current && typeof current.getDelegate === 'function' && current.getDelegate() === provider) {
+    trace.disable()
+    const replacement = providers.values().next().value
+    if (replacement) trace.setGlobalTracerProvider(replacement)
+  }
   await provider.shutdown()
 }

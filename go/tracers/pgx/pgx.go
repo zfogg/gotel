@@ -23,6 +23,7 @@ type Config struct {
 	System    string                                     // db.system.name; defaults to postgresql.
 	Namespace string                                     // Logical database name recorded as db.namespace.
 	Sanitize  gotelsql.SanitizeOptions                   // SQL template policy; defaults to PostgreSQL.
+	Analysis  *sequel.AnalysisOptions                    // Optional unified budgets and bind descriptors.
 	Observe   gotelsql.Observer                          // Optional low-cardinality duration observer.
 	Outcome   func(context.Context, error) outcome.Value // Optional explicit completion policy; errors returned unchanged.
 }
@@ -61,12 +62,26 @@ type batchSpanKey struct{}
 type prepareSpanKey struct{}
 type connectSpanKey struct{}
 
+func (t *Tracer) inspect(ctx context.Context, name, statement string, args []any) gotelsql.Metadata {
+	if t.config.Analysis != nil {
+		options := *t.config.Analysis
+		if options.Context == nil {
+			options.Context = ctx
+		}
+		if options.Dialect == "" {
+			options.Dialect = gotelsql.DialectPostgreSQL
+		}
+		return gotelsql.InspectAnalysis(t.config.Namer, name, statement, args, options)
+	}
+	return gotelsql.InspectWithOptions(t.config.Namer, name, statement, args, t.config.Sanitize)
+}
+
 // TraceQueryStart starts a named query span.
 func (t *Tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	if owned, _ := ctx.Value(lifecycleQueryKey{}).(bool); owned || gotelsql.TracingDisabled(ctx) {
 		return ctx
 	}
-	meta := gotelsql.InspectWithOptions(t.config.Namer, "", data.SQL, data.Args, t.config.Sanitize)
+	meta := t.inspect(ctx, "", data.SQL, data.Args)
 	name := gotelsql.NameFromContext(ctx)
 	if name == "" {
 		name = meta.Name
@@ -91,7 +106,7 @@ func (t *Tracer) TraceCopyFromStart(ctx context.Context, conn *pgx.Conn, data pg
 		return ctx
 	}
 	name := t.config.Namer.MustName("CopyFrom")
-	meta := gotelsql.InspectWithOptions(t.config.Namer, "CopyFrom", "COPY "+data.TableName.Sanitize()+" FROM STDIN", nil, t.config.Sanitize)
+	meta := t.inspect(ctx, "CopyFrom", "COPY "+data.TableName.Sanitize()+" FROM STDIN", nil)
 	attrs := append(meta.Attributes(t.config.System, t.config.Namespace), attribute.Int("db.query.column.count", len(data.ColumnNames)))
 	attrs = append(attrs, connectionAttributes(conn)...)
 	ctx, span := t.tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(attrs...))
@@ -124,7 +139,7 @@ func (t *Tracer) TraceBatchQuery(ctx context.Context, _ *pgx.Conn, data pgx.Trac
 	if st.span == nil {
 		return
 	}
-	meta := gotelsql.InspectWithOptions(t.config.Namer, "", data.SQL, data.Args, t.config.Sanitize)
+	meta := t.inspect(ctx, "", data.SQL, data.Args)
 	attrs := append(meta.Attributes(t.config.System, t.config.Namespace), resultAttributes(data.Err, data.CommandTag.RowsAffected())...)
 	st.span.AddEvent("db.batch.query", trace.WithAttributes(attrs...))
 }
@@ -139,7 +154,7 @@ func (t *Tracer) TracePrepareStart(ctx context.Context, conn *pgx.Conn, data pgx
 	if gotelsql.TracingDisabled(ctx) {
 		return ctx
 	}
-	meta := gotelsql.InspectWithOptions(t.config.Namer, "Prepare", data.SQL, nil, t.config.Sanitize)
+	meta := t.inspect(ctx, "Prepare", data.SQL, nil)
 	attrs := append(meta.Attributes(t.config.System, t.config.Namespace), attribute.String("db.stored_procedure.name", data.Name))
 	attrs = append(attrs, gotelsql.OperationKey.String("PREPARE"))
 	attrs = append(attrs, connectionAttributes(conn)...)
