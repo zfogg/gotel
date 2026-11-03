@@ -18,7 +18,7 @@ Sequel compiles its bundled C engine using a C compiler. You can instead link a
 matching prebuilt Sequel SDK with `SEQUEL_LIB_DIR` and `SEQUEL_LINK_KIND`, as
 described in [Sequel's Rust installation guide](https://github.com/zfogg/sequel/blob/main/rust/README.md).
 
-```rust
+```no_run
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 # #[cfg(feature = "otlp")]
 # {
