@@ -98,6 +98,15 @@ rollback remains a successful driver operation; owners may mark a callback error
 on the lifetime separately. `Retry` is opt-in: positive maximum attempts and an
 explicit retryable predicate bound retries; it never guesses idempotence.
 
+GORM query spans retain an explicit operation parent from `Operations.Start`,
+including an operation started before the transaction. A child span explicitly
+supplied after `Begin` is also retained. An ordinary transaction call using the
+original request context (or no active span) is parented to the transaction
+lifetime. The native driver keeps the query span already created by the GORM
+callback instead of replacing it a second time. Acquisition, BEGIN, COMMIT and
+ROLLBACK remain transaction children; caller values, cancellation and work-budget
+causes are forwarded unchanged.
+
 ## Critical and realtime sampling
 
 Go `sampling.Policy` and Python `sampling.Policy` take an existing delegate,
