@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"unsafe"
 
 	sequel "github.com/zfogg/sequel/go"
 )
@@ -109,6 +110,20 @@ func TestByteCacheBudgetAndOversizeBypass(t *testing.T) {
 	stats := cache.snapshot()
 	if stats.Bytes > stats.MaxBytes || stats.Entries != 2 || stats.Evictions != 1 || stats.Bypasses != 1 {
 		t.Fatalf("stats=%+v", stats)
+	}
+}
+
+func TestCacheDoesNotRetainLargeBackingStrings(t *testing.T) {
+	backing := "postgresql" + strings.Repeat("x", 1<<20)
+	key := inspectionCacheKey{statement: backing[10:18], dialect: Dialect(backing[:10])}
+	cache := newInspectionCache(4096)
+	cache.put(key, inspectionCacheValue{simple: backing[18:22]})
+	entry := cache.order.Front().Value.(inspectionCacheEntry)
+	if unsafe.StringData(entry.key.statement) == unsafe.StringData(key.statement) || unsafe.StringData(string(entry.key.dialect)) == unsafe.StringData(string(key.dialect)) {
+		t.Fatal("small cache keys retained a large caller backing allocation")
+	}
+	if cache.snapshot().Bytes > 4096 {
+		t.Fatal("small detached entry exceeded budget")
 	}
 }
 
