@@ -236,7 +236,7 @@ jobs:
           components: rustfmt, clippy
       - run: cargo fmt --manifest-path rust/Cargo.toml --check
       - run: cargo test --manifest-path rust/Cargo.toml --locked
-      - run: cargo test --manifest-path rust/Cargo.toml --locked --no-default-features --lib
+      - run: cargo test --manifest-path rust/Cargo.toml --locked --no-default-features
       - run: cargo clippy --manifest-path rust/Cargo.toml --locked --all-targets --all-features -- -D warnings
       - run: cargo doc --manifest-path rust/Cargo.toml --locked --no-deps
       - name: Package Rust sources and installation guide

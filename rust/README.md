@@ -19,11 +19,13 @@ matching prebuilt Sequel SDK with `SEQUEL_LIB_DIR` and `SEQUEL_LINK_KIND`, as
 described in [Sequel's Rust installation guide](https://github.com/zfogg/sequel/blob/main/rust/README.md).
 
 ```rust
+# fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+# #[cfg(feature = "otlp")]
+# {
 use gotel::{Application, ApplicationConfig, Query};
 use gotel::opentelemetry::Context;
 use gotel::sequel::Dialect;
 
-# fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 let app = Application::otlp(ApplicationConfig::new("example"))?;
 let database = app.database("storage.postgres", Dialect::PostgreSql, "example")?;
 let result = database.query(
@@ -34,6 +36,7 @@ let result = database.query(
 )?;
 assert_eq!(result, 42);
 app.shutdown()?;
+# }
 # Ok(())
 # }
 ```
