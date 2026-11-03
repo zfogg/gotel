@@ -26,6 +26,13 @@ if(NOT _docs_no_typescript)
     WORKING_DIRECTORY "${_docs_root}" VERBATIM USES_TERMINAL)
   list(APPEND _docs_languages docs-typescript)
 endif()
+string(JSON _docs_rust ERROR_VARIABLE _docs_no_rust GET "${_docs_config}" languages rust)
+if(NOT _docs_no_rust)
+  add_custom_target(docs-rust
+    COMMAND ${_docs_command} rust --output "${DOCS_OUTPUT_DIR}"
+    WORKING_DIRECTORY "${_docs_root}" VERBATIM USES_TERMINAL)
+  list(APPEND _docs_languages docs-rust)
+endif()
 add_custom_target(docs-site
   COMMAND ${_docs_command} site --output "${DOCS_OUTPUT_DIR}"
   DEPENDS ${_docs_languages} WORKING_DIRECTORY "${_docs_root}" VERBATIM)

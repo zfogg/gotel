@@ -12,3 +12,4 @@ python/src/*.egg-info/
 *.pyd
 
 /build/
+/rust/target/

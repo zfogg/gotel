@@ -6,9 +6,9 @@ import json
 import platform
 import re
 import tarfile
+import tomllib
 import zipfile
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = re.compile(r"v[0-9]+\.[0-9]+\.[0-9]+\Z")
@@ -21,11 +21,17 @@ def require_tag(tag: str) -> str:
 
 
 def archive_name(tag: str, linkage: str, expected_arch: str | None = None) -> str:
-    system = {"Linux": "linux", "Darwin": "macos", "Windows": "windows"}[platform.system()]
+    system = {"Linux": "linux", "Darwin": "macos", "Windows": "windows"}[
+        platform.system()
+    ]
     machine = platform.machine().lower()
-    arch = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "arm64": "arm64"}.get(machine, machine)
+    arch = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "arm64": "arm64"}.get(
+        machine, machine
+    )
     if expected_arch is not None and arch != expected_arch:
-        raise ValueError(f"runner architecture {arch} does not match requested {expected_arch}")
+        raise ValueError(
+            f"runner architecture {arch} does not match requested {expected_arch}"
+        )
     return f"gotel-{tag}-{system}-{arch}-{linkage}"
 
 
@@ -35,45 +41,73 @@ def add_file(archive: zipfile.ZipFile, source: Path, destination: str) -> None:
     archive.write(source, destination)
 
 
-def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
-              linkage: str, expected_arch: str | None = None,
-              nghttp2_source: Path | None = None) -> Path:
-    if 'GOTEL_WITH_GRPC:BOOL=ON' not in (build / 'CMakeCache.txt').read_text(encoding='utf-8'):
-        raise ValueError('C release libraries must be built with GOTEL_WITH_GRPC=ON')
-    nghttp2_source = nghttp2_source or build / '_deps' / 'gotel_nghttp2-src'
+def package_c(
+    tag: str,
+    build: Path,
+    otlp_source: Path,
+    output: Path,
+    linkage: str,
+    expected_arch: str | None = None,
+    nghttp2_source: Path | None = None,
+) -> Path:
+    if "GOTEL_WITH_GRPC:BOOL=ON" not in (build / "CMakeCache.txt").read_text(
+        encoding="utf-8"
+    ):
+        raise ValueError("C release libraries must be built with GOTEL_WITH_GRPC=ON")
+    nghttp2_source = nghttp2_source or build / "_deps" / "gotel_nghttp2-src"
     cache = {}
-    for line in (build / 'CMakeCache.txt').read_text(encoding='utf-8').splitlines():
-        if '=' in line and not line.startswith(('#', '//')):
-            key, value = line.split('=', 1)
-            cache[key.split(':', 1)[0]] = value
-    sequel_source = Path(cache.get('sequel_SOURCE_DIR', str(build / '_deps' / 'sequel-src')))
-    sequel_build = Path(cache.get('sequel_BINARY_DIR', str(build / '_deps' / 'sequel-build')))
+    for line in (build / "CMakeCache.txt").read_text(encoding="utf-8").splitlines():
+        if "=" in line and not line.startswith(("#", "//")):
+            key, value = line.split("=", 1)
+            cache[key.split(":", 1)[0]] = value
+    sequel_source = Path(
+        cache.get("sequel_SOURCE_DIR", str(build / "_deps" / "sequel-src"))
+    )
+    sequel_build = Path(
+        cache.get("sequel_BINARY_DIR", str(build / "_deps" / "sequel-build"))
+    )
     name = archive_name(tag, linkage, expected_arch)
     path = output / f"{name}.zip"
     system = platform.system()
     readme = ROOT / "c" / "RELEASE.md"
     if linkage == "static":
-        suffix = ".lib" if system == "Windows" else ".a"
-        gotel_libs = [build / "src" / ("gotel.lib" if system == "Windows" else "libgotel.a")]
-        gotel_libs.append(build / "_deps" / "otlp_c-build" / ("otlp_c.lib" if system == "Windows" else "libotlp_c.a"))
-        gotel_libs.append(build / "_deps" / "gotel_nghttp2-build" / "lib" /
-                          ("nghttp2.lib" if system == "Windows" else "libnghttp2.a"))
-        gotel_libs.extend(sequel_build / name for name in (
-            ('sequel.lib', 'sequel_utf8proc.lib') if system == 'Windows'
-            else ('libsequel.a', 'libsequel_utf8proc.a')))
+        gotel_libs = [
+            build / "src" / ("gotel.lib" if system == "Windows" else "libgotel.a")
+        ]
+        gotel_libs.append(
+            build
+            / "_deps"
+            / "otlp_c-build"
+            / ("otlp_c.lib" if system == "Windows" else "libotlp_c.a")
+        )
+        gotel_libs.append(
+            build
+            / "_deps"
+            / "gotel_nghttp2-build"
+            / "lib"
+            / ("nghttp2.lib" if system == "Windows" else "libnghttp2.a")
+        )
+        gotel_libs.extend(
+            sequel_build / name
+            for name in (
+                ("sequel.lib", "sequel_utf8proc.lib")
+                if system == "Windows"
+                else ("libsequel.a", "libsequel_utf8proc.a")
+            )
+        )
     elif system == "Windows":
         gotel_libs = [build / "src" / "gotel.dll", build / "src" / "gotel.lib"]
-        gotel_libs.extend(sequel_build / name for name in ('sequel.dll', 'sequel.lib'))
+        gotel_libs.extend(sequel_build / name for name in ("sequel.dll", "sequel.lib"))
     else:
         extension = ".dylib" if system == "Darwin" else ".so"
         pattern = "libgotel*.dylib" if system == "Darwin" else "libgotel.so*"
         gotel_libs = sorted((build / "src").glob(pattern))
         if not gotel_libs:
             raise FileNotFoundError(build / "src" / f"libgotel{extension}")
-        sequel_pattern = 'libsequel*.dylib' if system == 'Darwin' else 'libsequel.so*'
+        sequel_pattern = "libsequel*.dylib" if system == "Darwin" else "libsequel.so*"
         sequel_libs = sorted(sequel_build.glob(sequel_pattern))
         if not sequel_libs:
-            raise FileNotFoundError(sequel_build / f'libsequel{extension}')
+            raise FileNotFoundError(sequel_build / f"libsequel{extension}")
         gotel_libs.extend(sequel_libs)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
         for source, destination in (
@@ -83,15 +117,24 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
             (otlp_source / "LICENSE", "third-party/otlp-c-LICENSE"),
             (nghttp2_source / "COPYING", "third-party/nghttp2-COPYING"),
             (sequel_source / "LICENSE", "third-party/sequel-LICENSE"),
-            (sequel_source / "third_party" / "UTF8PROC_LICENSE.md", "third-party/sequel-utf8proc-LICENSE.md"),
+            (
+                sequel_source / "third_party" / "UTF8PROC_LICENSE.md",
+                "third-party/sequel-utf8proc-LICENSE.md",
+            ),
             (sequel_source / "include" / "sequel.h", "include/sequel.h"),
         ):
             add_file(archive, source, f"{name}/{destination}")
         for source in gotel_libs:
             if not source.is_file():
                 # Multi-configuration generators put artifacts below the configuration.
-                source = next((source.parent / config / source.name for config in ('Release', 'Debug')
-                               if (source.parent / config / source.name).is_file()), source)
+                source = next(
+                    (
+                        source.parent / config / source.name
+                        for config in ("Release", "Debug")
+                        if (source.parent / config / source.name).is_file()
+                    ),
+                    source,
+                )
             add_file(archive, source, f"{name}/lib/{source.name}")
         for prefix, directory in (
             ("include/gotel", ROOT / "c" / "include" / "gotel"),
@@ -103,29 +146,51 @@ def package_c(tag: str, build: Path, otlp_source: Path, output: Path,
             for source in headers:
                 if prefix == "include/gotel" and source.name == "testing.h":
                     continue  # The optional gotel::testing library is not in release archives.
-                add_file(archive, source, f"{name}/{prefix}/{source.relative_to(directory).as_posix()}")
+                add_file(
+                    archive,
+                    source,
+                    f"{name}/{prefix}/{source.relative_to(directory).as_posix()}",
+                )
     return path
 
 
 def package_typescript(tag: str, tarball: Path, output: Path) -> Path:
     name = f"gotel-typescript-{tag}"
     path = output / f"{name}.zip"
-    with tarfile.open(tarball, "r:gz") as package, zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+    with (
+        tarfile.open(tarball, "r:gz") as package,
+        zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive,
+    ):
         members = [member for member in package.getmembers() if member.isfile()]
-        metadata = next((member for member in members if member.name == "package/package.json"), None)
+        metadata = next(
+            (member for member in members if member.name == "package/package.json"),
+            None,
+        )
         if metadata is None:
             raise ValueError("npm tarball is missing package.json")
-        package_json = json.load(package.extractfile(metadata))
+        metadata_file = package.extractfile(metadata)
+        if metadata_file is None:
+            raise ValueError("npm metadata is not a regular file")
+        package_json = json.load(metadata_file)
         if package_json["version"] != tag[1:]:
-            raise ValueError(f"package version {package_json['version']} does not match {tag}")
+            raise ValueError(
+                f"package version {package_json['version']} does not match {tag}"
+            )
         if not any(member.name.startswith("package/dist/") for member in members):
             raise ValueError("npm tarball is missing compiled dist files")
         for member in members:
             relative = Path(member.name)
             if relative.parts[0] != "package" or ".." in relative.parts:
                 raise ValueError(f"unexpected npm tarball path: {member.name}")
-            data = package.extractfile(member).read()
-            destination = "PROJECT.md" if relative.as_posix() == "package/README.md" else "/".join(relative.parts[1:])
+            contents = package.extractfile(member)
+            if contents is None:
+                raise ValueError(f"npm member is not a regular file: {member.name}")
+            data = contents.read()
+            destination = (
+                "PROJECT.md"
+                if relative.as_posix() == "package/README.md"
+                else "/".join(relative.parts[1:])
+            )
             archive.writestr(f"{name}/{destination}", data)
         add_file(archive, ROOT / "typescript" / "RELEASE.md", f"{name}/README.md")
     return path
@@ -133,7 +198,7 @@ def package_typescript(tag: str, tarball: Path, output: Path) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=("c", "typescript"))
+    parser.add_argument("kind", choices=("c", "typescript", "rust"))
     parser.add_argument("--tag", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--build", type=Path)
@@ -148,8 +213,31 @@ def main() -> None:
     if args.kind == "c":
         if not args.build or not args.otlp_source:
             parser.error("C packaging needs --build and --otlp-source")
-        path = package_c(tag, args.build, args.otlp_source, args.output,
-                         args.linkage, args.expected_arch, args.nghttp2_source)
+        path = package_c(
+            tag,
+            args.build,
+            args.otlp_source,
+            args.output,
+            args.linkage,
+            args.expected_arch,
+            args.nghttp2_source,
+        )
+    elif args.kind == "rust":
+        manifest = tomllib.loads((ROOT / "rust/Cargo.toml").read_text(encoding="utf-8"))
+        if manifest["package"]["version"] != tag[1:]:
+            raise ValueError("Rust package version does not match tag")
+        name = f"gotel-rust-{tag}"
+        path = args.output / f"{name}.zip"
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+            for source in sorted((ROOT / "rust/src").rglob("*.rs")):
+                add_file(
+                    archive,
+                    source,
+                    f"{name}/src/{source.relative_to(ROOT / 'rust/src').as_posix()}",
+                )
+            for file in ("Cargo.toml", "Cargo.lock", "README.md"):
+                add_file(archive, ROOT / "rust" / file, f"{name}/{file}")
+            add_file(archive, ROOT / "LICENSE", f"{name}/LICENSE")
     else:
         if not args.tarball:
             parser.error("TypeScript packaging needs --tarball")

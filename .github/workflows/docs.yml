@@ -30,6 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: false
+      - uses: dtolnay/rust-toolchain@stable
       - name: Install Doxygen
         run: sudo apt-get update && sudo apt-get install -y doxygen
       - uses: pnpm/action-setup@v4
