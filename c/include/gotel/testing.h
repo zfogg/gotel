@@ -40,6 +40,36 @@ otlp_status_t gotel_test_transport(gotel_host_t *host, gotel_test_script_t *scri
 /** Create a normal host, then install the no-I/O transport. */
 otlp_status_t gotel_test_create(const gotel_options_t *options, gotel_host_t **output);
 
+/** Owned offline trace capture. Only the optional gotel::testing library links
+ * the serializer. Captures contain actual completed span attributes, events,
+ * links, timestamps and exporter resource metadata, before queue acceptance;
+ * they do not prove delivery. No redaction beyond application instrumentation
+ * is performed. Treat the bytes as potentially sensitive local test artifacts. */
+typedef struct gotel_test_capture gotel_test_capture_t;
+
+/** Allocate at most max_bytes retained protobuf bytes (must be nonzero).
+ * Serialization uses additional temporary memory proportional to one span. */
+gotel_test_capture_t *gotel_test_capture_create(size_t max_bytes);
+
+/** Install capture and disable all network export on host. Call before any
+ * producers/tick owner start. One capture can accept concurrent submissions
+ * from multiple hosts. Attachment does not transfer ownership; stop producers
+ * and detach or destroy all attached hosts before destroying capture. */
+otlp_status_t gotel_test_capture_attach(gotel_host_t *host, gotel_test_capture_t *capture);
+
+/** Remove capture after all host producers stop. Null transport stays enabled.
+ * Safe if no capture is installed. Never detach during concurrent submission. */
+void gotel_test_capture_detach(gotel_host_t *host);
+
+/** Borrow a complete ExportTraceServiceRequest protobuf buffer until destroy.
+ * Call after all attached producers stop. Empty capture returns NULL/0. An
+ * encoding/allocation/byte-limit failure is sticky and returns no partial data;
+ * callers must check the status before asserting on capture contents. */
+otlp_status_t gotel_test_capture_read(const gotel_test_capture_t *capture, const uint8_t **data, size_t *bytes);
+
+/** Free capture after detaching or destroying its hosts. NULL is safe. */
+void gotel_test_capture_destroy(gotel_test_capture_t *capture);
+
 /** Thread-safe event recorder. Install gotel_test_event_record as the exporter
  * callback with the recorder as context. Stop/join producers before destroying. */
 typedef struct gotel_test_events gotel_test_events_t;

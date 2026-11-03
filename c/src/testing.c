@@ -1,6 +1,9 @@
+#include "exporter_internal.h"
 #include "internal.h"
+#include "otlp_messages.h"
 #include <gotel/testing.h>
 #include <stdlib.h>
+#include <string.h>
 static _Thread_local uint64_t mono = UINT64_C(1000000000);
 static _Thread_local uint64_t real = UINT64_C(1700000000000000000);
 void gotel_test_clock_set(uint64_t monotonic_ns, uint64_t realtime_ns) {
@@ -61,4 +64,97 @@ otlp_status_t gotel_test_create(const gotel_options_t *options, gotel_host_t **o
   if (result != OTLP_OK)
     return result;
   return gotel_test_transport(*output, NULL);
+}
+
+struct gotel_test_capture {
+  atomic_flag lock;
+  uint8_t *data;
+  size_t bytes, capacity;
+  otlp_status_t status;
+};
+
+gotel_test_capture_t *gotel_test_capture_create(size_t max_bytes) {
+  if (!max_bytes)
+    return NULL;
+  gotel_test_capture_t *capture = calloc(1, sizeof(*capture));
+  if (!capture)
+    return NULL;
+  capture->data = malloc(max_bytes);
+  if (!capture->data) {
+    free(capture);
+    return NULL;
+  }
+  capture->capacity = max_bytes;
+  atomic_flag_clear(&capture->lock);
+  return capture;
+}
+
+static void capture_span(void *context, gotel_host_t *host, const otlp_span_t *span) {
+  gotel_test_capture_t *capture = context;
+  while (atomic_flag_test_and_set_explicit(&capture->lock, memory_order_acquire)) {
+  }
+  if (capture->status == OTLP_OK) {
+    struct otlp_pb_buf encoded;
+    capture->status = otlp_pb_buf_init(&encoded, 0);
+    if (capture->status == OTLP_OK) {
+      size_t resource_count = 0;
+      const struct otlp_attribute *resource = otlp_exporter_get_resource_attrs(host->exporter, &resource_count);
+      capture->status =
+          otlp_encode_export_trace_service_request(&encoded, host->exporter->service_name, host->exporter->schema_url,
+                                                   resource, resource_count, "gotel", NULL, &span, 1);
+      if (capture->status == OTLP_OK) {
+        if (encoded.len > capture->capacity - capture->bytes)
+          capture->status = OTLP_ERR_OVERFLOW;
+        else {
+          // Each encoded request contains only repeated ResourceSpans fields;
+          // concatenation is one valid protobuf request, including mixed hosts.
+          memcpy(capture->data + capture->bytes, encoded.data, encoded.len);
+          capture->bytes += encoded.len;
+        }
+      }
+      otlp_pb_buf_free(&encoded);
+    }
+  }
+  atomic_flag_clear_explicit(&capture->lock, memory_order_release);
+}
+
+otlp_status_t gotel_test_capture_attach(gotel_host_t *host, gotel_test_capture_t *capture) {
+  if (!host || !capture)
+    return OTLP_ERR_NULL;
+  if (host->span_observer)
+    return OTLP_ERR_INVALID_ARGUMENT;
+  otlp_status_t result = gotel_test_transport(host, NULL);
+  if (result != OTLP_OK)
+    return result;
+  host->span_observer_context = capture;
+  host->span_observer = capture_span;
+  return OTLP_OK;
+}
+
+void gotel_test_capture_detach(gotel_host_t *host) {
+  if (host) {
+    host->span_observer = NULL;
+    host->span_observer_context = NULL;
+  }
+}
+
+otlp_status_t gotel_test_capture_read(const gotel_test_capture_t *capture, const uint8_t **data, size_t *bytes) {
+  if (data)
+    *data = NULL;
+  if (bytes)
+    *bytes = 0;
+  if (!capture || !data || !bytes)
+    return OTLP_ERR_NULL;
+  if (capture->status != OTLP_OK)
+    return capture->status;
+  *data = capture->bytes ? capture->data : NULL;
+  *bytes = capture->bytes;
+  return OTLP_OK;
+}
+
+void gotel_test_capture_destroy(gotel_test_capture_t *capture) {
+  if (capture) {
+    free(capture->data);
+    free(capture);
+  }
 }
