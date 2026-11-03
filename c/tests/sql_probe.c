@@ -13,6 +13,22 @@
   } while (0)
 static const gotel_operation_t operations[] = {{"test.sql", false}};
 
+static bool cancel_analysis(void *unused) {
+  (void)unused;
+  return true;
+}
+
+static void emit_analysis(gotel_host_t *host, int index, const char *sql, sequel_analysis_options_t policy) {
+  sequel_analysis_t analysis = {0};
+  sequel_analyze(sql, &policy, &analysis);
+  gotel_scope_t scope;
+  gotel_begin(host, &scope, 0, NULL);
+  otlp_span_set_attribute_int(scope.span, "test.case", index);
+  gotel_sql_analysis_attributes(scope.span, &analysis, "postgresql", "test", 1);
+  sequel_analysis_free(&analysis);
+  gotel_end(&scope);
+}
+
 int main(int argc, char **argv) {
   if (argc != 2)
     return 2;
@@ -86,6 +102,26 @@ int main(int argc, char **argv) {
   otlp_span_set_attribute_int(scope.span, "test.case", 7);
   gotel_sql_attributes(scope.span, &metadata, "sqlite", NULL, 0);
   gotel_end(&scope);
+  sequel_analysis_options_t analysis_policy = {.dialect = SEQUEL_POSTGRESQL, .format = true};
+  emit_analysis(host, 8, "-- LITERAL_SECRET\r\nSELECT id FROM widgets WHERE id=$1 OR parent=$1", analysis_policy);
+  analysis_policy.omit_query_text = true;
+  emit_analysis(host, 9, "SELECT 'LITERAL_SECRET'", analysis_policy);
+  analysis_policy.omit_query_text = false;
+  emit_analysis(host, 10, "SELECT 'LITERAL_SECRET", analysis_policy);
+  analysis_policy.max_work_units = 1;
+  emit_analysis(host, 11, "SELECT 'LITERAL_SECRET'", analysis_policy);
+  analysis_policy.max_work_units = 0;
+  char malformed[2048] = {0};
+  for (int i = 0; i < 100; ++i)
+    strcat(malformed, "SELECT );");
+  emit_analysis(host, 12, malformed, analysis_policy);
+  char mapped[16384] = "SELECT ";
+  for (int i = 0; i < 600; ++i)
+    sprintf(mapped + strlen(mapped), "%scol%d", i ? "," : "", i);
+  strcat(mapped, " FROM widgets");
+  emit_analysis(host, 13, mapped, analysis_policy);
+  analysis_policy.cancelled = cancel_analysis;
+  emit_analysis(host, 14, "SELECT 'LITERAL_SECRET'", analysis_policy);
   CHECK(gotel_drain(host) == OTLP_OK);
   gotel_destroy(host);
   return 0;

@@ -25,6 +25,19 @@ void gotel_sql_attributes(otlp_span_t *span, const sequel_metadata_t *metadata, 
 void gotel_sql_attributes_with_limit(otlp_span_t *span, const sequel_metadata_t *metadata, const char *system,
                                      const char *namespace_name, size_t bind_count, size_t max_text_bytes);
 
+/** Attach unified analysis, canonical diagnostics, versioned fingerprint and
+ * explicit query-text omission status. Numeric maps are a versioned JSON envelope
+ * capped at 16 KiB; oversized maps set source_map_omitted. Bind descriptors are
+ * emitted only when the caller requested them in sequel_analysis_options_t, and
+ * contain no parameter names, types or values. The result remains caller-owned. */
+void gotel_sql_analysis_attributes(otlp_span_t *span, const sequel_analysis_t *analysis, const char *system,
+                                   const char *namespace_name, size_t bind_count);
+
+/** Preserve a custom query-text collection limit when formatting expands text.
+ * Zero selects SEQUEL_TEXT_MAX. @see gotel_sql_analysis_attributes */
+void gotel_sql_analysis_attributes_with_limit(otlp_span_t *span, const sequel_analysis_t *analysis, const char *system,
+                                              const char *namespace_name, size_t bind_count, size_t max_text_bytes);
+
 #ifdef __cplusplus
 }
 #endif
