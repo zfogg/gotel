@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zfogg/gotel/go"
+	"github.com/zfogg/gotel/go/outcome"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -42,7 +43,7 @@ func NewOperations(application gotel.Application) Operations {
 func (o Operations) Start(ctx context.Context, name string) (context.Context, func(error)) {
 	if trace.SpanContextFromContext(ctx).IsValid() {
 		ctx, span := o.application.ComponentTracer(gotel.ComponentOperations).Start(ctx, name)
-		return ctx, func(err error) { gotel.End(span, err) }
+		return ctx, func(err error) { outcome.End(ctx, span, err) }
 	}
 	state := &operationState{name: name}
 	ctx = context.WithValue(ctx, operationKey{}, state)
@@ -55,7 +56,12 @@ func (o Operations) Start(ctx context.Context, name string) (context.Context, fu
 		if failed {
 			span.SetStatus(codes.Error, "background operation contains failed spans")
 		}
-		gotel.End(span, err)
+		completion := outcome.Classify(ctx, err)
+		if failed && completion == outcome.Success {
+			completion = outcome.Error
+		}
+		outcome.Apply(span, completion, err)
+		span.End()
 	}
 }
 func Retain(ctx context.Context) {

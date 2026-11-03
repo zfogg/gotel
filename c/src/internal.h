@@ -23,7 +23,7 @@ struct gotel_host {
   gotel_measurement_t *measurements;
   gotel_instrument_t *instruments;
   size_t instrument_count;
-  atomic_uint_fast64_t sequence, rate_window;
+  atomic_uint_fast64_t sequence, rate_window, retained_window;
   uint64_t last_metrics_ns, epoch_ns;
   uint64_t watchdog_poll_ns, watchdog_report_ns;
   void (*span_observer)(void *context, gotel_host_t *host, const otlp_span_t *span);

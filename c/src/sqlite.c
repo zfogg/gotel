@@ -17,7 +17,25 @@ struct gotel_sqlite {
   size_t count;
   gotel_sqlite_options_t options;
   statement_start_t *started;
+  struct gotel_sqlite *registry_next;
 };
+/* Attachment lifetime is owned by the connection's caller. The registry lock
+ * protects lookup/publication, not concurrent detach or close versus DB use. */
+static gotel_sqlite_t *attachments;
+static atomic_flag attachments_lock = ATOMIC_FLAG_INIT;
+static void registry_lock(void) {
+  while (atomic_flag_test_and_set_explicit(&attachments_lock, memory_order_acquire)) {
+  }
+}
+static void registry_remove(gotel_sqlite_t *a) {
+  registry_lock();
+  gotel_sqlite_t **entry = &attachments;
+  while (*entry && *entry != a)
+    entry = &(*entry)->registry_next;
+  if (*entry)
+    *entry = a->registry_next;
+  atomic_flag_clear_explicit(&attachments_lock, memory_order_release);
+}
 static void clear_started(gotel_sqlite_t *a) {
   while (a->started) {
     statement_start_t *entry = a->started;
@@ -29,6 +47,7 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
   gotel_sqlite_t *a = data;
   gotel_host_t *h = a->host;
   if (event == SQLITE_TRACE_CLOSE) {
+    registry_remove(a);
     clear_started(a);
     free(a);
     return 0;
@@ -82,6 +101,7 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
     span = otlp_tracer_start_span(h->tracer, gotel_span_name(h, span_name));
   if (span) {
     otlp_span_set_kind(span, OTLP_SPAN_KIND_CLIENT);
+    otlp_span_set_attribute_string(span, "operation.outcome", "success");
     gotel_sql_attributes_with_limit(span, &metadata, "sqlite", a->options.namespace_name,
                                     (size_t)sqlite3_bind_parameter_count(statement),
                                     a->options.sql.max_query_text_bytes);
@@ -95,8 +115,7 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
     otlp_span_mark_end(span);
     otlp_span_set_end_time(span, end);
     otlp_span_set_start_time(span, end >= duration ? end - duration : 0);
-    otlp_exporter_emit(h->exporter, span);
-    otlp_span_free(span);
+    gotel_submit_span(h, span);
   }
   if (h->options.signals & GOTEL_METRICS) {
     static const double bounds[] = {.0001, .0005, .001, .0025, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10};
@@ -138,6 +157,14 @@ otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *h, sqlite3 *db, con
       if (!strcmp(queries[i].sql, queries[j].sql))
         return OTLP_ERR_INVALID_ARGUMENT;
   }
+  registry_lock();
+  bool attached = false;
+  for (gotel_sqlite_t *entry = attachments; entry; entry = entry->registry_next)
+    if (entry->db == db)
+      attached = true;
+  atomic_flag_clear_explicit(&attachments_lock, memory_order_release);
+  if (attached)
+    return OTLP_ERR_INVALID_ARGUMENT;
   gotel_sqlite_t *a = calloc(1, sizeof(*a));
   if (!a)
     return OTLP_ERR_NOMEM;
@@ -150,12 +177,113 @@ otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *h, sqlite3 *db, con
     return OTLP_ERR_INVALID_ARGUMENT;
   }
   *out = a;
+  registry_lock();
+  a->registry_next = attachments;
+  attachments = a;
+  atomic_flag_clear_explicit(&attachments_lock, memory_order_release);
   return OTLP_OK;
 }
 void gotel_sqlite_detach(gotel_sqlite_t *a) {
   if (!a)
     return;
   sqlite3_trace_v2(a->db, 0, NULL, NULL);
+  registry_remove(a);
   clear_started(a);
   free(a);
+}
+
+static void prepare_failed(gotel_sqlite_t *a, const char *sql, int bytes, int result, uint64_t started) {
+  gotel_host_t *h = a->host;
+  uint64_t finished = h->options.monotonic_ns(), end = h->options.realtime_ns();
+  uint64_t duration = finished >= started ? finished - started : 0;
+  char *owned = NULL;
+  if (sql && bytes >= 0) {
+    size_t length = 0;
+    while (length < (size_t)bytes && sql[length])
+      ++length;
+    owned = malloc(length + 1);
+    if (owned) {
+      memcpy(owned, sql, length);
+      owned[length] = 0;
+    }
+    sql = owned;
+  }
+  sequel_metadata_t metadata = {0};
+  sequel_inspect(sql, &a->options.sql, &metadata);
+  const gotel_query_t *query = gotel_query_find(a->queries, a->count, sql);
+  char name[256];
+  int n = snprintf(name, sizeof(name), "%s.%s", a->prefix, query ? query->name : "Prepare");
+  gotel_context_t parent = gotel_current_context();
+  otlp_span_t *span = NULL;
+  if (n >= 0 && (size_t)n < sizeof(name) && (h->options.signals & GOTEL_TRACES) && !(parent.valid && !parent.sampled))
+    span = otlp_tracer_start_span(h->tracer, gotel_span_name(h, name));
+  if (span) {
+    otlp_span_set_kind(span, OTLP_SPAN_KIND_CLIENT);
+    gotel_sql_attributes_with_limit(span, &metadata, "sqlite", a->options.namespace_name, 0,
+                                    a->options.sql.max_query_text_bytes);
+    gotel_sql_diagnostics(span, sql, SEQUEL_SQLITE);
+    otlp_span_set_attribute_string(span, "db.operation.name", "PREPARE");
+    otlp_span_set_attribute_int(span, "db.response.status_code", result);
+    otlp_span_set_attribute_string(span, "operation.outcome", "error");
+    otlp_span_set_attribute_string(span, "error.type", "sqlite.prepare");
+    otlp_span_set_status(span, OTLP_STATUS_CODE_ERROR, "");
+    if (parent.valid) {
+      otlp_span_set_trace_id(span, parent.trace_id);
+      otlp_span_set_parent_span_id(span, parent.span_id);
+    }
+    otlp_span_mark_end(span);
+    otlp_span_set_end_time(span, end);
+    otlp_span_set_start_time(span, end >= duration ? end - duration : 0);
+    gotel_submit_span(h, span);
+  }
+  if (h->options.signals & GOTEL_METRICS) {
+    static const double bounds[] = {.0001, .001, .01, .1, 1, 10};
+    otlp_metric_t *metric = otlp_metric_create(OTLP_METRIC_HISTOGRAM, "db.client.operation.duration", "s", NULL, bounds,
+                                               sizeof(bounds) / sizeof(bounds[0]));
+    if (metric) {
+      otlp_metric_set_attribute_string(metric, "db.system.name", "sqlite");
+      otlp_metric_set_attribute_string(metric, "db.operation.name", "PREPARE");
+      otlp_metric_set_attribute_string(metric, "operation.outcome", "error");
+      otlp_metric_set_aggregation_temporality(metric, OTLP_AGG_TEMP_DELTA);
+      otlp_metric_set_start_time(metric, end >= duration ? end - duration : 0);
+      otlp_metric_set_time(metric, end);
+      otlp_metric_record(metric, (double)duration / 1e9);
+      otlp_exporter_emit_metric(h->exporter, metric);
+      otlp_metric_free(metric);
+    }
+  }
+  sequel_metadata_free(&metadata);
+  free(owned);
+}
+
+int gotel_sqlite_prepare_v3(gotel_sqlite_t *a, const char *sql, int bytes, unsigned flags, sqlite3_stmt **statement,
+                            const char **tail) {
+  if (!a) {
+    if (statement)
+      *statement = NULL;
+    return SQLITE_MISUSE;
+  }
+  uint64_t started = a->host->options.monotonic_ns();
+  int result = sqlite3_prepare_v3(a->db, sql, bytes, flags, statement, tail);
+  if (result != SQLITE_OK)
+    prepare_failed(a, sql, bytes, result, started);
+  return result;
+}
+
+int gotel_sqlite_prepare_v2(gotel_sqlite_t *a, const char *sql, int bytes, sqlite3_stmt **statement,
+                            const char **tail) {
+  return gotel_sqlite_prepare_v3(a, sql, bytes, 0, statement, tail);
+}
+
+int gotel_sqlite_prepare(gotel_sqlite_t *a, const char *sql, sqlite3_stmt **statement) {
+  return gotel_sqlite_prepare_v2(a, sql, -1, statement, NULL);
+}
+
+int gotel_sqlite_prepare_db(sqlite3 *db, const char *sql, sqlite3_stmt **statement) {
+  registry_lock();
+  gotel_sqlite_t *a = attachments;
+  while (a && a->db != db)
+    a = a->registry_next;
+  atomic_flag_clear_explicit(&attachments_lock, memory_order_release);
+  return a ? gotel_sqlite_prepare(a, sql, statement) : sqlite3_prepare_v2(db, sql, -1, statement, NULL);
 }

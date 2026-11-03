@@ -5,11 +5,14 @@ package gorm
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"errors"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/zfogg/gotel/go"
+	"github.com/zfogg/gotel/go/outcome"
 	gotelsql "github.com/zfogg/gotel/go/tracers/sql"
 	sequel "github.com/zfogg/sequel/go"
 	"go.opentelemetry.io/otel"
@@ -36,13 +39,26 @@ type transactionPool struct {
 
 func (p *transactionPool) GetDBConn() (*sql.DB, error) { return p.DB, nil }
 func (p *transactionPool) BeginTx(ctx context.Context, opts *sql.TxOptions) (pool gorm.ConnPool, err error) {
-	beginCtx, span := otel.Tracer(strings.Trim(p.application.Prefix()+"/storage", "/")).Start(ctx, p.namer.Name("BeginTransaction"), trace.WithSpanKind(trace.SpanKindClient))
-	defer func() { gotel.End(span, err) }()
-	tx, err := p.DB.BeginTx(beginCtx, opts)
+	tracer := otel.Tracer(strings.Trim(p.application.Prefix()+"/storage", "/"))
+	txCtx, lifetime := tracer.Start(ctx, p.namer.Name("Transaction"), trace.WithSpanKind(trace.SpanKindClient))
+	acquireCtx, acquire := tracer.Start(txCtx, p.namer.Name("PoolAcquire"), trace.WithSpanKind(trace.SpanKindClient))
+	started := time.Now()
+	conn, err := p.DB.Conn(acquireCtx)
+	acquire.SetAttributes(attribute.Float64("db.client.connection.acquire_wait_seconds", time.Since(started).Seconds()))
+	outcome.End(ctx, acquire, err)
 	if err != nil {
+		outcome.End(ctx, lifetime, err)
 		return nil, err
 	}
-	return &tracedTransaction{Tx: tx, ctx: ctx, db: p.DB, application: p.application, namer: p.namer}, nil
+	beginCtx, span := tracer.Start(txCtx, p.namer.Name("BeginTransaction"), trace.WithSpanKind(trace.SpanKindClient))
+	tx, err := conn.BeginTx(beginCtx, opts)
+	outcome.End(ctx, span, err)
+	if err != nil {
+		_ = conn.Close()
+		outcome.End(ctx, lifetime, err)
+		return nil, err
+	}
+	return &tracedTransaction{Tx: tx, ctx: txCtx, db: p.DB, connection: conn, lifetime: lifetime, application: p.application, namer: p.namer}, nil
 }
 
 type tracedTransaction struct {
@@ -51,18 +67,79 @@ type tracedTransaction struct {
 	db          *sql.DB
 	application gotel.Application
 	namer       gotelsql.Namer
+	connection  *sql.Conn
+	lifetime    trace.Span
+	done        atomic.Bool
+	once        sync.Once
+	failure     error
+	failureCtx  context.Context
+}
+
+// MarkTransactionOutcome records the owner's error before manually rolling back.
+// It preserves native cleanup contexts/results and unwraps PreparedStmtTX.
+func MarkTransactionOutcome(pool gorm.ConnPool, ctx context.Context, err error) bool {
+	if prepared, ok := pool.(*gorm.PreparedStmtTX); ok {
+		pool = prepared.Tx
+	}
+	tx, ok := pool.(*tracedTransaction)
+	if !ok || tx.done.Load() {
+		return false
+	}
+	tx.failureCtx, tx.failure = ctx, err
+	return true
 }
 
 func (t *tracedTransaction) GetDBConn() (*sql.DB, error) { return t.db, nil }
+func (t *tracedTransaction) traceContext(ctx context.Context) context.Context {
+	if !t.done.Load() {
+		return trace.ContextWithSpan(ctx, t.lifetime)
+	}
+	return ctx
+}
+func (t *tracedTransaction) finish(err error) {
+	t.once.Do(func() {
+		t.done.Store(true)
+		if t.connection != nil {
+			_ = t.connection.Close()
+		}
+		ctx := t.ctx
+		if t.failure != nil {
+			ctx, err = t.failureCtx, t.failure
+		}
+		if errors.Is(err, sql.ErrTxDone) && ctx.Err() != nil {
+			err = ctx.Err()
+		}
+		outcome.End(ctx, t.lifetime, err)
+	})
+}
 func (t *tracedTransaction) Commit() (err error) {
+	if t.done.Load() {
+		return t.Tx.Commit()
+	}
 	_, span := otel.Tracer(strings.Trim(t.application.Prefix()+"/storage", "/")).Start(t.ctx, t.namer.Name("CommitTransaction"), trace.WithSpanKind(trace.SpanKindClient))
-	defer func() { gotel.End(span, err) }()
+	defer func() { outcome.End(t.ctx, span, err); t.finish(err) }()
 	return t.Tx.Commit()
 }
 func (t *tracedTransaction) Rollback() (err error) {
+	if t.done.Load() {
+		return t.Tx.Rollback()
+	}
 	_, span := otel.Tracer(strings.Trim(t.application.Prefix()+"/storage", "/")).Start(t.ctx, t.namer.Name("RollbackTransaction"), trace.WithSpanKind(trace.SpanKindClient))
-	defer func() { gotel.End(span, err) }()
+	defer func() { outcome.End(t.ctx, span, err); t.finish(err) }()
 	return t.Tx.Rollback()
+}
+
+func (t *tracedTransaction) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	return t.Tx.ExecContext(t.traceContext(ctx), query, args...)
+}
+func (t *tracedTransaction) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return t.Tx.QueryContext(t.traceContext(ctx), query, args...)
+}
+func (t *tracedTransaction) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+	return t.Tx.QueryRowContext(t.traceContext(ctx), query, args...)
+}
+func (t *tracedTransaction) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+	return t.Tx.PrepareContext(t.traceContext(ctx), query)
 }
 
 var _ gorm.ConnPoolBeginner = (*transactionPool)(nil)
@@ -99,6 +176,8 @@ type Config struct {
 	// Observe receives bounded operation/result values and elapsed time after
 	// each operation. It is suitable for application-owned metrics.
 	Observe gotelsql.Observer
+	// Outcome optionally classifies completion without changing db.Error.
+	Outcome func(context.Context, error) outcome.Value
 }
 
 type plugin struct {
@@ -173,6 +252,13 @@ func (p *plugin) before(op string) func(*gorm.DB) {
 		if gotelsql.TracingDisabled(ctx) {
 			return
 		}
+		pool := db.Statement.ConnPool
+		if prepared, ok := pool.(*gorm.PreparedStmtTX); ok {
+			pool = prepared.Tx
+		}
+		if transaction, ok := pool.(*tracedTransaction); ok {
+			ctx = transaction.traceContext(ctx)
+		}
 		name := gotelsql.NameFromContext(ctx)
 		if name == "" && p.config.Caller != nil {
 			if simple := p.config.Caller(); simple != "" {
@@ -227,10 +313,18 @@ func (p *plugin) after(op string) func(*gorm.DB) {
 			result = "not_found"
 		} else if err != nil {
 			result = "error"
-			attrs = append(attrs, attribute.String("error.type", fmt.Sprintf("%T", err)))
 		}
 		st.span.SetAttributes(attrs...)
-		gotel.End(st.span, err)
+		classify := p.config.Outcome
+		if classify == nil {
+			classify = outcome.Classify
+		}
+		completion := classify(db.Statement.Context, err)
+		outcome.Apply(st.span, completion, err)
+		st.span.End()
+		if completion != outcome.Success {
+			result = string(completion)
+		}
 		if p.config.Observe != nil {
 			p.config.Observe(db.Statement.Context, op, result, time.Since(st.started))
 		}

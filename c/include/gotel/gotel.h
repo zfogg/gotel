@@ -157,6 +157,31 @@ typedef struct gotel_scope {
  * the current thread scope. Realtime roots sample independently of CLI spans. */
 void gotel_begin(gotel_host_t *host, gotel_scope_t *scope, size_t operation, const gotel_context_t *parent);
 
+typedef enum { GOTEL_PARENT_INHERIT, GOTEL_PARENT_INDEPENDENT, GOTEL_PARENT_BOUNDED } gotel_parent_mode_t;
+
+/** Pure copied-context policy: INDEPENDENT returns an invalid root; BOUNDED
+ * marks a valid parent realtime so every nested stage shares its one decision;
+ * INHERIT returns the parent unchanged. No allocations, locks, or live pointers. */
+gotel_context_t gotel_operation_parent(gotel_context_t parent, gotel_parent_mode_t mode);
+
+/** Start a non-realtime retained observation. Sampled parents are inherited.
+ * Dropped parents create bounded independent roots with explicit link metadata;
+ * the original dropped scope is never mutated. Returns false if capped/invalid.
+ * Cap is realtime_max_per_second, or 10/s when it is zero. Call gotel_end when
+ * true. This is for errors discovered after head sampling, not retroactive sampling. */
+bool gotel_begin_retained(gotel_host_t *host, gotel_scope_t *scope, size_t operation, const gotel_context_t *parent);
+
+typedef enum {
+  GOTEL_OUTCOME_SUCCESS,
+  GOTEL_OUTCOME_ERROR,
+  GOTEL_OUTCOME_CANCELLED,
+  GOTEL_OUTCOME_DEFERRED
+} gotel_outcome_t;
+
+/** Set explicit completion without retaining error messages. ERROR updates
+ * error metrics/status; cancellation and deferred work do not count as failures. */
+void gotel_outcome(gotel_scope_t *scope, gotel_outcome_t outcome, const char *error_type);
+
 /** Finish a scope and restore the previous thread-local scope. */
 void gotel_end(gotel_scope_t *scope);
 
@@ -323,6 +348,25 @@ otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *host, sqlite3 *db, 
 
 /** Release the SQLite trace attachment after its statements finish. */
 void gotel_sqlite_detach(gotel_sqlite_t *attachment);
+
+/** Prepare with attached naming/privacy options. Success emits no prepare span:
+ * only PROFILE traces execution. Failure records safe SQL metadata and code,
+ * never sqlite3_errmsg. NULL attachment returns SQLITE_MISUSE. */
+int gotel_sqlite_prepare(gotel_sqlite_t *attachment, const char *sql, sqlite3_stmt **statement);
+
+/** sqlite3_prepare_v2-compatible byte bound and tail semantics. */
+int gotel_sqlite_prepare_v2(gotel_sqlite_t *attachment, const char *sql, int bytes, sqlite3_stmt **statement,
+                            const char **tail);
+
+/** sqlite3_prepare_v3-compatible flags, byte bound and tail semantics. */
+int gotel_sqlite_prepare_v3(gotel_sqlite_t *attachment, const char *sql, int bytes, unsigned flags,
+                            sqlite3_stmt **statement, const char **tail);
+
+/** Look up the connection attachment; unattached connections call SQLite directly.
+ * Caller must serialize attach/detach/close with use of that connection, as with
+ * the attachment APIs. Lookup allocates no memory. CLOSE removes the attachment.
+ * This wrapper leaves sqlite3_trace_v2's existing callback untouched. */
+int gotel_sqlite_prepare_db(sqlite3 *db, const char *sql, sqlite3_stmt **statement);
 
 /** Find the matching query in the caller-owned catalog, or return NULL. */
 const gotel_query_t *gotel_query_find(const gotel_query_t *queries, size_t count, const char *sql);

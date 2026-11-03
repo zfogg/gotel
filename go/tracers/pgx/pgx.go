@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/zfogg/gotel/go"
+	"github.com/zfogg/gotel/go/outcome"
 	gotelsql "github.com/zfogg/gotel/go/tracers/sql"
 	sequel "github.com/zfogg/sequel/go"
 	"go.opentelemetry.io/otel"
@@ -18,13 +18,14 @@ import (
 
 // Config controls pgx database span names and attributes.
 type Config struct {
-	Scope     string                   // OpenTelemetry instrumentation scope.
-	Namer     gotelsql.Namer           // Prefix and validation for database span names.
-	System    string                   // db.system.name; defaults to postgresql.
-	Namespace string                   // Logical database name recorded as db.namespace.
-	Sanitize  gotelsql.SanitizeOptions // SQL template policy; defaults to PostgreSQL.
-	Analysis  *sequel.AnalysisOptions  // Optional unified budgets and bind descriptors.
-	Observe   gotelsql.Observer        // Optional low-cardinality duration observer.
+	Scope     string                                     // OpenTelemetry instrumentation scope.
+	Namer     gotelsql.Namer                             // Prefix and validation for database span names.
+	System    string                                     // db.system.name; defaults to postgresql.
+	Namespace string                                     // Logical database name recorded as db.namespace.
+	Sanitize  gotelsql.SanitizeOptions                   // SQL template policy; defaults to PostgreSQL.
+	Analysis  *sequel.AnalysisOptions                    // Optional unified budgets and bind descriptors.
+	Observe   gotelsql.Observer                          // Optional low-cardinality duration observer.
+	Outcome   func(context.Context, error) outcome.Value // Optional explicit completion policy; errors returned unchanged.
 }
 
 // Tracer implements every pgx tracing hook with safe metadata.
@@ -77,7 +78,7 @@ func (t *Tracer) inspect(ctx context.Context, name, statement string, args []any
 
 // TraceQueryStart starts a named query span.
 func (t *Tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	if gotelsql.TracingDisabled(ctx) {
+	if owned, _ := ctx.Value(lifecycleQueryKey{}).(bool); owned || gotelsql.TracingDisabled(ctx) {
 		return ctx
 	}
 	meta := t.inspect(ctx, "", data.SQL, data.Args)
@@ -93,6 +94,9 @@ func (t *Tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.T
 
 // TraceQueryEnd records result metadata and ends a query span.
 func (t *Tracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
+	if owned, _ := ctx.Value(lifecycleQueryKey{}).(bool); owned || gotelsql.TracingDisabled(ctx) {
+		return
+	}
 	t.end(ctx, stateFrom(ctx, querySpanKey{}), data.Err, data.CommandTag.RowsAffected())
 }
 
@@ -152,6 +156,7 @@ func (t *Tracer) TracePrepareStart(ctx context.Context, conn *pgx.Conn, data pgx
 	}
 	meta := t.inspect(ctx, "Prepare", data.SQL, nil)
 	attrs := append(meta.Attributes(t.config.System, t.config.Namespace), attribute.String("db.stored_procedure.name", data.Name))
+	attrs = append(attrs, gotelsql.OperationKey.String("PREPARE"))
 	attrs = append(attrs, connectionAttributes(conn)...)
 	ctx, span := t.tracer.Start(ctx, meta.Name, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(attrs...))
 	return context.WithValue(ctx, prepareSpanKey{}, spanState{span, time.Now(), "PREPARE"})
@@ -193,14 +198,24 @@ func (t *Tracer) end(ctx context.Context, st spanState, err error, rows int64) {
 	if st.span == nil {
 		return
 	}
-	st.span.SetAttributes(resultAttributes(err, rows)...)
-	gotel.End(st.span, err)
+	classify := t.config.Outcome
+	if classify == nil {
+		classify = outcome.Classify
+	}
+	result := classify(ctx, err)
+	telemetryErr := err
+	if result != outcome.Error {
+		telemetryErr = nil
+	}
+	st.span.SetAttributes(resultAttributes(telemetryErr, rows)...)
+	outcome.Apply(st.span, result, err)
+	st.span.End()
 	if t.config.Observe != nil {
-		result := "ok"
-		if err != nil {
-			result = "error"
-		}
-		t.config.Observe(ctx, st.operation, result, time.Since(st.started))
+		label := string(result)
+		if result == outcome.Success {
+			label = "ok"
+		} // Preserve the existing observer contract.
+		t.config.Observe(ctx, st.operation, label, time.Since(st.started))
 	}
 }
 func resultAttributes(err error, rows int64) []attribute.KeyValue {
