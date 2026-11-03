@@ -1,11 +1,17 @@
 add_library(gotel-testing STATIC ${PROJECT_SOURCE_DIR}/src/testing.c)
 add_library(gotel::testing ALIAS gotel-testing)
 target_link_libraries(gotel-testing PUBLIC gotel::gotel)
+target_include_directories(gotel-testing PRIVATE ${PROJECT_BINARY_DIR}/otlp-tls ${otlp_c_SOURCE_DIR}/src)
 set_target_properties(gotel-testing PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(GOTEL_BUILD_TESTS)
   find_package(Threads REQUIRED)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  add_executable(gotel-capture-probe capture_probe.c)
+  target_link_libraries(gotel-capture-probe PRIVATE gotel::testing Threads::Threads)
+  add_test(NAME gotel-capture COMMAND ${CMAKE_COMMAND} -E env
+    "PYTHONPATH=${PROJECT_SOURCE_DIR}/testing/python"
+    ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/capture_test.py $<TARGET_FILE:gotel-capture-probe>)
   if(GOTEL_WITH_GRPC)
     execute_process(COMMAND ${Python3_EXECUTABLE} -c "import grpc, h2"
       RESULT_VARIABLE _grpc_python_status ERROR_QUIET)

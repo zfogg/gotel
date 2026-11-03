@@ -357,6 +357,33 @@ events, not affected items. Install callbacks before starting producers. Null
 transport exercises queueing, signals, outcomes and retry state, but does not
 validate HTTP or serialized payloads.
 
+For offline assertions on serialized spans, install an owned capture before
+starting producers:
+
+```c
+gotel_test_capture_t *capture = gotel_test_capture_create(4 * 1024 * 1024);
+/* Check allocation and every returned status. Attachment disables network I/O. */
+gotel_test_capture_attach(host, capture);
+/* Produce operations, then join all producers. */
+gotel_test_capture_detach(host);
+const uint8_t *data = NULL;
+size_t bytes = 0;
+otlp_status_t status = gotel_test_capture_read(capture, &data, &bytes);
+/* Only when status == OTLP_OK: consume data before destroying capture. */
+gotel_test_capture_destroy(capture);
+```
+
+The borrowed bytes form one OTLP `ExportTraceServiceRequest` protobuf message,
+including events, links, timestamps, and exporter resource attributes. Feed a
+local capture file to Spaniel's `spaniel-assert --format otlp-proto --input
+capture.pb --spec assertions.json`, or decode it with `gotel_testing` for library
+tests. The helper observes completed submissions before queue acceptance; it
+tests instrumentation, not delivery. Producer calls are synchronized across
+hosts, but installation, detachment, reading, and destruction require stopped
+producers. Exceeding the retained-byte limit or failing encoding makes reads fail
+without returning partial data. Encoding uses temporary memory for one span.
+Capture does not perform additional redaction; retain artifacts locally.
+
 For actual wire assertions, add `c/testing/python` to the test's Python
 module path and import `Collector`, `Response`, `protobuf`, `records`, and
 `service_names` from `gotel_testing`. The standard-library-only collector binds

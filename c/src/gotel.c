@@ -289,7 +289,8 @@ otlp_status_t gotel_publish_span_snapshot(gotel_host_t *h, const gotel_span_snap
   SNAPSHOT_SET(otlp_span_set_attribute_bool(span, "gotel.span.incomplete", true));
   SNAPSHOT_SET(otlp_span_set_attribute_string(span, "gotel.span.snapshot.reason", "thread.deadlock"));
   SNAPSHOT_SET(otlp_span_set_status(span, OTLP_STATUS_CODE_ERROR, "Unfinished operation observed during deadlock"));
-  SNAPSHOT_SET(otlp_exporter_emit(h->exporter, span));
+  status = gotel_submit_span(h, span);
+  span = NULL;
 done:
 #undef SNAPSHOT_SET
   otlp_span_free(span);
@@ -334,8 +335,16 @@ void gotel_emit_span(gotel_host_t *h, otlp_span_t *span) {
   if (!span)
     return;
   otlp_span_mark_end(span);
-  otlp_exporter_emit(h->exporter, span);
+  gotel_submit_span(h, span);
+}
+otlp_status_t gotel_submit_span(gotel_host_t *h, otlp_span_t *span) {
+  if (!span)
+    return OTLP_ERR_NULL;
+  if (h->span_observer)
+    h->span_observer(h->span_observer_context, h, span);
+  otlp_status_t status = otlp_exporter_emit(h->exporter, span);
   otlp_span_free(span);
+  return status;
 }
 void gotel_end(gotel_scope_t *s) {
   if (!s || !s->active)
