@@ -17,7 +17,7 @@ include(cmake/TextDependencies.cmake)
 if(NOT TARGET sequel::sequel)
   FetchContent_Declare(sequel
     GIT_REPOSITORY https://github.com/zfogg/sequel.git
-    GIT_TAG 77a21f8c8dee0672609b5a9be3a0958e1871fe07)
+    GIT_TAG f85ed6484f4ccd365e628b83633de4717c7d27b6)
   FetchContent_MakeAvailable(sequel)
 endif()
 
