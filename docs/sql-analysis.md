@@ -66,6 +66,9 @@ Python also accepts Sequel's `omit_source_maps=False` and
 Sequel defaults: 1 GiB input/output/memory ceilings and unlimited work.
 `max_query_text_bytes` controls template truncation independently from the total
 output budget. There is no smaller hidden global SQL input limit.
+Ordinary Python analysis/cancellation-callback failures produce `analysis_error`
+without exception prose and do not prevent the database call. Task cancellation,
+`KeyboardInterrupt` and `SystemExit` still propagate.
 
 C callers zero-initialize `sequel_analysis_options_t`, set the corresponding
 `omit_*` fields according to their policy, call `sequel_analyze[_n]`, then call

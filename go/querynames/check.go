@@ -146,7 +146,7 @@ func (c *checker) checkPackages(pkgs []*packages.Package) (int, []error) {
 						valid = pascalName.MatchString(name)
 					}
 					if !valid {
-						errors = append(errors, fmt.Errorf("%s: invalid source-owned query name %q", where, name))
+						errors = append(errors, fmt.Errorf("%s: invalid source-owned query name; expected a static identifier", where))
 						continue
 					}
 					if prior, ok := seen[name]; ok && prior != where {

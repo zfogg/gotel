@@ -360,10 +360,18 @@ func metadataFromInspection(namer Namer, explicitName string, argumentCount int,
 	simple := strings.TrimSpace(explicitName)
 	qualified := ""
 	if simple != "" {
-		qualified, _ = namer.Parse(simple)
+		var err error
+		qualified, err = namer.Parse(simple)
+		if err != nil {
+			// Invalid dynamic labels can contain SQL or values. Fall back to a
+			// source SQLC name/operation instead of deriving a name from that input.
+			simple = ""
+		}
 	}
 	if simple == "" {
-		simple = cached.simple
+		if candidate, err := namer.Parse(cached.simple); err == nil {
+			simple, qualified = cached.simple, candidate
+		}
 	}
 	if simple == "" {
 		simple = operation

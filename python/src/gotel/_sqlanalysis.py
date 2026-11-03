@@ -6,6 +6,7 @@ import copy
 import json
 import sys
 from collections import OrderedDict
+from concurrent.futures import CancelledError as FutureCancelledError
 from dataclasses import asdict, dataclass
 from threading import Lock
 from typing import Any
@@ -25,6 +26,7 @@ class CacheStats:
     memory and max_bytes is the configured budget. Zero max_bytes disables
     retention; allocator bookkeeping is excluded.
     """
+
     hits: int
     misses: int
     evictions: int
@@ -128,7 +130,12 @@ def _analyze(sql: str, dialect, policy: dict) -> dict:
     options.setdefault("omit_source_maps", True)
     try:
         query = sequel.analyze(sql, dialect=dialect, **options)
-    except (sequel.SQLInspectionError, TypeError, ValueError):
+    except FutureCancelledError:
+        raise
+    except Exception:
+        # Analysis callbacks may fail with an ordinary application exception.
+        # Telemetry must not prevent execution or publish its exception text.
+        # BaseException interruptions and task cancellation still propagate.
         try:
             original_length = len(sql.encode()) if isinstance(sql, str) else 0
         except UnicodeError:
@@ -224,8 +231,10 @@ def attributes(sql, dialect, system, namespace, policy):
     # cached success. Unknown/unhashable policy objects also skip retention.
     # Retain only plain immutable policy scalars; user objects can own arbitrary
     # allocations that sys.getsizeof cannot account for recursively.
-    cacheable = policy.get("cancelled") is None and type(sql) is str and all(
-        type(value) in {bool, int, str, type(None)} for value in policy.values()
+    cacheable = (
+        policy.get("cancelled") is None
+        and type(sql) is str
+        and all(type(value) in {bool, int, str, type(None)} for value in policy.values())
     )
     key = (sql, dialect, tuple(sorted(policy.items())))
     if cacheable:
