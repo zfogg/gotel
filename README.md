@@ -378,6 +378,12 @@ for example an `AuthenticatedSpanExporter` that drops queued spans after
 logout. Call `shutdownBrowserTelemetry(serviceName)` when your application
 tears down the provider.
 
+The browser provider removes URL credentials, query strings and fragments from
+exported HTTP URL attributes and events. It leaves the actual fetch request
+unchanged. Applications that own their provider can wrap their exporter with
+`withoutPrivateHttpUrls` for the same policy. Fetch instrumentation binds to
+the selected provider and can be restarted after shutdown.
+
 ## Development and reference
 
 Run Go tests with `go -C go test ./...` and browser tests with `pnpm test`.
