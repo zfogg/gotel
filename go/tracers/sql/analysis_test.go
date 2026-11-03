@@ -36,6 +36,17 @@ func TestUnifiedAnalysisReasonsAndPrivacy(t *testing.T) {
 	}
 }
 
+func TestInvalidExplicitNameCannotBecomeSpanName(t *testing.T) {
+	m := Inspect(Namer{}, "SELECT 'private-value'", "SELECT id FROM widgets", nil)
+	if m.Name != "SELECT" || strings.Contains(m.Name, "private") {
+		t.Fatalf("unsafe fallback name %q", m.Name)
+	}
+	m = Inspect(Namer{}, "", "-- name: private-value :one\nSELECT id FROM widgets", nil)
+	if m.Name != "SELECT" {
+		t.Fatalf("invalid SQLC comment became a name: %q", m.Name)
+	}
+}
+
 func TestUnifiedFingerprintMapAndBinds(t *testing.T) {
 	options := sequel.AnalysisOptions{Dialect: DialectPostgreSQL, Format: true}
 	sql := "-- leading\r\nSELECT '🔒secret', id FROM widgets WHERE id=$1 OR parent=$1"

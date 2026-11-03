@@ -1,4 +1,7 @@
+import asyncio
 import json
+import sqlite3
+from concurrent.futures import CancelledError as FutureCancelledError
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -6,6 +9,7 @@ import sequel
 
 from gotel import sqltrace
 from gotel._sqlanalysis import _Cache, _size
+from gotel.testing import Capture
 
 
 @pytest.fixture(autouse=True)
@@ -107,3 +111,30 @@ def test_cache_concurrent_reset_and_cancellation():
     attrs = sqltrace._attributes("SELECT 1", sequel.Dialect.GENERIC, "sqlite", "", {"cancelled": lambda: True})
     assert attrs["gotel.db.query.text_reason"] == "cancelled"
     assert sqltrace._attributes("SELECT 1", sequel.Dialect.GENERIC, "sqlite", "", {})["db.query.text"]
+
+
+def test_analysis_callback_failure_preserves_real_database_execution():
+    def broken_callback():
+        raise RuntimeError("private-value")
+
+    with sqlite3.connect(":memory:") as database, Capture() as capture:
+        namer = sqltrace.Namer("storage.sqlite", tracer_provider=capture.provider)
+        with namer.query(
+            "Read", sql="SELECT ?", system="sqlite", dialect=sequel.Dialect.SQLITE, cancelled=broken_callback
+        ):
+            assert database.execute("SELECT ?", ("private-value",)).fetchone() == ("private-value",)
+        attrs = capture.spans[0].attributes
+        assert attrs["gotel.db.query.text_reason"] == "analysis_error"
+        assert attrs["gotel.db.query.analysis_status"] == "error"
+        assert "db.query.text" not in attrs
+        assert "gotel.db.query.fingerprint" not in attrs
+        capture.require_no_values("private-value")
+
+
+@pytest.mark.parametrize("error_type", [asyncio.CancelledError, FutureCancelledError, KeyboardInterrupt, SystemExit])
+def test_analysis_cancellation_and_interrupts_are_not_swallowed(error_type):
+    def cancelled():
+        raise error_type()
+
+    with pytest.raises(error_type):
+        sqltrace._attributes("SELECT 1", sequel.Dialect.GENERIC, "sqlite", "", {"cancelled": cancelled})

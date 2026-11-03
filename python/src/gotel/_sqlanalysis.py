@@ -6,6 +6,7 @@ import copy
 import json
 import sys
 from collections import OrderedDict
+from concurrent.futures import CancelledError as FutureCancelledError
 from dataclasses import asdict, dataclass
 from threading import Lock
 from typing import Any
@@ -129,7 +130,12 @@ def _analyze(sql: str, dialect, policy: dict) -> dict:
     options.setdefault("omit_source_maps", True)
     try:
         query = sequel.analyze(sql, dialect=dialect, **options)
-    except (sequel.SQLInspectionError, TypeError, ValueError):
+    except FutureCancelledError:
+        raise
+    except Exception:
+        # Analysis callbacks may fail with an ordinary application exception.
+        # Telemetry must not prevent execution or publish its exception text.
+        # BaseException interruptions and task cancellation still propagate.
         try:
             original_length = len(sql.encode()) if isinstance(sql, str) else 0
         except UnicodeError:

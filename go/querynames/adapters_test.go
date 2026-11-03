@@ -20,6 +20,7 @@ func TestTypedExecutionAdapters(t *testing.T) {
 		{"sqlc constant", `const sql="-- name: ReadWidget :one\nSELECT id FROM widgets WHERE id=$1";db.Query(Context{},sql,1)`, "", false, 1},
 		{"typed context alias", `ctx:=Name(Context{},"ReadWidget");db.Query(ctx,"SELECT id FROM widgets")`, "", false, 1},
 		{"runtime context name", `ctx:=Name(Context{},runtimeName);db.Query(ctx,"SELECT id FROM widgets")`, "static query name", false, 1},
+		{"invalid name redaction", `ctx:=Name(Context{},"SELECT 'private-value'");db.Query(ctx,"SELECT id FROM widgets")`, "invalid source-owned", false, 1},
 		{"dynamic SQL", `ctx:=Name(Context{},"ReadWidget");db.Query(ctx,runtimeSQL)`, "dynamic SQL identity", false, 1},
 		{"caller owned", `db.Query(Context{},"SELECT id FROM widgets")`, "", true, 1},
 		{"decoy context argument", `db.Query(Context{},"SELECT id FROM widgets",Name(Context{},"Decoy"))`, "static query name", false, 1},
@@ -56,6 +57,9 @@ func(*Owner)ReadWidget(db *DB,other *Other,runtimeName,runtimeSQL string){`+tc.b
 				return
 			}
 			for _, err := range errors {
+				if strings.Contains(err.Error(), "private-value") {
+					t.Fatal("invalid name leaked into a diagnostic")
+				}
 				if strings.Contains(err.Error(), tc.want) {
 					return
 				}
