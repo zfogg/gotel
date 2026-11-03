@@ -9,9 +9,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-import sequel
-
-from .querynames import CConfig, Issue, NamingError, Registry, Report
+from .querynames import CConfig, Issue, NamingError, Registry, Report, _sql_identities
 
 Node = dict[str, Any]
 
@@ -58,7 +56,7 @@ def check_c(paths: Iterable[str | Path], config: CConfig) -> Report:
     """Use evaluated typed initializers, aliases and forwarding call arguments."""
     report = Report()
     registry = Registry(check_duplicate_definitions=config.check_duplicate_definitions)
-    # Fingerprints associate static templates with their source-owned catalog
+    # Literal-preserving definitions associate templates with their source-owned catalog
     # names. Repeated compilation of an included catalog is harmless.
     catalog: dict[str, str] = {}
     for path_value in paths:
@@ -163,8 +161,8 @@ def check_c(paths: Iterable[str | Path], config: CConfig) -> Report:
                     continue
                 records.append((name, sql))
                 try:
-                    registry.observe(name, sql, dialect=config.dialect)
-                    catalog[sequel.fingerprint(sql, dialect=config.dialect)] = name
+                    identity = registry._observe_static(name, sql, config.dialect, config.definition_identity)
+                    catalog[identity] = name
                 except NamingError as exc:
                     report.issues.append(Issue(str(path), 1, "identity", str(exc)))
             arrays[node["id"]] = records
@@ -234,8 +232,8 @@ def check_c(paths: Iterable[str | Path], config: CConfig) -> Report:
                 else:
                     for sql in set(values):
                         try:
-                            identity = sequel.fingerprint(sql, dialect=config.dialect)
-                        except (ValueError, TypeError):
+                            identity, _ = _sql_identities(sql, config.dialect, config.definition_identity)
+                        except NamingError:
                             identity = ""
                         if identity not in catalog:
                             report.issues.append(

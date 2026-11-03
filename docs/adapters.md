@@ -65,6 +65,10 @@ classification callback. Original driver errors are unchanged. pgx implements
 pool AcquireTracer/ReleaseTracer; acquire duration includes failed waits. Release
 has no SDK caller context and is an independent instantaneous observation.
 
+PostgreSQL SQLSTATE is extracted through driver error wrappers, including
+`pgconn.PrepareError`. Telemetry retains the outer error type while leaving the
+original caller error unchanged; database and wrapper messages are excluded.
+
 ```go
 tx, err := tracer.Begin(ctx, pool) // or BeginTx with pgx.TxOptions
 if err != nil { return err }

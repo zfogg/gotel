@@ -25,6 +25,9 @@ func TestTypedExecutionAdapters(t *testing.T) {
 		{"caller owned", `db.Query(Context{},"SELECT id FROM widgets")`, "", true, 1},
 		{"decoy context argument", `db.Query(Context{},"SELECT id FROM widgets",Name(Context{},"Decoy"))`, "static query name", false, 1},
 		{"other receiver", `other.Query(Context{},"SELECT id FROM widgets")`, "", false, 0},
+		{"same body distinct SQLC names", `const one="-- name: One :one\nSELECT id FROM widgets WHERE key=$1";const two="-- name: Two :one\nSELECT id FROM widgets WHERE key=$1";db.Query(Context{},one);db.Query(Context{},two)`, "duplicates the definition", false, 2},
+		{"distinct fixed literal semantics", `db.Query(Name(Context{},"Fill"),"SELECT id FROM widgets WHERE key='fill'");db.Query(Name(Context{},"Alert"),"SELECT id FROM widgets WHERE key=$1")`, "", false, 2},
+		{"literal whitespace is semantic", `db.Query(Name(Context{},"One"),"SELECT 'two spaces'");db.Query(Name(Context{},"Two"),"SELECT 'two  spaces'")`, "", false, 2},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			fs := token.NewFileSet()

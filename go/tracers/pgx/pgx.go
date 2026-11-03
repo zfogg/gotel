@@ -3,6 +3,7 @@ package pgx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -225,7 +226,8 @@ func resultAttributes(err error, rows int64) []attribute.KeyValue {
 	}
 	if err != nil {
 		attrs = append(attrs, attribute.String("error.type", fmt.Sprintf("%T", err)))
-		if pgErr, ok := err.(*pgconn.PgError); ok {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
 			attrs = append(attrs, attribute.String("db.response.status_code", pgErr.Code))
 		}
 	}

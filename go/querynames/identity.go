@@ -1,6 +1,9 @@
 package querynames
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"go/ast"
 	"go/types"
 	"strconv"
@@ -10,7 +13,8 @@ import (
 )
 
 // queryDefinition identifies statically declared SQL and simple GORM model
-// queries. Bound values do not change identity. Complex clauses are left to
+// queries. Fixed SQL literals and markers retain their semantics by default;
+// bound argument values do not change template identity. Complex clauses are left to
 // their explicit definitions and runtime trace lint rather than guessed.
 func (ck *checker) queryDefinition(call *ast.CallExpr, info *types.Info) string {
 	sel, ok := call.Fun.(*ast.SelectorExpr)
@@ -25,7 +29,7 @@ func (ck *checker) queryDefinition(call *ast.CallExpr, info *types.Info) string 
 		if !ok {
 			return ""
 		}
-		shape := ck.queryShape(s)
+		shape := ck.queryIdentity(s)
 		if shape == "" {
 			return ""
 		}
@@ -62,7 +66,7 @@ func (ck *checker) queryDefinition(call *ast.CallExpr, info *types.Info) string 
 		if !ok {
 			return ""
 		}
-		parts = append(parts, "Where:"+ck.queryShape(s))
+		parts = append(parts, "Where:"+ck.queryIdentity(s))
 	}
 	return "gorm:" + op + ":" + model + ":" + strings.Join(parts, "|")
 }
@@ -98,7 +102,7 @@ func (ck *checker) queryScope(e ast.Expr, info *types.Info) ([]string, string, b
 			if !ok {
 				return nil, "", false
 			}
-			return append(p, s.Sel.Name+":"+ck.queryShape(v)), m, true
+			return append(p, s.Sel.Name+":"+ck.queryIdentity(v)), m, true
 		default:
 			return nil, "", false
 		}
@@ -130,14 +134,64 @@ func queryModel(t types.Type) string {
 		}
 	}
 }
-func (ck *checker) queryShape(s string) string {
+func (ck *checker) queryIdentity(s string) string {
 	dialect := ck.config.Dialect
 	if dialect == "" {
 		dialect = sequel.DialectPostgreSQL
 	}
-	q, err := sequel.Fingerprint(dialect, s)
+	identity, _, err := sqlDefinitionIdentity(s, dialect, ck.config.DefinitionIdentity)
 	if err != nil {
 		return ""
 	}
-	return q
+	return identity
+}
+
+func sqlDefinitionIdentity(s string, dialect sequel.Dialect, policy DefinitionIdentity) (string, string, error) {
+	if policy != "" && policy != DefinitionExact && policy != DefinitionShape {
+		return "", "", fmt.Errorf("unknown static SQL definition identity policy")
+	}
+	if dialect == "" {
+		dialect = sequel.DialectGeneric
+	}
+	q, err := sequel.Fingerprint(dialect, s)
+	if err != nil {
+		return "", "", fmt.Errorf("query identity unavailable; manual review required")
+	}
+	if policy == DefinitionShape {
+		return q, q, nil
+	}
+	body := stripSQLCNaming(s)
+	if body == "" {
+		return "", "", fmt.Errorf("query definition is empty; manual review required")
+	}
+	digest := sha256.Sum256([]byte(body))
+	return "definition:exact:" + string(dialect) + ":" + hex.EncodeToString(digest[:]), q, nil
+}
+
+// stripSQLCNaming only considers leading line comments, where -- is known to be
+// outside a literal. A SQLC-looking line inside a quoted body remains untouched.
+// Other comments, hints, bind markers and literal whitespace are retained.
+func stripSQLCNaming(sql string) string {
+	var body strings.Builder
+	remaining := sql
+	for remaining != "" {
+		line, rest, newline := strings.Cut(remaining, "\n")
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" && !strings.HasPrefix(trimmed, "--") {
+			body.WriteString(remaining)
+			break
+		}
+		comment := strings.TrimSpace(strings.TrimPrefix(trimmed, "--"))
+		if !strings.HasPrefix(comment, "name:") {
+			body.WriteString(line)
+			if newline {
+				body.WriteByte('\n')
+			}
+		}
+		if !newline {
+			break
+		}
+		remaining = rest
+	}
+	return strings.TrimSpace(body.String())
 }

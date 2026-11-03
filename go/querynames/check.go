@@ -28,6 +28,9 @@ func Check(root string, configs ...Config) (int, []error) {
 
 // Check applies this project's source naming policy.
 func (config Config) Check(root string) (int, []error) {
+	if config.DefinitionIdentity != "" && config.DefinitionIdentity != DefinitionExact && config.DefinitionIdentity != DefinitionShape {
+		return 0, []error{fmt.Errorf("unknown static SQL definition identity policy")}
+	}
 	c := &checker{config: config}
 	patterns := config.Patterns
 	if len(patterns) == 0 {
@@ -122,7 +125,7 @@ func (c *checker) checkPackages(pkgs []*packages.Package) (int, []error) {
 				definition := c.queryDefinition(call, pkg.TypesInfo)
 				if rule.SQLArgument >= 0 && rule.SQLArgument < len(call.Args) {
 					if sql, ok := constantString(call.Args[rule.SQLArgument], pkg.TypesInfo); ok {
-						shape := c.queryShape(sql)
+						shape := c.queryIdentity(sql)
 						if shape == "" {
 							errors = append(errors, fmt.Errorf("%s: SQL identity unavailable; manual review required", where))
 						} else {

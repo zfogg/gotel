@@ -19,7 +19,8 @@ func TestQueryNamingBoundary(t *testing.T) {
 		name, body, want string
 		count            int
 	}{
-		{"same SQL different names", `store.NamedQuery(db,"ReadAccount").Raw("SELECT cash FROM accounts WHERE id=1").Scan(&value); store.NamedQuery(db,"OtherReadAccount").Raw("SELECT cash FROM accounts WHERE id=2").Scan(&value)`, "duplicates the definition", 2},
+		{"same SQL different names", `store.NamedQuery(db,"ReadAccount").Raw("SELECT cash FROM accounts WHERE id=1").Scan(&value); store.NamedQuery(db,"OtherReadAccount").Raw("SELECT cash FROM accounts WHERE id=1").Scan(&value)`, "duplicates the definition", 2},
+		{"distinct fixed literals", `store.NamedQuery(db,"ReadAccountOne").Raw("SELECT cash FROM accounts WHERE id=1").Scan(&value); store.NamedQuery(db,"ReadAccountTwo").Raw("SELECT cash FROM accounts WHERE id=2").Scan(&value)`, "", 2},
 		{"same model different names", `type Account struct{ID string}; var a Account; store.NamedQuery(db,"GetAccount").First(&a,"id=?",1); store.NamedQuery(db,"OtherAccount").First(&a,"id=?",2)`, "duplicates the definition", 2},
 		{"different model scope", `type Account struct{ID string}; var a Account; store.NamedQuery(db.Where("NOT archived"),"ActiveAccount").First(&a,"id=?",1); store.NamedQuery(db.Where("archived"),"ArchivedAccount").First(&a,"id=?",2)`, "", 2},
 		{"different SQL beyond text cap", `store.NamedQuery(db,"Short").Raw("SELECT cash FROM accounts").Scan(&value); store.NamedQuery(db,"Other").Raw("SELECT cash FROM accounts WHERE archived").Scan(&value)`, "", 2},

@@ -8,11 +8,13 @@ review or a runtime Registry check; they are never guessed to be static.
 from __future__ import annotations
 
 import ast
+import hashlib
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Lock
+from typing import Literal
 
 import sequel
 
@@ -25,19 +27,25 @@ class NamingError(ValueError):
 
 
 class Registry:
-    """Bounded concurrent name-to-fingerprint identity checks for dynamic SQL."""
+    """Bounded concurrent runtime-shape and source-definition checks.
+
+    ``observe``/``observe_fingerprint`` enforce same-name shape consistency and
+    permit distinct names sharing a fingerprint. ``observe_definition`` compares
+    literal-preserving source bodies. ``check_duplicate_definitions`` controls
+    only cross-name exact-definition checks; it never weakens same-name checks.
+    """
 
     def __init__(self, max_entries: int = 4096, *, check_duplicate_definitions: bool = True):
         if max_entries < 1:
             raise ValueError("max_entries must be positive")
         self.max_entries = max_entries
         self.check_duplicate_definitions = check_duplicate_definitions
-        self._names: dict[str, str] = {}
-        self._shapes: dict[str, str] = {}
+        self._names: dict[str, tuple[str, str | None]] = {}
+        self._definitions: dict[str, str] = {}
         self._lock = Lock()
 
     def observe(self, name: str, sql: str, *, dialect: sequel.Dialect = sequel.Dialect.GENERIC) -> None:
-        """Reject missing names, malformed SQL, or conflicting canonical identities."""
+        """Check a runtime shape without inferring duplicate source definitions."""
         try:
             fingerprint = sequel.fingerprint(sql, dialect=dialect)
         except (ValueError, TypeError):
@@ -45,23 +53,78 @@ class Registry:
         self.observe_fingerprint(name, fingerprint)
 
     def observe_fingerprint(self, name: str, fingerprint: str) -> None:
-        """Check an already-analyzed versioned identity; no SQL is retained."""
+        """Check same-name shape consistency; different names may share a shape."""
         if not _IDENTIFIER.fullmatch(name):
             raise NamingError("query name must be a static identifier")
         if not _FINGERPRINT.fullmatch(fingerprint):
             raise NamingError("query identity unavailable; manual review required")
+        self._observe(name, fingerprint)
+
+    def observe_definition(self, name: str, sql: str, *, dialect: sequel.Dialect = sequel.Dialect.GENERIC) -> None:
+        """Register a fixed source template, preserving literal/marker semantics.
+
+        Leading SQLC name directives and outer whitespace are excluded. Other
+        comments and literal whitespace are retained. Only digests are stored;
+        do not pass SQL containing interpolated runtime values to this method.
+        """
+        self._observe_static(name, sql, dialect, "exact")
+
+    def _observe_static(self, name: str, sql: str, dialect, policy: Literal["exact", "shape"]) -> str:
+        identity, fingerprint = _sql_identities(sql, dialect, policy)
+        if not _IDENTIFIER.fullmatch(name):
+            raise NamingError("query name must be a static identifier")
+        self._observe(name, fingerprint, identity)
+        return identity
+
+    def _observe(self, name: str, fingerprint: str, definition: str | None = None) -> None:
         with self._lock:
             prior = self._names.get(name)
-            if prior is not None:
-                if prior != fingerprint:
-                    raise NamingError(f"query name {name} is reused for a different definition")
-                return
-            if self.check_duplicate_definitions and fingerprint in self._shapes:
-                raise NamingError(f"query {name} duplicates the definition of {self._shapes[fingerprint]}")
-            if len(self._names) >= self.max_entries:
+            if prior is not None and prior[0] != fingerprint:
+                raise NamingError(f"query name {name} is reused for a different shape")
+            if definition is not None and prior is not None and prior[1] is not None and prior[1] != definition:
+                raise NamingError(f"query name {name} is reused for a different source definition")
+            owner = self._definitions.get(definition) if definition is not None else None
+            if self.check_duplicate_definitions and owner is not None and owner != name:
+                raise NamingError(f"query {name} duplicates the definition of {owner}")
+            if prior is None and len(self._names) >= self.max_entries:
                 raise NamingError("query identity registry capacity exceeded")
-            self._names[name] = fingerprint
-            self._shapes[fingerprint] = name
+            self._names[name] = (fingerprint, definition if definition is not None else prior[1] if prior else None)
+            if definition is not None:
+                self._definitions[definition] = name
+
+
+def _sql_identities(sql: str, dialect, policy: Literal["exact", "shape"]) -> tuple[str, str]:
+    if policy not in {"exact", "shape"}:
+        raise NamingError("unknown static SQL definition identity policy")
+    try:
+        fingerprint = sequel.fingerprint(sql, dialect=dialect)
+    except (ValueError, TypeError):
+        raise NamingError("query identity unavailable; manual review required") from None
+    if policy == "shape":
+        return fingerprint, fingerprint
+    remaining = sql
+    parts: list[str] = []
+    # Leading -- comments are necessarily outside quoted SQL. Once code starts,
+    # preserve every byte, including SQLC-looking text inside multiline literals.
+    while remaining:
+        line, newline, rest = remaining.partition("\n")
+        trimmed = line.strip()
+        if trimmed and not trimmed.startswith("--"):
+            parts.append(remaining)
+            break
+        comment = trimmed.removeprefix("--").strip()
+        if not comment.startswith("name:"):
+            parts.append(line + newline)
+        if not newline:
+            break
+        remaining = rest
+    body = "".join(parts).strip()
+    if not body:
+        raise NamingError("query definition is empty; manual review required")
+    # Internal lint identity only. It includes fixed literals and must never be
+    # emitted as the privacy-redacted telemetry fingerprint.
+    identity = "definition:exact:" + fingerprint.split(":")[2] + ":" + hashlib.sha256(body.encode()).hexdigest()
+    return identity, fingerprint
 
 
 @dataclass(frozen=True)
@@ -119,6 +182,9 @@ class PythonConfig:
     allow_dynamic_sql: bool = False
     pascal_case: bool = False
     check_duplicate_definitions: bool = True
+    # Exact source bodies preserve fixed literals/markers; redacted shape
+    # comparison is an explicit compatibility policy, never the default.
+    definition_identity: Literal["exact", "shape"] = "exact"
     # Only awaited direct calls match these methods; named wrappers still match
     # all executors. This distinguishes e.g. async ORM get from mapping.get.
     awaited_executors: tuple[str, ...] = ()
@@ -157,6 +223,7 @@ class CConfig:
     timeout_seconds: float = 60
     allow_dynamic_sql: bool = False
     check_duplicate_definitions: bool = True
+    definition_identity: Literal["exact", "shape"] = "exact"
 
 
 def _dotted(node: ast.expr, imports: dict[str, str]) -> str:
@@ -391,7 +458,7 @@ def check_python(paths: Iterable[str | Path], config: PythonConfig = PythonConfi
                 return
             if operation is not None:
                 try:
-                    registry.observe(operation, sql, dialect=config.dialect)
+                    registry._observe_static(operation, sql, config.dialect, config.definition_identity)
                 except NamingError as exc:
                     issue(node, "identity", str(exc))
 

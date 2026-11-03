@@ -47,12 +47,28 @@ type NamingFunction struct {
 	Context bool
 }
 
+// DefinitionIdentity chooses how a static SQL template is compared. Definition
+// keys are internal lint metadata and are never exported as telemetry.
+type DefinitionIdentity string
+
+const (
+	// DefinitionExact preserves fixed SQL literals, parameter markers and comments,
+	// excluding leading SQLC naming directives and outer whitespace. This is the
+	// default. Bound Go argument values are not part of a SQL template definition.
+	DefinitionExact DefinitionIdentity = "exact"
+	// DefinitionShape deliberately compares Sequel's literal-redacted query shape.
+	// Use only when distinct fixed literals should be one project-owned definition.
+	DefinitionShape DefinitionIdentity = "shape"
+)
+
 // Config describes the project's naming boundary. Patterns defaults to ./....
 // Exclude and DefinitionFiles match slash-normalized path suffixes using glob
 // patterns (for example */storage_queries.gen.go). Exclude also accepts a
 // directory fragment ending in /. Tests and generated source are not implicitly
 // excluded: projects must state which files belong to the boundary.
 type Config struct {
+	// DefinitionIdentity defaults to DefinitionExact; shape comparison is opt-in.
+	DefinitionIdentity DefinitionIdentity
 	// Dialect selects static SQL fingerprint rules; empty uses PostgreSQL.
 	Dialect sequel.Dialect
 	// Context cancels package loading and compiler subprocesses; nil is unbounded.

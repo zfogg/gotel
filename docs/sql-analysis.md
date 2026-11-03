@@ -133,6 +133,18 @@ SQL, duplicate definitions, overwritten contexts and caller-built scopes passed
 into a generated catalog. It returns execution count plus actionable errors.
 `Config.Context` cancels package loading and compiler subprocesses.
 
+Static definition comparison defaults to exact source bodies. Its internal
+digests preserve fixed SQL literals, bind-marker spelling/repetition, comments
+and whitespace inside literals; only leading SQLC `-- name:` directives and
+outer whitespace are excluded. For example, `WHERE key='fill'` and
+`WHERE key=$1` are different definitions, as are `'completed'` and `'failed'`.
+Bound argument values outside the SQL string are not part of a template's
+definition. The comparison is conservative rather than an SQL equivalence
+proof. Go `Config.DefinitionIdentity=DefinitionShape` and Python/C
+`definition_identity="shape"` deliberately opt into redacted shape comparison
+when that is the project's intended policy. These definition digests are lint
+metadata and are never emitted as telemetry fingerprints.
+
 `AllowCall` is a narrow per-call policy hook for verified decorators;
 `UnchangedForwarder` proves unchanged receiver/SQL/variadic forwarding. Restrict
 the receiver type and delegate field in the application before invoking that
@@ -156,7 +168,22 @@ Both reports expose issues and a checked execution count. Python
 also assert that the count is nonzero to catch accidental policy exclusions.
 
 Go `querynames.NewRegistry(limit)` and Python `querynames.Registry(limit)` check
-runtime name-to-fingerprint consistency for dynamic SQL. They are concurrent,
-bounded, retain no SQL or argument values, reject conflicting definitions and
-report capacity exhaustion rather than evict identities. Callers decide whether
-to surface naming errors in tests or telemetry; do not replace driver results.
+runtime name-to-fingerprint consistency for dynamic SQL. `Observe` / `observe`
+and `ObserveFingerprint` / `observe_fingerprint` reject one name changing shape
+and permit distinct names sharing a fingerprint. A redacted shape cannot prove
+that different source operations have duplicate definitions.
+
+`ObserveDefinition` / `observe_definition` explicitly registers a fixed,
+literal-preserving source template. It rejects one name changing source body and
+by default rejects different names for the same exact body. Go
+`NewRegistryWithConfig(RegistryConfig{AllowDuplicateDefinitions:true})` or Python
+`Registry(check_duplicate_definitions=False)` permits cross-name exact copies;
+same-name consistency still applies. Python's duplicate-definition setting does
+not restrict fingerprint-only observations. Use this source-definition API only
+for source-owned templates, not SQL with interpolated runtime values.
+
+Registries are concurrent and bounded, retain names/digests without SQL or
+argument values, and report capacity exhaustion rather than evict identities.
+Callers decide whether to surface naming errors in tests or telemetry; do not
+replace driver results. Definition digests must never be exported as the
+privacy-redacted `gotel.db.query.fingerprint` attribute.
