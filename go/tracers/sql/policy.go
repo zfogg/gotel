@@ -17,4 +17,9 @@ const (
 type SanitizeOptions = sequel.SanitizeOptions
 type SanitizedQuery = sequel.SanitizedQuery
 
+// AnalysisOptions is Sequel's unified per-call analysis policy. Explicit options
+// enable source maps/bind descriptors unless their Omit fields are set. Resource
+// budgets are bytes or work units; zero preserves Sequel's 1GiB/default ceiling.
+type AnalysisOptions = sequel.AnalysisOptions
+
 const DefaultMaxQueryTextBytes = sequel.DefaultMaxQueryTextBytes

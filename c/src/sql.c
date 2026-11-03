@@ -20,6 +20,8 @@ static void json_string(char **out, const char *value) {
   **out = 0;
 }
 
+#include "sql_analysis.inc"
+
 void gotel_sql_diagnostics(otlp_span_t *span, const char *sql, sequel_dialect_t dialect) {
   if (!span)
     return;

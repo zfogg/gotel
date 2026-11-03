@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
-import json
 import re
 import time
 from collections.abc import Awaitable, Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import asdict
 from typing import ParamSpec, TypeVar
 
 import sequel
 from opentelemetry import metrics, trace
 from opentelemetry.instrumentation.utils import is_instrumentation_enabled, suppress_instrumentation
 
+from ._sqlanalysis import CacheStats as CacheStats
+from ._sqlanalysis import attributes as _analysis_attributes
+from ._sqlanalysis import configure_inspection_cache as configure_inspection_cache
+from ._sqlanalysis import inspection_cache_stats as inspection_cache_stats
 from .application import GotelApp
 
 _operation: ContextVar[str | None] = ContextVar("gotel.sql.operation", default=None)
@@ -68,31 +70,7 @@ def call_sync(operation: str, execute: Callable[_P, _T], /, *args: _P.args, **kw
 
 
 def _attributes(sql, dialect, system, namespace, policy):
-    attrs = {"db.system.name": system, "db.query.diagnostics": []}
-    if namespace:
-        attrs["db.namespace"] = namespace
-    try:
-        diagnostic = sequel.diagnose(sql, dialect=dialect)
-        if diagnostic.code != "none":
-            attrs["db.query.diagnostics"] = [json.dumps(asdict(diagnostic), separators=(",", ":"))]
-        query = sequel.inspect(sql, dialect=dialect, **policy)
-    except (sequel.SQLInspectionError, TypeError):
-        return attrs  # No raw SQL, exception text, or partial template on failure.
-    attrs.update({"db.query.summary": query.summary, "gotel.db.query.statement_count": query.statement_count})
-    if query.operation:
-        attrs["db.operation.name"] = query.operation
-    if query.text:
-        # Keep the complete bounded template when layout would expand past the
-        # collection cap. Formatting must not introduce silent truncation.
-        limit = (
-            policy.get("max_query_text_bytes", sequel.DEFAULT_MAX_QUERY_TEXT_BYTES)
-            or sequel.DEFAULT_MAX_QUERY_TEXT_BYTES
-        )
-        formatted = query.text if query.truncated else sequel.format_sql_or_original(query.text, dialect=dialect)
-        attrs["db.query.text"] = formatted if len(formatted.encode()) <= limit else query.text
-    if query.truncated:
-        attrs["gotel.db.query.truncated"] = True
-    return attrs
+    return _analysis_attributes(sql, dialect, system, namespace, policy)
 
 
 class Namer:

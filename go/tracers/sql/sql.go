@@ -3,7 +3,6 @@
 package sql
 
 import (
-	"container/list"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -170,71 +169,23 @@ func isASCIILetter(c byte) bool { return c >= 'a' && c <= 'z' || c >= 'A' && c <
 
 var callerNames sync.Map
 
-const defaultInspectionCacheSize = 1024
-
 type inspectionCacheKey struct {
-	statement string
-	dialect   Dialect
-	maxBytes  int
-	collapse  bool
-	omit      bool
+	statement                                   string
+	dialect                                     Dialect
+	maxBytes                                    int
+	collapse, omit, format, omitMaps, omitBinds bool
+	maxInput, maxOutput, maxMemory, maxWork     uint64
 }
 
 type inspectionCacheValue struct {
-	diagnostic     sequel.Diagnostic
-	formattedSQL   string
-	operation      string
-	summary        string
-	simple         string
-	sanitized      SanitizedQuery
-	statementCount int
-}
-
-type inspectionCacheEntry struct {
-	key   inspectionCacheKey
-	value inspectionCacheValue
-}
-
-type inspectionCache struct {
-	mu       sync.Mutex
-	capacity int
-	entries  map[inspectionCacheKey]*list.Element
-	order    *list.List
-}
-
-var inspections = newInspectionCache(defaultInspectionCacheSize)
-
-func newInspectionCache(capacity int) *inspectionCache {
-	return &inspectionCache{capacity: capacity, entries: make(map[inspectionCacheKey]*list.Element), order: list.New()}
-}
-
-func (c *inspectionCache) get(key inspectionCacheKey) (inspectionCacheValue, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	element, ok := c.entries[key]
-	if !ok {
-		return inspectionCacheValue{}, false
-	}
-	c.order.MoveToFront(element)
-	return element.Value.(inspectionCacheEntry).value, true
-}
-
-func (c *inspectionCache) put(key inspectionCacheKey, value inspectionCacheValue) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if element, ok := c.entries[key]; ok {
-		element.Value = inspectionCacheEntry{key: key, value: value}
-		c.order.MoveToFront(element)
-		return
-	}
-	element := c.order.PushFront(inspectionCacheEntry{key: key, value: value})
-	c.entries[key] = element
-	if c.order.Len() <= c.capacity {
-		return
-	}
-	oldest := c.order.Back()
-	delete(c.entries, oldest.Value.(inspectionCacheEntry).key)
-	c.order.Remove(oldest)
+	formattedSQL, operation, summary, simple string
+	sanitized                                SanitizedQuery
+	statementCount                           int
+	diagnostics                              []sequel.Diagnostic
+	fingerprint, status, reason              string
+	sourceMap, binds                         string
+	mapsPresent, mapsOmitted, bindsPresent   bool
+	originalLength, schemaVersion            int
 }
 
 // CallerConfig controls source-owned fallback query names.
@@ -365,6 +316,23 @@ type Metadata struct {
 	// Diagnostics contains the first lexical/delimiter issue from the original SQL,
 	// or an empty array when none was found. Messages never contain input SQL.
 	Diagnostics []sequel.Diagnostic
+	// Fingerprint is Sequel's versioned, dialect-specific shape digest.
+	Fingerprint string
+	// QueryTextReason explains absent query text without including SQL.
+	QueryTextReason string
+	// AnalysisStatus distinguishes validated input from incomplete analysis.
+	AnalysisStatus string
+	// OriginalLength is the original SQL UTF-8 byte length, including on failure.
+	OriginalLength int
+	// DiagnosticSchemaVersion is the canonical Sequel diagnostic schema version.
+	DiagnosticSchemaVersion int
+	// SourceMap is a bounded, versioned JSON envelope mapping original offsets
+	// through sanitization and formatting to the transported db.query.text.
+	SourceMap string
+	// SourceMapOmitted marks an opt-in map exceeding the transport byte budget.
+	SourceMapOmitted bool
+	// BindDescriptors is opt-in bounded JSON metadata without names or values.
+	BindDescriptors string
 }
 
 // Inspect extracts sqlc names, SQL operation, a sanitized template, and the
@@ -380,27 +348,14 @@ func InspectDialect(namer Namer, explicitName, statement string, args []any, dia
 
 // InspectWithOptions extracts safe metadata using an application policy.
 func InspectWithOptions(namer Namer, explicitName, statement string, args []any, options SanitizeOptions) Metadata {
-	if options.Dialect == "" {
-		options.Dialect = DialectGeneric
-	}
-	if options.MaxQueryTextBytes == 0 {
-		options.MaxQueryTextBytes = DefaultMaxQueryTextBytes
-	}
-	key := inspectionCacheKey{statement: statement, dialect: options.Dialect, maxBytes: options.MaxQueryTextBytes, collapse: options.CollapseInLists, omit: options.OmitQueryText}
-	cached, ok := inspections.get(key)
-	if !ok {
-		cached.diagnostic = sequel.Diagnose(options.Dialect, statement)
-		cached.summary, cached.operation, cached.sanitized, cached.statementCount, _ = sequel.Inspect(statement, options)
-		cached.formattedSQL = sequel.FormatSQLOrOriginal(options.Dialect, cached.sanitized.Text)
-		if options.MaxQueryTextBytes > 0 && len(cached.formattedSQL) > options.MaxQueryTextBytes {
-			cached.formattedSQL = cached.sanitized.Text
-		}
-		if cached.summary == "" {
-			cached.summary = "SQL"
-		}
-		cached.simple = sequel.SQLCName(statement)
-		inspections.put(key, cached)
-	}
+	return InspectAnalysis(namer, explicitName, statement, args, sequel.AnalysisOptions{
+		Dialect: options.Dialect, MaxQueryTextBytes: options.MaxQueryTextBytes,
+		KeepInLists: !options.CollapseInLists, OmitQueryText: options.OmitQueryText,
+		Format: true, OmitBindDescriptors: true, OmitSourceMaps: true,
+	})
+}
+
+func metadataFromInspection(namer Namer, explicitName string, argumentCount int, cached inspectionCacheValue) Metadata {
 	operation := cached.operation
 	simple := strings.TrimSpace(explicitName)
 	qualified := ""
@@ -419,20 +374,52 @@ func InspectWithOptions(namer Namer, explicitName, statement string, args []any,
 	if qualified == "" {
 		qualified = namer.Name(normalizeSimpleName(simple))
 	}
-	diagnostics := make([]sequel.Diagnostic, 0, 1)
-	if cached.diagnostic.Code != "none" {
-		diagnostics = append(diagnostics, cached.diagnostic)
+	return Metadata{formattedSQL: cached.formattedSQL, Name: qualified, Summary: cached.summary,
+		Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text,
+		QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: argumentCount,
+		StatementCount: cached.statementCount, Diagnostics: append([]sequel.Diagnostic{}, cached.diagnostics...),
+		Fingerprint: cached.fingerprint, QueryTextReason: cached.reason, AnalysisStatus: cached.status,
+		OriginalLength: cached.originalLength, DiagnosticSchemaVersion: cached.schemaVersion,
+		SourceMap: cached.sourceMap, SourceMapOmitted: cached.mapsOmitted, BindDescriptors: cached.binds,
 	}
-	return Metadata{formattedSQL: cached.formattedSQL, Name: qualified, Summary: cached.summary, Operation: strings.ToUpper(operation), SanitizedSQL: cached.sanitized.Text, QueryTextTruncated: cached.sanitized.Truncated, ArgumentCount: len(args), StatementCount: cached.statementCount, Diagnostics: diagnostics}
 }
 
 // Attributes returns standard database attributes plus safe query metadata.
 func (m Metadata) Attributes(system, namespace string) []attribute.KeyValue {
 	attrs := []attribute.KeyValue{BindCountKey.Int(m.ArgumentCount), StatementCountKey.Int(m.StatementCount)}
-	diagnostics := make([]string, len(m.Diagnostics))
-	for i, diagnostic := range m.Diagnostics {
-		encoded, _ := json.Marshal(diagnostic)
-		diagnostics[i] = string(encoded)
+	attrs = append(attrs, attribute.String(QueryAnalysisStatusKey, m.AnalysisStatus), attribute.Int(QueryOriginalLengthKey, m.OriginalLength), attribute.Int(QueryDiagnosticSchemaVersionKey, m.DiagnosticSchemaVersion))
+	if m.Fingerprint != "" {
+		attrs = append(attrs, attribute.String(QueryFingerprintKey, m.Fingerprint))
+	}
+	if m.SanitizedSQL == "" && m.QueryTextReason != "" {
+		attrs = append(attrs, attribute.String(QueryTextReasonKey, m.QueryTextReason))
+	}
+	if m.SourceMap != "" {
+		attrs = append(attrs, attribute.String(QuerySourceMapKey, m.SourceMap))
+	}
+	if m.SourceMapOmitted {
+		attrs = append(attrs, attribute.Bool(QuerySourceMapOmittedKey, true))
+	}
+	if m.BindDescriptors != "" {
+		attrs = append(attrs, attribute.String(QueryBindsKey, m.BindDescriptors))
+	}
+	diagnostics := make([]string, 0, min(len(m.Diagnostics), 64))
+	diagnosticBytes := 0
+	for _, diagnostic := range m.Diagnostics {
+		canonical, err := sequel.CanonicalizeDiagnostic(m.DiagnosticSchemaVersion, m.OriginalLength, diagnostic)
+		if err != nil {
+			attrs = append(attrs, attribute.Bool("gotel.db.query.diagnostic_validation_error", true))
+			continue
+		}
+		encoded, _ := json.Marshal(canonical)
+		if len(diagnostics) == 64 || diagnosticBytes+len(encoded) > MaxAnalysisAttributeBytes {
+			break
+		}
+		diagnostics = append(diagnostics, string(encoded))
+		diagnosticBytes += len(encoded)
+	}
+	if len(diagnostics) < len(m.Diagnostics) {
+		attrs = append(attrs, attribute.Bool("gotel.db.query.diagnostics_omitted", true))
 	}
 	attrs = append(attrs, QueryDiagnosticsKey.StringSlice(diagnostics))
 	if m.Summary != "" {
@@ -475,6 +462,10 @@ type SpanConfig struct {
 	Statement string
 	Args      []any
 	Dialect   Dialect
+	// Analysis opts into unified per-call analysis policy and bind descriptors.
+	// Nil preserves the existing dialect policy. Context, if nonnil, is polled
+	// during native work. Cancelled results are never retained.
+	Analysis  *sequel.AnalysisOptions
 	System    string
 	Namespace string
 	Kind      trace.SpanKind
@@ -503,7 +494,16 @@ func StartSpan(ctx context.Context, config SpanConfig) (context.Context, *DBSpan
 	if name == "" {
 		name = config.Name
 	}
-	meta := InspectDialect(config.Namer, name, config.Statement, config.Args, config.Dialect)
+	var meta Metadata
+	if config.Analysis != nil {
+		options := *config.Analysis
+		if options.Context == nil {
+			options.Context = ctx
+		}
+		meta = InspectAnalysis(config.Namer, name, config.Statement, config.Args, options)
+	} else {
+		meta = InspectDialect(config.Namer, name, config.Statement, config.Args, config.Dialect)
+	}
 	kind := config.Kind
 	if kind == trace.SpanKindUnspecified {
 		kind = trace.SpanKindClient

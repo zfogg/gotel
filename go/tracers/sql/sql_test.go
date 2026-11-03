@@ -82,7 +82,8 @@ func TestInspectOmitsQueryTextButKeepsMetadata(t *testing.T) {
 }
 
 func TestInspectionCacheIsBounded(t *testing.T) {
-	cache := newInspectionCache(2)
+	unit := inspectionBytes(inspectionCacheKey{statement: "SELECT 1"}, inspectionCacheValue{operation: "SELECT"})
+	cache := newInspectionCache(2 * unit)
 	for _, statement := range []string{"SELECT 1", "SELECT 2", "SELECT 3"} {
 		key := inspectionCacheKey{statement: statement}
 		cache.put(key, inspectionCacheValue{operation: "SELECT"})

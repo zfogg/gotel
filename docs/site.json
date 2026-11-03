@@ -23,6 +23,7 @@
       "gotel/otelhost.html",
       "gotel/httptrace.html",
       "gotel/sqltrace.html",
+      "gotel/querynames.html",
       "gotel/redistrace.html",
       "gotel/temporaltrace.html",
       "gotel/logging.html",
@@ -39,6 +40,7 @@
       "pkg/github.com/zfogg/gotel/go/tracers/processor.html",
       "pkg/github.com/zfogg/gotel/go/tracers/redis.html",
       "pkg/github.com/zfogg/gotel/go/tracers/sql.html",
+      "pkg/github.com/zfogg/gotel/go/querynames.html",
       "pkg/github.com/zfogg/gotel/go/tracers/temporal.html"
     ],
     "typescript": "functions/browserHttpClientSpanName.html"
