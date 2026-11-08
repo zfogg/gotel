@@ -2,6 +2,8 @@
 
 [Rust API documentation](https://zfogg.github.io/gotel/rust/) · [Rust usage and installation](rust/README.md)
 
+Rust HTTP, SQL and Redis integrations: [Axum, reqwest, SQLx, rusqlite and redis-rs](rust/ADAPTERS.md).
+
 [Documentation](https://zfogg.github.io/gotel/) ·
 [C API](https://zfogg.github.io/gotel/c/) ·
 [Python API](https://zfogg.github.io/gotel/python/) ·

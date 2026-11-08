@@ -235,7 +235,7 @@ def main() -> None:
                     source,
                     f"{name}/src/{source.relative_to(ROOT / 'rust/src').as_posix()}",
                 )
-            for file in ("Cargo.toml", "Cargo.lock", "README.md"):
+            for file in ("Cargo.toml", "Cargo.lock", "README.md", "ADAPTERS.md"):
                 add_file(archive, ROOT / "rust" / file, f"{name}/{file}")
             add_file(archive, ROOT / "LICENSE", f"{name}/LICENSE")
     else:

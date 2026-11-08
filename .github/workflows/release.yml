@@ -235,10 +235,10 @@ jobs:
         with:
           components: rustfmt, clippy
       - run: cargo fmt --manifest-path rust/Cargo.toml --check
-      - run: cargo test --manifest-path rust/Cargo.toml --locked
+      - run: cargo test --manifest-path rust/Cargo.toml --locked --all-features
       - run: cargo test --manifest-path rust/Cargo.toml --locked --no-default-features
       - run: cargo clippy --manifest-path rust/Cargo.toml --locked --all-targets --all-features -- -D warnings
-      - run: cargo doc --manifest-path rust/Cargo.toml --locked --no-deps
+      - run: cargo doc --manifest-path rust/Cargo.toml --locked --no-deps --all-features
       - name: Package Rust sources and installation guide
         if: matrix.runner == 'ubuntu-24.04'
         run: python scripts/package_release.py rust --tag '${{ needs.validate.outputs.tag }}' --output release-assets

@@ -2,6 +2,10 @@
 
 [API documentation](https://zfogg.github.io/gotel/rust/)
 
+For native HTTP, database and Redis integrations, see the
+[adapter guide](https://zfogg.github.io/gotel/rust/gotel/tracers/index.html): Axum, reqwest, SQLx, rusqlite and redis-rs are
+available as optional Cargo features under `gotel::tracers`.
+
 Install from this repository (the Rust crate is in `rust/`):
 
 ```toml

@@ -6,6 +6,7 @@ use opentelemetry::{
 };
 use std::time::Instant;
 
+#[derive(Clone)]
 pub(crate) struct QueryMetrics {
     pub duration: Histogram<f64>,
     pub count: Counter<u64>,

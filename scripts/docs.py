@@ -89,6 +89,7 @@ def build_rust(output):
         "doc",
         "--locked",
         "--no-deps",
+        "--all-features",
         "--manifest-path",
         str(ROOT / CONFIG.get("rust_directory", ".") / "Cargo.toml"),
         "--target-dir",

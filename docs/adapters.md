@@ -5,6 +5,25 @@ cancellation. Query metadata goes through Gotel's SQL inspection path; parameter
 are counted without recording their values. Exception messages are excluded.
 Optional driver packages are installed by the application.
 
+## Rust
+
+`gotel::tracers` provides optional Cargo features for Axum (`http-axum`), reqwest
+(`http-reqwest`), SQLx (`db-sqlx`), rusqlite (`db-rusqlite`) and redis-rs (`redis`).
+See the [Rust adapter guide](../rust/ADAPTERS.md) for versions and examples.
+
+Axum middleware extracts W3C context and names matched routes, including streaming
+response completion and cancellation. The reqwest client injects W3C context and
+returns original responses. SQLx implements the native executor trait, preserving
+typed queries, streams and native transactions; rusqlite forwards execute/batch
+and query-row calls. SQL spans use Sequel's sanitization, diagnostics and optional
+bounded metadata, with configurable privacy and analysis budgets.
+
+The Redis connection wrapper implements both native sync and async connection
+traits, including pipelines and connection managers. It exports a bounded command
+vocabulary and timing without command arguments, keys, values, scripts or error
+messages. Adapters use application-owned providers, retain original driver
+results/errors, and attach context only during synchronous calls or async polling.
+
 ## Python
 
 ```python

@@ -56,7 +56,13 @@
       "gotel/index.html",
       "gotel/struct.Application.html",
       "gotel/struct.SqlTracer.html",
-      "gotel/struct.Query.html"
+      "gotel/struct.Query.html",
+      "gotel/tracers/index.html",
+      "gotel/tracers/axum/struct.Tracer.html",
+      "gotel/tracers/reqwest/struct.Client.html",
+      "gotel/tracers/sqlx/struct.Tracer.html",
+      "gotel/tracers/rusqlite/struct.Connection.html",
+      "gotel/tracers/redis/struct.Connection.html"
     ]
   },
   "rust_directory": "rust"

@@ -11,6 +11,7 @@ mod naming;
 mod operation;
 mod outcome;
 mod sql;
+pub mod tracers;
 
 pub use application::*;
 pub use naming::*;
