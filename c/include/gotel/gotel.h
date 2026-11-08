@@ -326,6 +326,16 @@ typedef struct {
   const char *sql;
 } gotel_query_t;
 
+/** A view of a caller-owned catalog. get writes one descriptor at index and
+ * returns true on success. The descriptor's strings and context must remain
+ * valid until the SQLite attachment is detached or the connection is closed. */
+typedef bool (*gotel_query_get_fn)(const void *context, size_t index, gotel_query_t *out);
+typedef struct {
+  const void *context;
+  size_t count;
+  gotel_query_get_fn get;
+} gotel_query_catalog_t;
+
 typedef struct gotel_sqlite gotel_sqlite_t;
 
 typedef struct {
@@ -354,6 +364,12 @@ otlp_status_t gotel_sqlite_attach(gotel_host_t *host, sqlite3 *db, const char *p
 otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *host, sqlite3 *db, const char *prefix,
                                                const gotel_query_t *queries, size_t count,
                                                const gotel_sqlite_options_t *options, gotel_sqlite_t **out);
+
+/** Attach using a catalog accessor. The catalog value is copied; its context
+ * and strings remain caller-owned. Empty catalogs may use a NULL accessor. */
+otlp_status_t gotel_sqlite_attach_catalog_with_options(gotel_host_t *host, sqlite3 *db, const char *prefix,
+                                                       const gotel_query_catalog_t *catalog,
+                                                       const gotel_sqlite_options_t *options, gotel_sqlite_t **out);
 
 /** Release the SQLite trace attachment after its statements finish. */
 void gotel_sqlite_detach(gotel_sqlite_t *attachment);

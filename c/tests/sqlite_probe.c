@@ -2,6 +2,17 @@
 #include <stdio.h>
 #include <string.h>
 static const gotel_operation_t operations[] = {{"test.database.operation", false}, {"test.cleanup", false}};
+typedef struct {
+  int metadata;
+  const char *name;
+  const char *sql;
+} application_query_t;
+static bool application_query_get(const void *context, size_t index, gotel_query_t *out) {
+  const application_query_t *queries = context;
+  out->name = queries[index].name;
+  out->sql = queries[index].sql;
+  return true;
+}
 static int advance_progress(void *context) {
   (void)context;
   return gotel_test_clock_advance(100) == OTLP_OK ? 0 : 1;
@@ -38,17 +49,26 @@ int main(int argc, char **argv) {
   CHECK(sqlite3_exec(db,
                      "CREATE TABLE accounts(id INTEGER, token TEXT); INSERT INTO accounts VALUES(1,'LITERAL_SECRET');",
                      NULL, NULL, NULL) == SQLITE_OK);
-  static const gotel_query_t queries[] = {
-      {"FindAccount", "SELECT id FROM accounts WHERE token='LITERAL_SECRET' AND id=?1"},
-      {"DeferredFinalize", "SELECT id FROM accounts UNION ALL SELECT 99"},
-      {"EnableForeignKeys", "PRAGMA foreign_keys=ON;"}};
+  static const application_query_t queries[] = {
+      {1, "FindAccount", "SELECT id FROM accounts WHERE token='LITERAL_SECRET' AND id=?1"},
+      {2, "DeferredFinalize", "SELECT id FROM accounts UNION ALL SELECT 99"},
+      {3, "EnableForeignKeys", "PRAGMA foreign_keys=ON;"}};
   sqlite3_progress_handler(db, 1, advance_progress, NULL);
   gotel_sqlite_options_t options = {.namespace_name = "fixture"};
   options.sql.omit_query_text = !strcmp(argv[2], "omit");
   if (!strcmp(argv[2], "truncate"))
     options.sql.max_query_text_bytes = 12;
   gotel_sqlite_t *adapter = NULL;
-  CHECK(gotel_sqlite_attach_with_options(h, db, "test.storage", queries, 3, &options, &adapter) == OTLP_OK);
+  gotel_query_catalog_t invalid = {queries, 3, NULL};
+  CHECK(gotel_sqlite_attach_catalog_with_options(h, db, "test.storage", &invalid, &options, &adapter) ==
+        OTLP_ERR_INVALID_ARGUMENT);
+  const application_query_t duplicates[] = {{1, "First", "SELECT 1"}, {2, "Second", "SELECT 1"}};
+  invalid = (gotel_query_catalog_t){duplicates, 2, application_query_get};
+  CHECK(gotel_sqlite_attach_catalog_with_options(h, db, "test.storage", &invalid, &options, &adapter) ==
+        OTLP_ERR_INVALID_ARGUMENT);
+  gotel_query_catalog_t catalog = {queries, 3, application_query_get};
+  CHECK(gotel_sqlite_attach_catalog_with_options(h, db, "test.storage", &catalog, &options, &adapter) == OTLP_OK);
+  catalog.context = NULL; /* The adapter copied the catalog itself. */
   gotel_scope_t scope;
   gotel_begin(h, &scope, 0, NULL);
   CHECK(sqlite3_exec(db, queries[2].sql, NULL, NULL, NULL) == SQLITE_OK);

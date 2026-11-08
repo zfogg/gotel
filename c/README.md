@@ -279,6 +279,15 @@ gotel_sqlite_detach(attachment);
 sqlite3_close(db);
 ```
 
+Applications whose query records contain additional fields can use
+`gotel_sqlite_attach_catalog_with_options` with a `gotel_query_catalog_t`.
+Its accessor returns a `gotel_query_t` view for each index, so the adapter
+does not depend on the application's record layout or allocate a second
+catalog. The catalog value is copied; its context and the returned strings
+must remain valid until detach or database close. The accessor must be safe to
+call whenever the connection is used. The same duplicate-SQL validation
+applies to both attachment interfaces.
+
 The immutable query registry in `src/named.c` resolves original SQL templates
 by text, so separate prepared instances share stable operation names. No bind
 values, expanded SQL, unsanitized SQL text, or connection file paths are exported.
