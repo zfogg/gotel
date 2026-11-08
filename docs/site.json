@@ -16,7 +16,8 @@
     "c": [
       "gotel_8h.html",
       "sql_8h.html",
-      "testing_8h.html"
+      "testing_8h.html",
+      "clickhouse_8h.html"
     ],
     "python": [
       "gotel.html",
@@ -49,7 +50,8 @@
       "pkg/github.com/zfogg/gotel/go/tracers/redis.html",
       "pkg/github.com/zfogg/gotel/go/tracers/sql.html",
       "pkg/github.com/zfogg/gotel/go/querynames.html",
-      "pkg/github.com/zfogg/gotel/go/tracers/temporal.html"
+      "pkg/github.com/zfogg/gotel/go/tracers/temporal.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/clickhouse.html"
     ],
     "typescript": "functions/browserHttpClientSpanName.html",
     "rust": [
@@ -63,7 +65,10 @@
       "gotel/tracers/sqlx/struct.Tracer.html",
       "gotel/tracers/rusqlite/struct.Connection.html",
       "gotel/tracers/redis/struct.Connection.html",
-      "gotel/tracers/duckdb/struct.Connection.html"
+      "gotel/tracers/duckdb/struct.Connection.html",
+      "gotel/tracers/clickhouse/struct.Client.html",
+      "gotel/tracers/clickhouse/struct.Query.html",
+      "gotel/tracers/clickhouse/struct.Insert.html"
     ]
   },
   "rust_directory": "rust"

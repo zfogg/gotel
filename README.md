@@ -2,7 +2,9 @@
 
 [Rust API documentation](https://zfogg.github.io/gotel/rust/) · [Rust usage and installation](rust/README.md)
 
-Rust HTTP, SQL and Redis integrations: [Axum, reqwest, SQLx, rusqlite, DuckDB and redis-rs](rust/ADAPTERS.md).
+Rust HTTP, SQL and Redis integrations: [Axum, reqwest, SQLx, rusqlite, DuckDB, ClickHouse and redis-rs](rust/ADAPTERS.md).
+
+[ClickHouse adapters](docs/adapters.md#clickhouse) are available for Go, Rust, Python and C.
 
 [Documentation](https://zfogg.github.io/gotel/) ·
 [C API](https://zfogg.github.io/gotel/c/) ·

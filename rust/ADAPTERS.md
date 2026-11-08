@@ -9,6 +9,7 @@ Enable only the integrations you use:
 | `db-sqlx` | `gotel::tracers::sqlx` | SQLx 0.8 (PostgreSQL, MySQL, SQLite) |
 | `db-rusqlite` | `gotel::tracers::rusqlite` | rusqlite 0.32 |
 | `db-duckdb` | `gotel::tracers::duckdb` | official duckdb-rs 1.20000.x (DuckDB 2.0) |
+| `db-clickhouse` | `gotel::tracers::clickhouse` | official ClickHouse client 0.15; Rust 1.89+ |
 | `redis` | `gotel::tracers::redis` | redis-rs 1.8, sync and async |
 
 ```toml
@@ -132,6 +133,45 @@ adapters. `query_all` buffers results and includes native row-decoding errors in
 the span. Arrow streams, appenders and calls made directly on the native connection
 are not automatically instrumented. Wrap `&*transaction` to observe native
 transactional queries; commit and rollback remain application-owned.
+
+## ClickHouse
+
+```no_run
+# #[cfg(feature = "db-clickhouse")]
+# async fn read(app: &gotel::Application) -> Result<(), Box<dyn std::error::Error>> {
+use gotel::{opentelemetry::Context, tracers};
+#[derive(clickhouse::Row, serde::Deserialize)]
+struct Item { value: String }
+let client = tracers::clickhouse::Client::new(
+    clickhouse::Client::default().with_url("http://localhost:8123"),
+    app, "storage.clickhouse", "analytics",
+)?;
+let mut rows = client.query(&Context::current(), "FindItem",
+    "SELECT value FROM items WHERE id = ?").bind(42_u64).fetch::<Item>()?;
+while let Some(row) = rows.next().await? { let _ = row.value; }
+# Ok(())
+# }
+```
+
+The optional `db-clickhouse` feature uses the official `clickhouse` 0.15 driver,
+which requires Rust 1.89; other adapters retain their existing minimum. Configure
+URL, TLS, credentials, compression, validation and timeouts on the native client
+before wrapping it. Gotel analyzes the original template before positional
+`bind` or typed `param` serialization; bound SQL is never read for telemetry.
+
+`execute`, `fetch_one`, `fetch_optional`, `fetch_all` and typed `fetch` retain
+native results/errors. Streaming spans finish on EOF/error/drop. Query policies
+use `SqlPolicy`, and requests inject the query span's W3C context without replacing
+global providers. Do not also enable a second driver telemetry adapter for the
+same query.
+
+For typed inserts use `client.insert::<Item>(&parent,
+gotel::Query::new("InsertItem", "INSERT INTO items (value) VALUES (?)"),
+"items").await?`. The separate source-owned template supplies safe SQL metadata;
+the native table and inserted rows are not inspected. Forward rows with `write`,
+then call `end` to commit. Dropping an unfinished insert retains the driver's
+abort behavior and records cancellation. Native inserters and raw-format APIs
+accessed directly through the original client remain outside this adapter.
 
 ## Redis
 

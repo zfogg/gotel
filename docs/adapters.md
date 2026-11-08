@@ -127,6 +127,59 @@ callback instead of replacing it a second time. Acquisition, BEGIN, COMMIT and
 ROLLBACK remain transaction children; caller values, cancellation and work-budget
 causes are forwarded unchanged.
 
+## ClickHouse
+
+Go's `github.com/zfogg/gotel/go/tracers/clickhouse` wraps the official
+`clickhouse-go/v2` API (tested with v2.49). Use `Open(options, Config{...})` to
+preserve native configuration and install HTTP W3C propagation; `Wrap(conn,
+config)` observes an already-open client and supplies native-protocol `WithSpan`
+context. The driver's HTTP transport does not use `WithSpan`; existing HTTP
+clients need `HTTPTransport` installed through `Options.TransportFunc` before
+opening. A caller's existing transport factory is preserved by `Open`.
+
+```go
+import (
+    native "github.com/ClickHouse/clickhouse-go/v2"
+    gotelch "github.com/zfogg/gotel/go/tracers/clickhouse"
+)
+// conn, err := gotelch.Open(&native.Options{Addr: []string{"localhost:9000"}},
+//     gotelch.Config{Namespace: "analytics"})
+// rows, err := conn.Query(ctx, "SELECT value FROM items WHERE id = ?", id)
+// defer rows.Close()
+```
+
+Queries keep spans through row EOF/Close, `QueryRow` scan, raw-format reader
+EOF/Close and batch Send/Abort/Close. Arguments, row destinations, format readers,
+native errors and cancellation pass through unchanged. Numeric exception codes
+are recorded without messages. `Analysis` supplies Sequel policies/budgets and
+the actual ClickHouse dialect is always forced. Connection metadata methods and
+future driver extensions embedded on the interface are forwarded without adding
+observations. `database/sql` consumers can also use the existing generic SQL
+helpers with `DialectClickHouse` and `System: "clickhouse"`.
+
+Rust's `gotel::tracers::clickhouse` (`db-clickhouse`) wraps the official typed
+0.15 client; see the [Rust adapter guide](../rust/ADAPTERS.md#clickhouse). Query
+builders are analyzed before binding, cursors cover full result lifetimes, and
+typed inserts include preparation/write/end with native abort-on-drop behavior.
+
+C exposes `<gotel/clickhouse.h>` with no new transport dependency. Register a
+source-owned operation such as `storage.clickhouse.FindItem`, then use
+`gotel_clickhouse_call` around a synchronous native or libcurl callback. It passes
+the original userdata once and returns the exact integer code. Default zero means
+success; an optional classifier supports native code conventions, cancellation
+and deferred work. For streaming use `gotel_clickhouse_begin` and
+`gotel_clickhouse_end`, observing the same-thread/LIFO lifetime rules of Gotel
+scopes. Keep the scope open until the native query/response is fully consumed.
+
+The C callback owns URL/authentication, callbacks, response buffers and error
+handling; Gotel never changes them or inspects result bodies. In particular,
+ClickHouse can report a query failure after HTTP 200: classify the native result,
+not merely the HTTP transport status. Optional analysis policy, namespace,
+hostname and bind count produce the same safe metadata and canonical diagnostic
+array as other adapters. Analysis failures never block the callback. Templates
+and options are borrowed only during begin; host/operation catalog lifetime stays
+owned by the application.
+
 ## Critical and realtime sampling
 
 Go `sampling.Policy` and Python `sampling.Policy` take an existing delegate,

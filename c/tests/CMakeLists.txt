@@ -57,6 +57,11 @@ if(GOTEL_BUILD_TESTS)
   target_link_libraries(gotel-policy-test PRIVATE gotel::testing)
   add_test(NAME gotel-policy COMMAND gotel-policy-test)
 
+  add_executable(gotel-clickhouse-probe clickhouse_probe.c)
+  target_link_libraries(gotel-clickhouse-probe PRIVATE gotel::testing)
+  add_test(NAME gotel-clickhouse COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/clickhouse_test.py $<TARGET_FILE:gotel-clickhouse-probe>)
+
   add_executable(gotel-resource-probe resource_probe.c)
   target_link_libraries(gotel-resource-probe PRIVATE gotel::testing)
   add_test(NAME gotel-resource COMMAND ${Python3_EXECUTABLE}

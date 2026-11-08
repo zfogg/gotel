@@ -16,6 +16,7 @@ http-axum = ["dep:axum", "dep:http-body", "dep:pin-project-lite"]
 db-sqlx = ["dep:sqlx", "dep:futures-core", "dep:pin-project-lite"]
 db-rusqlite = ["dep:rusqlite"]
 db-duckdb = ["dep:duckdb"]
+db-clickhouse = ["dep:clickhouse", "dep:serde"]
 redis = ["dep:redis"]
 
 [dependencies]
@@ -32,6 +33,8 @@ pin-project-lite = { version = "0.2", optional = true }
 sqlx = { version = "0.8.6", default-features = false, optional = true }
 rusqlite = { version = "0.32.1", default-features = false, features = ["bundled"], optional = true }
 duckdb = { version = "1.20000.1", optional = true }
+clickhouse = { version = "0.15.3", default-features = false, optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
 redis = { version = "1.8.0", default-features = false, features = ["aio", "tokio-comp"], optional = true }
 futures-core = { version = "0.3", optional = true }
 
@@ -44,3 +47,4 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time",
 tower = { version = "0.5", features = ["util"] }
 sqlx = { version = "0.8.6", default-features = false, features = ["sqlite", "runtime-tokio"] }
 axum = { version = "0.8.9", default-features = false, features = ["matched-path", "http1", "tokio"] }
+clickhouse = { version = "0.15.3", default-features = false, features = ["test-util"] }

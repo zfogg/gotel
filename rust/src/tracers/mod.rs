@@ -3,12 +3,26 @@
 //! Enable only the Cargo features required by your application. Providers belong
 //! to the supplied [`crate::Application`]; adapters never replace globals.
 #![doc = include_str!("../../ADAPTERS.md")]
-#[cfg(any(feature = "db-sqlx", feature = "db-rusqlite", feature = "db-duckdb"))]
+#[cfg(any(
+    feature = "db-sqlx",
+    feature = "db-rusqlite",
+    feature = "db-duckdb",
+    feature = "db-clickhouse"
+))]
 mod policy;
-#[cfg(any(feature = "db-sqlx", feature = "db-rusqlite", feature = "db-duckdb"))]
+#[cfg(any(
+    feature = "db-sqlx",
+    feature = "db-rusqlite",
+    feature = "db-duckdb",
+    feature = "db-clickhouse"
+))]
 pub use policy::SqlPolicy;
 #[cfg(feature = "http-axum")]
 pub mod axum;
+#[cfg(feature = "db-clickhouse")]
+pub mod clickhouse;
+#[cfg(all(test, feature = "db-clickhouse"))]
+mod clickhouse_tests;
 #[cfg(feature = "db-duckdb")]
 pub mod duckdb;
 #[cfg(all(test, feature = "db-duckdb"))]
@@ -30,6 +44,7 @@ pub mod sqlx;
         feature = "http-reqwest",
         feature = "db-rusqlite",
         feature = "db-duckdb",
+        feature = "db-clickhouse",
         feature = "db-sqlx",
         feature = "redis"
     )
