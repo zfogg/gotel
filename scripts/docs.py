@@ -7,6 +7,7 @@ import json
 import os
 import pkgutil
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -18,11 +19,25 @@ from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = json.loads((ROOT / "docs/site.json").read_text(encoding="utf-8"))
-GENERATORS = {"c": "Doxygen", "python": "pdoc", "go": "Golds", "typescript": "TypeDoc"}
+GENERATORS = {
+    "c": "Doxygen",
+    "cxx": "Doxygen",
+    "python": "pdoc",
+    "go": "Golds",
+    "rust": "rustdoc",
+    "typescript": "TypeDoc",
+}
 
 
 def run(*command, cwd=ROOT, capture=False):
-    return subprocess.run(command, cwd=cwd, check=True, text=True, encoding="utf-8", capture_output=capture).stdout
+    return subprocess.run(
+        command,
+        cwd=cwd,
+        check=True,
+        text=True,
+        encoding="utf-8",
+        capture_output=capture,
+    ).stdout
 
 
 def revision():
@@ -68,16 +83,60 @@ def build_go(output):
     )
 
 
+def build_rust(output):
+    target = ROOT / "build/docs-rust"
+    run(
+        "cargo",
+        "doc",
+        "--locked",
+        "--no-deps",
+        "--all-features",
+        "--manifest-path",
+        str(ROOT / CONFIG.get("rust_directory", ".") / "Cargo.toml"),
+        "--target-dir",
+        str(target),
+    )
+    shutil.copytree(target / "doc", output / "rust", dirs_exist_ok=True)
+    # Rustdoc copies documentation from upstream blanket implementations without
+    # resolving two relative links in OpenTelemetry's FutureExt prose. Preserve
+    # those references as links to their owning libraries rather than dead local
+    # pages. Check every other generated link normally below.
+    upstream_links = {
+        "Context": "https://docs.rs/opentelemetry/0.33.1/opentelemetry/struct.Context.html",
+        "dispatcher#setting-the-default-subscriber": "https://docs.rs/tracing/latest/tracing/dispatcher/index.html#setting-the-default-subscriber",
+    }
+    for page in (output / "rust").rglob("*.html"):
+        text = page.read_text(encoding="utf-8")
+        for relative, absolute in upstream_links.items():
+            text = text.replace(f'href="{relative}"', f'href="{absolute}"')
+        page.write_text(text, encoding="utf-8")
+    package = CONFIG["package"].replace("-", "_")
+    (output / "rust/index.html").write_text(
+        f'<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" '
+        f'content="0;url={package}/index.html"><title>Rust API</title></head>'
+        f'<body><a href="{package}/index.html">Rust API reference</a></body></html>',
+        encoding="utf-8",
+    )
+
+
 def build_typescript(output):
     # pnpm.cmd must be resolved explicitly on Windows when shell=False.
-    run("pnpm.cmd" if sys.platform == "win32" else "pnpm", "exec", "typedoc", "--out", str(output / "typescript"))
+    run(
+        "pnpm.cmd" if sys.platform == "win32" else "pnpm",
+        "exec",
+        "typedoc",
+        "--out",
+        str(output / "typescript"),
+    )
 
 
 def assemble(output):
     output.mkdir(parents=True, exist_ok=True)
     version = revision()
     (output / "site.css").write_bytes((ROOT / "docs/site.css").read_bytes())
-    name, description, repository = (html.escape(CONFIG[key]) for key in ("name", "description", "repository"))
+    name, description, repository = (
+        html.escape(CONFIG[key]) for key in ("name", "description", "repository")
+    )
     cards = "".join(
         f'<a class="language" href="{key}/"><strong>{label}</strong><span>{GENERATORS[key]} API reference →</span></a>'
         for key, label in CONFIG["languages"].items()
@@ -103,7 +162,9 @@ MIT licensed.</footer></main></body></html>\n''',
         "languages": CONFIG["languages"],
         "smoke": CONFIG["smoke"],
     }
-    (output / "build.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    (output / "build.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
     (output / ".nojekyll").touch()
     # Relative links preserve GitHub Pages' /repository/ prefix and work locally.
     for language in CONFIG["languages"]:
@@ -111,22 +172,38 @@ MIT licensed.</footer></main></body></html>\n''',
             text = page.read_text(encoding="utf-8")
             prefix = "../" * len(page.relative_to(output).parent.parts)
             links = f'<a href="{prefix}index.html">{CONFIG["name"]} docs</a>' + "".join(
-                f'<a href="{prefix}{key}/"' + (' aria-current="page"' if key == language else "") + f">{label}</a>"
+                f'<a href="{prefix}{key}/"'
+                + (' aria-current="page"' if key == language else "")
+                + f">{label}</a>"
                 for key, label in CONFIG["languages"].items()
             )
             nav = f'<nav id="language-nav" aria-label="Documentation languages">{links}</nav>'
             if 'id="language-nav"' in text:
-                text = re.sub(r'<nav id="language-nav".*?</nav>', nav, text, count=1, flags=re.DOTALL)
                 text = re.sub(
-                    r'(href="[^"]*site\.css)(?:\?[^"]*)?(\")', lambda match: match[1] + f"?v={version}" + match[2], text
+                    r'<nav id="language-nav".*?</nav>',
+                    nav,
+                    text,
+                    count=1,
+                    flags=re.DOTALL,
+                )
+                text = re.sub(
+                    r'(href="[^"]*site\.css)(?:\?[^"]*)?(\")',
+                    lambda match: match[1] + f"?v={version}" + match[2],
+                    text,
                 )
                 page.write_text(text, encoding="utf-8")
                 continue
             style = f'<link rel="stylesheet" href="{prefix}site.css?v={version}">'
-            text, closed_head = re.subn(r"</head>", style + "</head>", text, count=1, flags=re.IGNORECASE)
+            text, closed_head = re.subn(
+                r"</head>", style + "</head>", text, count=1, flags=re.IGNORECASE
+            )
             if not closed_head:  # Golds uses HTML's optional closing tags.
-                text = re.sub(r"<body\b", style + "\n<body", text, count=1, flags=re.IGNORECASE)
-            text, closed_body = re.subn(r"</body>", nav + "</body>", text, count=1, flags=re.IGNORECASE)
+                text = re.sub(
+                    r"<body\b", style + "\n<body", text, count=1, flags=re.IGNORECASE
+                )
+            text, closed_body = re.subn(
+                r"</body>", nav + "</body>", text, count=1, flags=re.IGNORECASE
+            )
             if not closed_body:
                 text += nav + "\n"
             page.write_text(text, encoding="utf-8")
@@ -140,7 +217,9 @@ class Links(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         for key, value in attrs:
-            if value and (key == "href" or (key == "src" and tag in ("script", "img", "iframe"))):
+            if value and (
+                key == "href" or (key == "src" and tag in ("script", "img", "iframe"))
+            ):
                 self.targets.append(value)
 
 
@@ -148,7 +227,10 @@ def verify_local(output):
     required = ["index.html", "site.css", "build.json", ".nojekyll"]
     for language, smoke in CONFIG["smoke"].items():
         required.append(f"{language}/index.html")
-        required.extend(f"{language}/{page}" for page in ([smoke] if isinstance(smoke, str) else smoke))
+        required.extend(
+            f"{language}/{page}"
+            for page in ([smoke] if isinstance(smoke, str) else smoke)
+        )
     for path in required:
         if not (output / path).is_file():
             raise ValueError(f"Missing documentation output: {path}")
@@ -157,8 +239,12 @@ def verify_local(output):
     pages = list(output.rglob("*.html"))
     for page in pages:
         text = page.read_text(encoding="utf-8")
-        if page.parent != output and ('id="language-nav"' not in text or "site.css" not in text):
-            raise ValueError(f"Missing shared navigation/styles: {page.relative_to(output)}")
+        if page.parent != output and (
+            'id="language-nav"' not in text or "site.css" not in text
+        ):
+            raise ValueError(
+                f"Missing shared navigation/styles: {page.relative_to(output)}"
+            )
         for target in Links(text).targets:
             url = urlsplit(target)
             if url.scheme or url.netloc or not url.path:
@@ -166,16 +252,23 @@ def verify_local(output):
             key = os.path.abspath(page.parent / unquote(url.path))
             if key not in known:
                 dest = Path(key).resolve()
-                known[key] = dest.is_relative_to(output) and (dest.is_file() or (dest / "index.html").is_file())
+                known[key] = dest.is_relative_to(output) and (
+                    dest.is_file() or (dest / "index.html").is_file()
+                )
             if not known[key]:
                 broken.append(f"{page.relative_to(output)} -> {target}")
     if broken:
         raise ValueError("Broken local documentation links:\n" + "\n".join(broken[:30]))
-    print(f"Verified {len(pages)} HTML pages, all local links/assets and every language entry point.", flush=True)
+    print(
+        f"Verified {len(pages)} HTML pages, all local links/assets and every language entry point.",
+        flush=True,
+    )
 
 
 def fetch(url):
-    with urlopen(Request(url, headers={"User-Agent": "documentation-verifier"}), timeout=30) as response:
+    with urlopen(
+        Request(url, headers={"User-Agent": "documentation-verifier"}), timeout=30
+    ) as response:
         if response.status != 200:
             raise ValueError(f"HTTP {response.status}: {url}")
         return response.read()
@@ -188,7 +281,9 @@ def verify_public(url, expected, wait):
         try:
             manifest = json.loads(fetch(urljoin(url, "build.json")))
             if manifest["revision"] != expected:
-                raise ValueError(f"Published revision {manifest['revision']} does not match {expected}")
+                raise ValueError(
+                    f"Published revision {manifest['revision']} does not match {expected}"
+                )
             home = fetch(url).decode()
             fetch(urljoin(url, "site.css"))
             for language, smoke in CONFIG["smoke"].items():
@@ -212,10 +307,23 @@ def verify_public(url, expected, wait):
 
 def publish(ref):
     if ref != "main":
-        raise ValueError("docs-publish deploys remote main only; dispatch the workflow directly for other build refs")
+        raise ValueError(
+            "docs-publish deploys remote main only; dispatch the workflow directly for other build refs"
+        )
     repo = CONFIG["repository"]
     request_id = str(uuid.uuid4())
-    run("gh", "workflow", "run", "docs.yml", "--repo", repo, "--ref", ref, "-f", f"request_id={request_id}")
+    run(
+        "gh",
+        "workflow",
+        "run",
+        "docs.yml",
+        "--repo",
+        repo,
+        "--ref",
+        ref,
+        "-f",
+        f"request_id={request_id}",
+    )
     deadline = time.monotonic() + 120
     while time.monotonic() < deadline:
         runs = json.loads(
@@ -237,17 +345,32 @@ def publish(ref):
         matches = [item for item in runs if request_id in item["displayTitle"]]
         if matches:
             item = matches[0]
-            run("gh", "run", "watch", str(item["databaseId"]), "--repo", repo, "--exit-status", "--interval", "10")
+            run(
+                "gh",
+                "run",
+                "watch",
+                str(item["databaseId"]),
+                "--repo",
+                repo,
+                "--exit-status",
+                "--interval",
+                "10",
+            )
             pages = json.loads(run("gh", "api", f"repos/{repo}/pages", capture=True))
             verify_public(pages["html_url"], item["headSha"], 180)
             return
         time.sleep(3)
-    raise TimeoutError("The dispatched documentation workflow did not appear within 120 seconds")
+    raise TimeoutError(
+        "The dispatched documentation workflow did not appear within 120 seconds"
+    )
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["python", "go", "typescript", "site", "verify", "publish"])
+    parser.add_argument(
+        "command",
+        choices=["python", "go", "rust", "typescript", "site", "verify", "publish"],
+    )
     parser.add_argument("--output", type=Path, default=ROOT / "build/docs/site")
     parser.add_argument("--url")
     parser.add_argument("--revision", default=None)
@@ -263,7 +386,13 @@ def main():
     elif args.command == "publish":
         publish(args.ref)
     else:
-        {"python": build_python, "go": build_go, "typescript": build_typescript, "site": assemble}[args.command](output)
+        {
+            "python": build_python,
+            "go": build_go,
+            "rust": build_rust,
+            "typescript": build_typescript,
+            "site": assemble,
+        }[args.command](output)
 
 
 if __name__ == "__main__":

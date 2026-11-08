@@ -1,0 +1,50 @@
+[package]
+name = "gotel"
+version = "0.14.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Gotel conventions and safe SQL telemetry for OpenTelemetry Rust applications"
+license = "MIT"
+repository = "https://github.com/zfogg/gotel"
+readme = "README.md"
+
+[features]
+default = ["otlp"]
+otlp = ["dep:opentelemetry-otlp", "dep:reqwest"]
+http-reqwest = ["dep:reqwest"]
+http-axum = ["dep:axum", "dep:http-body", "dep:pin-project-lite"]
+db-sqlx = ["dep:sqlx", "dep:futures-core", "dep:pin-project-lite"]
+db-rusqlite = ["dep:rusqlite"]
+db-duckdb = ["dep:duckdb"]
+db-clickhouse = ["dep:clickhouse", "dep:serde"]
+redis = ["dep:redis"]
+
+[dependencies]
+sequel = { git = "https://github.com/zfogg/sequel", tag = "v0.2.1", version = "0.2.1" }
+opentelemetry = { version = "0.33.1", features = ["trace", "metrics", "logs"] }
+opentelemetry_sdk = { version = "0.33.1", features = ["trace", "metrics", "logs"] }
+opentelemetry-otlp = { version = "0.33.1", default-features = false, features = ["trace", "metrics", "logs", "http-proto", "reqwest-blocking-client", "reqwest-rustls"], optional = true }
+serde_json = "1"
+url = "2"
+reqwest = { version = "0.13.1", default-features = false, features = ["blocking", "rustls"], optional = true }
+axum = { version = "0.8.9", default-features = false, features = ["matched-path"], optional = true }
+http-body = { version = "1", optional = true }
+pin-project-lite = { version = "0.2", optional = true }
+sqlx = { version = "0.8.6", default-features = false, optional = true }
+rusqlite = { version = "0.32.1", default-features = false, features = ["bundled"], optional = true }
+duckdb = { version = "1.20000.1", optional = true }
+clickhouse = { version = "0.15.3", default-features = false, optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+redis = { version = "1.8.0", default-features = false, features = ["aio", "tokio-comp"], optional = true }
+futures-core = { version = "0.3", optional = true }
+
+[dev-dependencies]
+opentelemetry_sdk = { version = "0.33.1", features = ["testing"] }
+futures = "0.3"
+opentelemetry-proto = { version = "0.33.1", features = ["gen-tonic-messages"] }
+prost = "0.14"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time", "sync"] }
+tower = { version = "0.5", features = ["util"] }
+sqlx = { version = "0.8.6", default-features = false, features = ["sqlite", "runtime-tokio"] }
+axum = { version = "0.8.9", default-features = false, features = ["matched-path", "http1", "tokio"] }
+clickhouse = { version = "0.15.3", default-features = false, features = ["test-util"] }

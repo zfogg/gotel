@@ -1,0 +1,25 @@
+name: Rust bindings
+on:
+  push:
+    paths: ['rust/**', '.github/workflows/rust.yml']
+  pull_request:
+    paths: ['rust/**', '.github/workflows/rust.yml']
+permissions:
+  contents: read
+jobs:
+  rust:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-26-intel, macos-26, windows-2025, windows-11-arm]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --manifest-path rust/Cargo.toml --check
+      - run: cargo test --manifest-path rust/Cargo.toml --locked --all-features
+      - run: cargo test --manifest-path rust/Cargo.toml --locked --no-default-features
+      - run: cargo clippy --manifest-path rust/Cargo.toml --locked --all-targets --all-features -- -D warnings
+      - run: cargo doc --manifest-path rust/Cargo.toml --locked --no-deps --all-features

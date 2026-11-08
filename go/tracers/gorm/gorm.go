@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/zfogg/gotel/go"
+	"github.com/zfogg/gotel/go/internal/operationcontext"
 	"github.com/zfogg/gotel/go/outcome"
 	gotelsql "github.com/zfogg/gotel/go/tracers/sql"
 	sequel "github.com/zfogg/sequel/go"
@@ -58,12 +59,13 @@ func (p *transactionPool) BeginTx(ctx context.Context, opts *sql.TxOptions) (poo
 		outcome.End(ctx, lifetime, err)
 		return nil, err
 	}
-	return &tracedTransaction{Tx: tx, ctx: txCtx, db: p.DB, connection: conn, lifetime: lifetime, application: p.application, namer: p.namer}, nil
+	return &tracedTransaction{Tx: tx, ctx: txCtx, parent: trace.SpanContextFromContext(ctx), db: p.DB, connection: conn, lifetime: lifetime, application: p.application, namer: p.namer}, nil
 }
 
 type tracedTransaction struct {
 	*sql.Tx
 	ctx         context.Context
+	parent      trace.SpanContext
 	db          *sql.DB
 	application gotel.Application
 	namer       gotelsql.Namer
@@ -91,10 +93,18 @@ func MarkTransactionOutcome(pool gorm.ConnPool, ctx context.Context, err error) 
 
 func (t *tracedTransaction) GetDBConn() (*sql.DB, error) { return t.db, nil }
 func (t *tracedTransaction) traceContext(ctx context.Context) context.Context {
-	if !t.done.Load() {
-		return trace.ContextWithSpan(ctx, t.lifetime)
+	if t.done.Load() {
+		return ctx
 	}
-	return ctx
+	current := trace.SpanContextFromContext(ctx)
+	// GORM retains the context originally passed to Begin. Bind that ordinary
+	// caller to the transaction, but respect an explicit operation (even when
+	// it started before Begin) or a child span supplied later. In particular,
+	// the driver wrapper must retain a query span already created by before.
+	if current.IsValid() && (operationcontext.IsCurrent(ctx) || current.TraceID() != t.parent.TraceID() || current.SpanID() != t.parent.SpanID()) {
+		return ctx
+	}
+	return trace.ContextWithSpan(ctx, t.lifetime)
 }
 func (t *tracedTransaction) finish(err error) {
 	t.once.Do(func() {

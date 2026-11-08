@@ -2,21 +2,25 @@
   "name": "Gotel",
   "package": "gotel",
   "repository": "zfogg/gotel",
-  "description": "Shared OpenTelemetry conventions for C, Python, Go and TypeScript applications.",
+  "description": "Shared OpenTelemetry conventions for C, Python, Go, Rust and TypeScript applications.",
   "python_project": "python",
   "go_directory": "go",
   "languages": {
     "c": "C",
+    "cxx": "C++",
     "python": "Python",
     "go": "Go",
-    "typescript": "TypeScript"
+    "typescript": "TypeScript",
+    "rust": "Rust"
   },
   "smoke": {
     "c": [
       "gotel_8h.html",
       "sql_8h.html",
-      "testing_8h.html"
+      "testing_8h.html",
+      "clickhouse_8h.html"
     ],
+    "cxx": "index.html",
     "python": [
       "gotel.html",
       "gotel/application.html",
@@ -48,8 +52,26 @@
       "pkg/github.com/zfogg/gotel/go/tracers/redis.html",
       "pkg/github.com/zfogg/gotel/go/tracers/sql.html",
       "pkg/github.com/zfogg/gotel/go/querynames.html",
-      "pkg/github.com/zfogg/gotel/go/tracers/temporal.html"
+      "pkg/github.com/zfogg/gotel/go/tracers/temporal.html",
+      "pkg/github.com/zfogg/gotel/go/tracers/clickhouse.html"
     ],
-    "typescript": "functions/browserHttpClientSpanName.html"
-  }
+    "typescript": "functions/browserHttpClientSpanName.html",
+    "rust": [
+      "gotel/index.html",
+      "gotel/struct.Application.html",
+      "gotel/struct.SqlTracer.html",
+      "gotel/struct.Query.html",
+      "gotel/tracers/index.html",
+      "gotel/tracers/axum/struct.Tracer.html",
+      "gotel/tracers/reqwest/struct.Client.html",
+      "gotel/tracers/sqlx/struct.Tracer.html",
+      "gotel/tracers/rusqlite/struct.Connection.html",
+      "gotel/tracers/redis/struct.Connection.html",
+      "gotel/tracers/duckdb/struct.Connection.html",
+      "gotel/tracers/clickhouse/struct.Client.html",
+      "gotel/tracers/clickhouse/struct.Query.html",
+      "gotel/tracers/clickhouse/struct.Insert.html"
+    ]
+  },
+  "rust_directory": "rust"
 }

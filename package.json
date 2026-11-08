@@ -1,6 +1,6 @@
 {
   "name": "@zfogg/gotel",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Reusable OpenTelemetry conventions for Go, C, Python, and TypeScript applications",
   "license": "MIT",
   "type": "module",
@@ -22,16 +22,18 @@
     "check": "tsc -p tsconfig.json --noEmit && vitest run typescript"
   },
   "peerDependencies": {
-    "@opentelemetry/api": ">=1.9.0 <1.10.0",
-    "@opentelemetry/exporter-trace-otlp-http": ">=0.208.0 <0.224.0",
-    "@opentelemetry/instrumentation": ">=0.208.0 <0.224.0",
-    "@opentelemetry/instrumentation-fetch": ">=0.208.0 <0.224.0",
-    "@opentelemetry/resources": ">=2.2.0 <3.0.0",
-    "@opentelemetry/sdk-trace-base": ">=2.2.0 <3.0.0",
-    "@opentelemetry/sdk-trace-web": ">=2.2.0 <3.0.0"
+    "@opentelemetry/api": ">=1.9.0 <2.0.0",
+    "@opentelemetry/core": ">=2.2.0 <4.0.0",
+    "@opentelemetry/exporter-trace-otlp-http": ">=0.208.0 <1.0.0",
+    "@opentelemetry/instrumentation": ">=0.208.0 <1.0.0",
+    "@opentelemetry/instrumentation-fetch": ">=0.208.0 <1.0.0",
+    "@opentelemetry/resources": ">=2.2.0 <4.0.0",
+    "@opentelemetry/sdk-trace-base": ">=2.2.0 <4.0.0",
+    "@opentelemetry/sdk-trace-web": ">=2.2.0 <4.0.0"
   },
   "devDependencies": {
     "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/core": "2.12.0",
     "@opentelemetry/exporter-trace-otlp-http": "0.223.0",
     "@opentelemetry/instrumentation": "0.223.0",
     "@opentelemetry/instrumentation-fetch": "0.223.0",

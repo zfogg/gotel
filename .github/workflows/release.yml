@@ -40,6 +40,7 @@ jobs:
           grep -Fq "project(gotel VERSION $version LANGUAGES C)" c/CMakeLists.txt
           node -e 'if (require("./package.json").version !== process.argv[1]) process.exit(1)' "$version"
           python -c 'import sys,tomllib; assert tomllib.load(open("python/pyproject.toml", "rb"))["project"]["version"] == sys.argv[1]' "$version"
+          python -c 'import sys,tomllib; assert tomllib.load(open("rust/Cargo.toml", "rb"))["package"]["version"] == sys.argv[1]' "$version"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
   c-libraries:
@@ -221,8 +222,35 @@ jobs:
             python/dist/*.tar.gz
           if-no-files-found: error
 
+  rust:
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-26-intel, macos-26, windows-2025, windows-11-arm]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --manifest-path rust/Cargo.toml --check
+      - run: cargo test --manifest-path rust/Cargo.toml --locked --all-features
+      - run: cargo test --manifest-path rust/Cargo.toml --locked --no-default-features
+      - run: cargo clippy --manifest-path rust/Cargo.toml --locked --all-targets --all-features -- -D warnings
+      - run: cargo doc --manifest-path rust/Cargo.toml --locked --no-deps --all-features
+      - name: Package Rust sources and installation guide
+        if: matrix.runner == 'ubuntu-24.04'
+        run: python scripts/package_release.py rust --tag '${{ needs.validate.outputs.tag }}' --output release-assets
+      - uses: actions/upload-artifact@v4
+        if: matrix.runner == 'ubuntu-24.04'
+        with:
+          name: release-rust
+          path: release-assets/*.zip
+          if-no-files-found: error
+
   publish:
-    needs: [validate, c-libraries, typescript, go-source, python]
+    needs: [validate, c-libraries, typescript, go-source, python, rust]
     if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
@@ -237,6 +265,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: release-typescript
+          path: release-assets
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-rust
           path: release-assets
       # All Python jobs produce the same filenames. Download one validated build
       # so parallel extraction cannot overwrite another platform's wheel bytes.

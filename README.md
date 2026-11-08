@@ -1,13 +1,20 @@
 # gotel
 
+[Rust API documentation](https://zfogg.github.io/gotel/rust/) · [Rust usage and installation](rust/README.md)
+
+Rust HTTP, SQL and Redis integrations: [Axum, reqwest, SQLx, rusqlite, DuckDB, ClickHouse and redis-rs](rust/ADAPTERS.md).
+
+[ClickHouse adapters](docs/adapters.md#clickhouse) are available for Go, Rust, Python and C.
+
 [Documentation](https://zfogg.github.io/gotel/) ·
 [C API](https://zfogg.github.io/gotel/c/) ·
 [Python API](https://zfogg.github.io/gotel/python/) ·
 [Go API](https://zfogg.github.io/gotel/go/) ·
+[Rust API](https://zfogg.github.io/gotel/rust/) ·
 [TypeScript API](https://zfogg.github.io/gotel/typescript/)
 
-The hosted references use Doxygen, pdoc, Golds and TypeDoc with shared language
-navigation. To build them locally, install Doxygen, Go, uv and pnpm, then run:
+The hosted references use Doxygen, pdoc, Golds, rustdoc and TypeDoc with shared language
+navigation. To build them locally, install Doxygen, Go, Rust, uv and pnpm, then run:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -18,7 +25,7 @@ uv run --project python python -m http.server 8000 --directory build/docs/site
 
 Open `http://localhost:8000/`. This docs-only CMake project avoids configuring
 the C runtime and its native dependencies. Individual targets are `docs-c`,
-`docs-python`, `docs-go` and `docs-typescript`; `docs-site` assembles shared
+`docs-python`, `docs-go`, `docs-rust` and `docs-typescript`; `docs-site` assembles shared
 navigation and `docs-check` validates language entry points and page/asset links.
 The native C build also exposes them with `GOTEL_BUILD_DOCS=ON`.
 Set `DOCS_OUTPUT_DIR` to override the destination.
@@ -49,7 +56,7 @@ When a request crosses a browser, an HTTP service, a database, and a native
 process, “how long did it take?” is only the first question. You also need to
 know which operation ran, where it spent time, and whether its trace, logs, and
 metrics describe the same work. gotel provides reusable OpenTelemetry
-instrumentation for those boundaries in Go, C, Python, and TypeScript.
+instrumentation for those boundaries in Go, C, Python, Rust, and TypeScript.
 
 Your application still chooses its service name and telemetry backend. gotel
 supplies stable operation names, resource attributes, safe database metadata,
@@ -61,6 +68,7 @@ Collector or another OTLP-compatible backend.
 | Go service | [Go packages](#go-services) | SDK setup, HTTP and database spans, logs, metrics, and resource detection |
 | Python application | [Python package](python/) | uv package, SDK lifecycle, HTTP/database/Redis/Temporal adapters, and shared SQL inspection |
 | Native C application | [gotel](#c---gotel) | Trace scopes, correlated logs, operation metrics, HTTP names, and SQLite spans |
+| Rust application | [Rust crate](rust/README.md) | Owned SDK providers, OTLP signals, sync/async operations and safe SQL diagnostics |
 | Browser application | [TypeScript package](#typescript-browser-applications) | Fetch spans with bounded names and an optional browser provider |
 
 Use only the pieces your application needs. Where the languages overlap, they
@@ -416,7 +424,8 @@ The tag must match the CMake and TypeScript package versions. The release
 contains tested C static and shared libraries for x64 and ARM64 on Linux,
 macOS, and Windows, with public headers and linking notes in separate ZIPs;
 one ZIP of the compiled
-TypeScript package; and SHA-256 checksums.
+TypeScript package; a Rust source ZIP with Cargo manifests, lockfile and installation
+guide; and SHA-256 checksums. Python wheels and an sdist are included as well.
 Each ZIP has a use-focused `README.md`; the GitHub Release notes summarize
 the C linking requirements and TypeScript installation steps.
 The C archives retain external dependencies such as OpenSSL, SQLite, PCRE2,
