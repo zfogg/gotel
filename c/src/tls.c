@@ -9,6 +9,7 @@
 #include <windows.h>
 #elif defined(__APPLE__)
 #include <Security/Security.h>
+#include <TargetConditionals.h>
 #endif
 struct gotel_tls_store {
   SSL_CTX *context;
@@ -25,7 +26,7 @@ gotel_tls_store *gotel_tls_select(gotel_tls_store *store) {
   selected = store;
   return previous;
 }
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32) || (defined(__APPLE__) && !TARGET_OS_IPHONE)
 static void add_der(X509_STORE *store, const unsigned char *data, size_t len) {
   if (len > LONG_MAX)
     return;
@@ -64,7 +65,7 @@ otlp_status_t gotel_tls_store_create(const char *file, gotel_tls_store **out) {
       CertCloseStore(roots, 0);
       loaded = 1;
     }
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && !TARGET_OS_IPHONE
     CFArrayRef roots = NULL;
     if (SecTrustCopyAnchorCertificates(&roots) == errSecSuccess) {
       for (CFIndex i = 0; i < CFArrayGetCount(roots); ++i) {
