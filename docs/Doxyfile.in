@@ -1,7 +1,7 @@
 PROJECT_NAME = "Gotel C API"
 PROJECT_BRIEF = "OpenTelemetry conventions and native instrumentation"
 OUTPUT_DIRECTORY = "@DOCS_OUTPUT_DIR@/c"
-INPUT = "@_docs_root@/c/include/gotel" "@_docs_root@/c/src/cxx/include/gotel" "@_docs_root@/docs/c.md" "@_docs_root@/docs/cxx.md"
+INPUT = "@_docs_root@/c/include/gotel" "@_docs_root@/docs/c.md"
 USE_MDFILE_AS_MAINPAGE = "@_docs_root@/docs/c.md"
 HTML_OUTPUT = .
 GENERATE_HTML = YES
