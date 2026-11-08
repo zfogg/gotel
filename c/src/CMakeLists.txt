@@ -6,7 +6,7 @@ else()
 endif()
 
 add_library(gotel::gotel ALIAS gotel)
-target_compile_features(gotel PUBLIC c_std_11)
+target_compile_features(gotel PUBLIC c_std_23)
 set_target_properties(gotel PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   WINDOWS_EXPORT_ALL_SYMBOLS ON
@@ -47,4 +47,24 @@ if(GOTEL_WITH_SQLITE)
   target_sources(gotel PRIVATE sqlite.c named.c)
   target_link_libraries(gotel PUBLIC ${_gotel_sqlite_target})
   target_compile_definitions(gotel PUBLIC GOTEL_WITH_SQLITE=1)
+endif()
+
+option(GOTEL_BUILD_CXX "Build the C++27 facade" ON)
+if(GOTEL_BUILD_CXX)
+  add_library(gotel_cxx cxx.cpp)
+  add_library(gotel::cxx ALIAS gotel_cxx)
+  set_target_properties(gotel_cxx PROPERTIES CXX_STANDARD ${GOTEL_CXX_STANDARD} CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO POSITION_INDEPENDENT_CODE ON)
+  target_include_directories(gotel_cxx PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/cxx/include>
+    $<INSTALL_INTERFACE:include>)
+  target_link_libraries(gotel_cxx PUBLIC gotel::gotel)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT MSVC)
+    find_library(GOTEL_LIBCXX NAMES c++ libc++ libcxx)
+    if(GOTEL_LIBCXX)
+      target_compile_options(gotel_cxx PUBLIC -stdlib=libc++)
+      target_link_options(gotel_cxx INTERFACE -stdlib=libc++)
+    endif()
+  endif()
+  install(TARGETS gotel_cxx EXPORT gotelTargets)
+  install(DIRECTORY cxx/include/gotel DESTINATION include)
 endif()

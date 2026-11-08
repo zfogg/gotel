@@ -7,6 +7,7 @@
   "go_directory": "go",
   "languages": {
     "c": "C",
+    "cxx": "C++",
     "python": "Python",
     "go": "Go",
     "typescript": "TypeScript",
@@ -19,6 +20,7 @@
       "testing_8h.html",
       "clickhouse_8h.html"
     ],
+    "cxx": "index.html",
     "python": [
       "gotel.html",
       "gotel/application.html",

@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG = json.loads((ROOT / "docs/site.json").read_text(encoding="utf-8"))
 GENERATORS = {
     "c": "Doxygen",
+    "cxx": "Doxygen",
     "python": "pdoc",
     "go": "Golds",
     "rust": "rustdoc",

@@ -8,10 +8,15 @@ find_package(Doxygen 1.9 REQUIRED)
 set(DOCS_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/site" CACHE PATH "Generated documentation site")
 set(DOCS_PUBLISH_REF main CACHE STRING "Remote Git ref deployed by docs-publish")
 configure_file("${_docs_root}/docs/Doxyfile.in" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile" @ONLY)
+configure_file("${_docs_root}/docs/Doxyfile.cxx.in" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.cxx" @ONLY)
 set(_docs_command "${DOCS_UV}" run --project "${_docs_root}/${_docs_python}" --group docs --locked python "${_docs_root}/scripts/docs.py")
 add_custom_target(docs-c
   COMMAND "${CMAKE_COMMAND}" -E make_directory "${DOCS_OUTPUT_DIR}/c"
   COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+  WORKING_DIRECTORY "${_docs_root}" VERBATIM)
+add_custom_target(docs-cxx
+  COMMAND "${CMAKE_COMMAND}" -E make_directory "${DOCS_OUTPUT_DIR}/cxx"
+  COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.cxx"
   WORKING_DIRECTORY "${_docs_root}" VERBATIM)
 foreach(language IN ITEMS python go)
   add_custom_target(docs-${language}
@@ -19,7 +24,7 @@ foreach(language IN ITEMS python go)
     WORKING_DIRECTORY "${_docs_root}" VERBATIM USES_TERMINAL)
 endforeach()
 string(JSON _docs_typescript ERROR_VARIABLE _docs_no_typescript GET "${_docs_config}" languages typescript)
-set(_docs_languages docs-c docs-python docs-go)
+set(_docs_languages docs-c docs-cxx docs-python docs-go)
 if(NOT _docs_no_typescript)
   add_custom_target(docs-typescript
     COMMAND ${_docs_command} typescript --output "${DOCS_OUTPUT_DIR}"
