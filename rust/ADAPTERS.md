@@ -8,6 +8,7 @@ Enable only the integrations you use:
 | `http-reqwest` | `gotel::tracers::reqwest` | reqwest 0.13 |
 | `db-sqlx` | `gotel::tracers::sqlx` | SQLx 0.8 (PostgreSQL, MySQL, SQLite) |
 | `db-rusqlite` | `gotel::tracers::rusqlite` | rusqlite 0.32 |
+| `db-duckdb` | `gotel::tracers::duckdb` | official duckdb-rs 1.20000.x (DuckDB 2.0) |
 | `redis` | `gotel::tracers::redis` | redis-rs 1.8, sync and async |
 
 ```toml
@@ -102,6 +103,35 @@ empty array for clean input. Bind values and driver messages are never exported.
 text while retaining safe metadata. The same policy configures input/output,
 memory/work budgets and opt-in source maps/bind descriptors. Analysis failures
 do not prevent native query execution or replace native errors/results.
+
+## DuckDB
+
+```no_run
+# #[cfg(feature = "db-duckdb")]
+# fn read(app: &gotel::Application) -> Result<(), Box<dyn std::error::Error>> {
+use gotel::{opentelemetry::Context, tracers};
+let db = tracers::duckdb::Connection::new(
+    duckdb::Connection::open_in_memory()?, app, "storage.duckdb", "analytics",
+)?;
+let rows: Vec<i64> = db.query_all(&Context::current(), "ReadRange",
+    "SELECT i FROM range(?) AS t(i)", [3_i64], |row| row.get(0))?;
+# assert_eq!(rows, vec![0, 1, 2]);
+# Ok(())
+# }
+```
+
+Enable `db-duckdb` and use the official `duckdb` crate at version `1.20000.x`.
+The driver uses its normal native-library discovery/download configuration;
+applications may enable its `bundled` feature to compile DuckDB themselves. A
+downloaded/system shared library must remain available at runtime; follow the
+driver's deployment instructions. Gotel does not change native library selection.
+
+`execute`, `execute_batch`, `query_row` and `query_all` use the DuckDB dialect,
+fingerprints, canonical diagnostics and the same `SqlPolicy` as the other SQL
+adapters. `query_all` buffers results and includes native row-decoding errors in
+the span. Arrow streams, appenders and calls made directly on the native connection
+are not automatically instrumented. Wrap `&*transaction` to observe native
+transactional queries; commit and rollback remain application-owned.
 
 ## Redis
 

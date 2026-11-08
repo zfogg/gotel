@@ -62,7 +62,8 @@
       "gotel/tracers/reqwest/struct.Client.html",
       "gotel/tracers/sqlx/struct.Tracer.html",
       "gotel/tracers/rusqlite/struct.Connection.html",
-      "gotel/tracers/redis/struct.Connection.html"
+      "gotel/tracers/redis/struct.Connection.html",
+      "gotel/tracers/duckdb/struct.Connection.html"
     ]
   },
   "rust_directory": "rust"

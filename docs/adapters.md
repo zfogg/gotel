@@ -8,7 +8,8 @@ Optional driver packages are installed by the application.
 ## Rust
 
 `gotel::tracers` provides optional Cargo features for Axum (`http-axum`), reqwest
-(`http-reqwest`), SQLx (`db-sqlx`), rusqlite (`db-rusqlite`) and redis-rs (`redis`).
+(`http-reqwest`), SQLx (`db-sqlx`), rusqlite (`db-rusqlite`), DuckDB (`db-duckdb`)
+and redis-rs (`redis`).
 See the [Rust adapter guide](../rust/ADAPTERS.md) for versions and examples.
 
 Axum middleware extracts W3C context and names matched routes, including streaming
