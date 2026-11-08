@@ -62,6 +62,16 @@ def test_database_error_privacy():
         assert capture.spans[0].status.status_code == trace.StatusCode.ERROR
 
 
+def test_scalar_query_presentation_redacts_values():
+    with Capture() as capture:
+        namer = sqltrace.Namer("test.storage", tracer_provider=capture.provider)
+        with namer.query("Health", sql="SELECT 'private-value'", system="sqlite", dialect=sequel.Dialect.SQLITE):
+            pass
+        attrs = capture.spans[0].attributes
+        assert attrs["db.query.text"] == "SELECT ?"
+        assert attrs["db.query.summary"] == "SELECT ?"
+
+
 def test_database_formatting_keeps_complete_bounded_template():
     with Capture() as capture:
         namer = sqltrace.Namer("test.storage", tracer_provider=capture.provider)
