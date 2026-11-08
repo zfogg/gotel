@@ -1,6 +1,6 @@
 [package]
 name = "gotel"
-version = "0.13.0"
+version = "0.14.0"
 edition = "2021"
 rust-version = "1.88"
 description = "Gotel conventions and safe SQL telemetry for OpenTelemetry Rust applications"
@@ -20,7 +20,7 @@ db-clickhouse = ["dep:clickhouse", "dep:serde"]
 redis = ["dep:redis"]
 
 [dependencies]
-sequel = { git = "https://github.com/zfogg/sequel", tag = "v0.2.0", version = "0.2.0" }
+sequel = { git = "https://github.com/zfogg/sequel", tag = "v0.2.1", version = "0.2.1" }
 opentelemetry = { version = "0.33.1", features = ["trace", "metrics", "logs"] }
 opentelemetry_sdk = { version = "0.33.1", features = ["trace", "metrics", "logs"] }
 opentelemetry-otlp = { version = "0.33.1", default-features = false, features = ["trace", "metrics", "logs", "http-proto", "reqwest-blocking-client", "reqwest-rustls"], optional = true }
