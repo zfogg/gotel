@@ -50,10 +50,10 @@ func TestPluginNamesAndSanitizesEveryOperation(t *testing.T) {
 				attrs[string(attr.Key)] = attr.Value.AsInt64()
 			}
 		}
-		if attrs["db.query.text"] != "SELECT\n  ?" {
+		if attrs["db.query.text"] != "SELECT ?" {
 			t.Fatalf("query text = %#v", attrs["db.query.text"])
 		}
-		if attrs["db.query.summary"] != "SELECT …" {
+		if attrs["db.query.summary"] != "SELECT ?" {
 			t.Fatalf("query summary = %#v", attrs["db.query.summary"])
 		}
 		if attrs["gotel.db.query.bind_count"] != int64(1) {
