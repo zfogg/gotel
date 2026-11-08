@@ -13,6 +13,7 @@ import {
 } from '@opentelemetry/sdk-trace-base'
 import { WebTracerProvider } from '@opentelemetry/sdk-trace-web'
 import { trace, type Attributes, type Span } from '@opentelemetry/api'
+import { W3CTraceContextPropagator } from '@opentelemetry/core'
 
 /** Inputs used to produce a bounded, application-qualified HTTP operation name. */
 export interface BrowserHttpSpanNameOptions {
@@ -230,7 +231,11 @@ export function startBrowserTelemetry({
     resource: resource ? applicationResource.merge(resource) : applicationResource,
     spanProcessors: [new BatchSpanProcessor(exporter, batch)],
   })
-  provider.register()
+  // Make propagation explicit instead of inheriting whatever global
+  // propagator a host application happened to install. Without this, a
+  // browser bundle can create client spans while omitting traceparent from
+  // same-origin fetches, leaving the server span in a separate trace.
+  provider.register({ propagator: new W3CTraceContextPropagator() })
   const remove = registerInstrumentations({
     tracerProvider: provider,
     instrumentations: [

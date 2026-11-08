@@ -23,6 +23,7 @@
   },
   "peerDependencies": {
     "@opentelemetry/api": ">=1.9.0 <1.10.0",
+    "@opentelemetry/core": ">=2.2.0 <3.0.0",
     "@opentelemetry/exporter-trace-otlp-http": ">=0.208.0 <0.224.0",
     "@opentelemetry/instrumentation": ">=0.208.0 <0.224.0",
     "@opentelemetry/instrumentation-fetch": ">=0.208.0 <0.224.0",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/core": "2.12.0",
     "@opentelemetry/exporter-trace-otlp-http": "0.223.0",
     "@opentelemetry/instrumentation": "0.223.0",
     "@opentelemetry/instrumentation-fetch": "0.223.0",
