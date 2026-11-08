@@ -13,8 +13,7 @@ struct gotel_sqlite {
   gotel_host_t *host;
   sqlite3 *db;
   const char *prefix;
-  const gotel_query_t *queries;
-  size_t count;
+  gotel_query_catalog_t catalog;
   gotel_sqlite_options_t options;
   sequel_analysis_options_t analysis;
   statement_start_t *started;
@@ -43,6 +42,16 @@ static void clear_started(gotel_sqlite_t *a) {
     a->started = entry->next;
     free(entry);
   }
+}
+static const char *catalog_name(const gotel_query_catalog_t *catalog, const char *sql) {
+  if (!sql || !catalog->get)
+    return NULL;
+  for (size_t i = 0; i < catalog->count; ++i) {
+    gotel_query_t query = {0};
+    if (catalog->get(catalog->context, i, &query) && query.sql && !strcmp(query.sql, sql))
+      return query.name;
+  }
+  return NULL;
 }
 static int traced(unsigned event, void *data, void *statement, void *extra) {
   gotel_sqlite_t *a = data;
@@ -88,9 +97,9 @@ static int traced(unsigned event, void *data, void *statement, void *extra) {
   }
   const char *sql = sqlite3_sql(statement);
   const char *name = "UnknownQuery";
-  const gotel_query_t *query = gotel_query_find(a->queries, a->count, sql);
-  if (query)
-    name = query->name;
+  const char *query_name = catalog_name(&a->catalog, sql);
+  if (query_name)
+    name = query_name;
   sequel_analysis_t metadata = {0};
   sequel_analyze(sql, &a->analysis, &metadata);
   char span_name[256];
@@ -142,13 +151,25 @@ otlp_status_t gotel_sqlite_attach(gotel_host_t *h, sqlite3 *db, const char *pref
                                   size_t count, gotel_sqlite_t **out) {
   return gotel_sqlite_attach_with_options(h, db, prefix, queries, count, NULL, out);
 }
+static bool legacy_query_get(const void *context, size_t index, gotel_query_t *out) {
+  if (!context)
+    return false;
+  *out = ((const gotel_query_t *)context)[index];
+  return true;
+}
 otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *h, sqlite3 *db, const char *prefix,
                                                const gotel_query_t *queries, size_t count,
                                                const gotel_sqlite_options_t *options, gotel_sqlite_t **out) {
+  gotel_query_catalog_t catalog = {queries, count, legacy_query_get};
+  return gotel_sqlite_attach_catalog_with_options(h, db, prefix, &catalog, options, out);
+}
+otlp_status_t gotel_sqlite_attach_catalog_with_options(gotel_host_t *h, sqlite3 *db, const char *prefix,
+                                                       const gotel_query_catalog_t *catalog,
+                                                       const gotel_sqlite_options_t *options, gotel_sqlite_t **out) {
   if (!out)
     return OTLP_ERR_NULL;
   *out = NULL;
-  if (!h || !db || !prefix || !*prefix || (!queries && count))
+  if (!h || !db || !prefix || !*prefix || !catalog || (catalog->count && !catalog->get))
     return OTLP_ERR_INVALID_ARGUMENT;
   if (options && options->sql.max_query_text_bytes > SEQUEL_TEXT_MAX)
     return OTLP_ERR_INVALID_ARGUMENT;
@@ -156,12 +177,15 @@ otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *h, sqlite3 *db, con
       (options->analysis->max_input_bytes > SEQUEL_INPUT_MAX || options->analysis->max_output_bytes > SEQUEL_TEXT_MAX ||
        options->analysis->max_query_text_bytes > SEQUEL_TEXT_MAX))
     return OTLP_ERR_INVALID_ARGUMENT;
-  for (size_t i = 0; i < count; ++i) {
-    if (!queries[i].name || !*queries[i].name || !queries[i].sql)
+  for (size_t i = 0; i < catalog->count; ++i) {
+    gotel_query_t query = {0};
+    if (!catalog->get(catalog->context, i, &query) || !query.name || !*query.name || !query.sql)
       return OTLP_ERR_INVALID_ARGUMENT;
-    for (size_t j = 0; j < i; ++j)
-      if (!strcmp(queries[i].sql, queries[j].sql))
+    for (size_t j = 0; j < i; ++j) {
+      gotel_query_t other = {0};
+      if (!catalog->get(catalog->context, j, &other) || !other.sql || !strcmp(query.sql, other.sql))
         return OTLP_ERR_INVALID_ARGUMENT;
+    }
   }
   registry_lock();
   bool attached = false;
@@ -174,7 +198,7 @@ otlp_status_t gotel_sqlite_attach_with_options(gotel_host_t *h, sqlite3 *db, con
   gotel_sqlite_t *a = calloc(1, sizeof(*a));
   if (!a)
     return OTLP_ERR_NOMEM;
-  *a = (gotel_sqlite_t){.host = h, .db = db, .prefix = prefix, .queries = queries, .count = count};
+  *a = (gotel_sqlite_t){.host = h, .db = db, .prefix = prefix, .catalog = *catalog};
   if (options)
     a->options = *options;
   a->options.sql.dialect = SEQUEL_SQLITE;
@@ -227,9 +251,9 @@ static void prepare_failed(gotel_sqlite_t *a, const char *sql, int bytes, int re
   }
   sequel_analysis_t metadata = {0};
   sequel_analyze(sql, &a->analysis, &metadata);
-  const gotel_query_t *query = gotel_query_find(a->queries, a->count, sql);
+  const char *query_name = catalog_name(&a->catalog, sql);
   char name[256];
-  int n = snprintf(name, sizeof(name), "%s.%s", a->prefix, query ? query->name : "Prepare");
+  int n = snprintf(name, sizeof(name), "%s.%s", a->prefix, query_name ? query_name : "Prepare");
   gotel_context_t parent = gotel_current_context();
   otlp_span_t *span = NULL;
   if (n >= 0 && (size_t)n < sizeof(name) && (h->options.signals & GOTEL_TRACES) && !(parent.valid && !parent.sampled))
