@@ -17,7 +17,7 @@ format-python:
 format-cx: format-c format-cpp
 
 format-c:
-	git ls-files -- '*.c' '*.h' | xargs clang-format -i
+	git ls-files -- '*.c' '*.h' ':!*.cc' ':!*.cpp' ':!*.cxx' ':!*.hh' ':!*.hpp' ':!*.hxx' | xargs clang-format -i
 
 format-cpp:
 	git ls-files -- '*.cc' '*.cpp' '*.cxx' '*.hh' '*.hpp' '*.hxx' | xargs clang-format -i
