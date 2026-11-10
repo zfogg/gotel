@@ -47,6 +47,7 @@ def revision():
 def build_python(output):
     import pdoc
     import pdoc.render
+    from pdoc.render_helpers import to_html
 
     package = importlib.import_module(CONFIG["package"])
     modules = [CONFIG["package"]] + sorted(
@@ -61,6 +62,21 @@ def build_python(output):
         template_directory=ROOT / "docs/pdoc",
     )
     pdoc.pdoc(*modules, output_directory=output / "python")
+    readme = ROOT / CONFIG["python_project"] / "README.md"
+    landing = output / "python" / "index.html"
+    if readme.is_file() and landing.is_file():
+        text = landing.read_text(encoding="utf-8")
+        content = to_html(readme.read_text(encoding="utf-8"))
+        content = re.sub(
+            r'href="(?!(?:https?:|mailto:|#))((?:\.\./)*[^"#]+)',
+            lambda match: f'href="https://github.com/{CONFIG["repository"]}/blob/main/{match[1].lstrip("./")}',
+            content,
+        )
+        text = text.replace(
+            '<main class="pdoc"></main>',
+            f'<main class="pdoc"><section class="module-info python-landing">{content}</section></main>',
+        )
+        landing.write_text(text, encoding="utf-8")
 
 
 def build_go(output):
