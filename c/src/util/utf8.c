@@ -1,4 +1,4 @@
-#include "utf8.h"
+#include "util/utf8.h"
 #include <utf8proc.h>
 
 bool gotel_utf8_valid(const char *text, size_t length) {
