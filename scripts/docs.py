@@ -104,7 +104,6 @@ def build_rust(output):
     run(
         "cargo",
         "doc",
-        "--locked",
         "--no-deps",
         "--all-features",
         "--manifest-path",
