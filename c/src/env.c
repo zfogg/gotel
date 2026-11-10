@@ -1,6 +1,6 @@
-#include "internal.h"
-#include "exporter_internal.h"
 #include "env_config.h"
+#include "exporter_internal.h"
+#include "internal.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,7 +69,7 @@ otlp_status_t gotel_options_apply_env(gotel_options_t *o, gotel_env_storage_t *s
   }
   /* Mixed per-signal protocols are not supported by this host API. Fail explicitly. */
   const char *protocol_names[] = {"OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
-                                 "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL"};
+                                  "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL"};
   for (size_t i = 0; i < 3; ++i) {
     const char *value = env(protocol_names[i]);
     if (value && strcmp(value, o->protocol ? o->protocol : "http/protobuf"))
@@ -128,12 +128,11 @@ otlp_status_t gotel_protocol_configure(gotel_host_t *h) {
     return OTLP_OK;
 #ifdef GOTEL_WITH_GRPC
   if (!strcmp(h->options.protocol, "grpc")) {
-    static const char *paths[] = {
-      "/opentelemetry.proto.collector.trace.v1.TraceService/Export",
-      "/opentelemetry.proto.collector.metrics.v1.MetricsService/Export",
-      "/opentelemetry.proto.collector.logs.v1.LogsService/Export"};
+    static const char *paths[] = {"/opentelemetry.proto.collector.trace.v1.TraceService/Export",
+                                  "/opentelemetry.proto.collector.metrics.v1.MetricsService/Export",
+                                  "/opentelemetry.proto.collector.logs.v1.LogsService/Export"};
     const char *endpoints[] = {h->options.exporter.endpoint, h->options.exporter.metrics_endpoint,
-                              h->options.exporter.logs_endpoint};
+                               h->options.exporter.logs_endpoint};
     for (size_t i = 0; i < 3; ++i) {
       struct otlp_http_url url;
       const char *endpoint = endpoints[i] ? endpoints[i] : endpoints[0];
