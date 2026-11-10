@@ -27,6 +27,11 @@ set(GOTEL_CXX_STANDARD 27 CACHE STRING "C++ standard for the facade; use 26 with
 option(GOTEL_WITH_SQLITE "Build SQLite trace adapter" ON)
 set(GOTEL_SQLITE_TARGET "" CACHE STRING "Existing SQLite3 CMake target")
 
+set(UTF8PROC_ENABLE_TESTING OFF CACHE BOOL "Disable utf8proc tests" FORCE)
+set(UTF8PROC_INSTALL OFF CACHE BOOL "Disable utf8proc installation" FORCE)
+add_subdirectory(vendor/utf8proc EXCLUDE_FROM_ALL)
+set_target_properties(utf8proc PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 include(cmake/TextDependencies.cmake)
 
 # SQL processing is owned by sequel; allow an existing target or FetchContent override.
