@@ -75,7 +75,10 @@ if(GOTEL_WITH_GRPC)
   file(READ "${_stage}/http_client.h" _api)
   string(REPLACE "int tls;" "int tls;\n int grpc;" _api "${_api}")
   file(WRITE "${_stage}/http_client.h" "${_api}")
-  file(READ "${_stage}/env_config.c" _env)
+  # Validate the pristine pinned source, not the staged copy. The staged file
+  # is intentionally rewritten by this adapter and therefore is not
+  # idempotent across repeated CMake configure runs.
+  file(READ "${otlp_c_SOURCE_DIR}/src/env_config.c" _env)
   # Git may check out CRLF on Windows. Compare the pinned LF content on every host.
   string(REPLACE "\r\n" "\n" _env "${_env}")
   string(SHA256 _env_hash "${_env}")
