@@ -2,14 +2,25 @@ UV ?= uv
 GO ?= go
 PNPM ?= pnpm
 
-.PHONY: sync format lint typecheck test test-python test-go test-typescript test-c check
+.PHONY: sync format format-python format-cx format-c format-cpp lint typecheck test test-python test-go test-typescript test-c check
 
 sync:
 	$(UV) sync --directory python --all-extras --locked
 
 format:
+	$(MAKE) format-python format-cx
+
+format-python:
 	$(UV) run --directory python --all-extras --locked ruff check --select I --fix src tests
 	$(UV) run --directory python --all-extras --locked ruff format src tests
+
+format-cx: format-c format-cpp
+
+format-c:
+	git ls-files -- '*.c' '*.h' ':!*.cc' ':!*.cpp' ':!*.cxx' ':!*.hh' ':!*.hpp' ':!*.hxx' | xargs clang-format -i
+
+format-cpp:
+	git ls-files -- '*.cc' '*.cpp' '*.cxx' '*.hh' '*.hpp' '*.hxx' | xargs clang-format -i
 
 lint:
 	$(UV) run --directory python --all-extras --locked ruff check src tests

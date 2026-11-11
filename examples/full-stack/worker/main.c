@@ -12,7 +12,9 @@ static uint64_t clock_ns(clockid_t which) {
     return 0;
   return (uint64_t)value.tv_sec * 1000000000u + (uint64_t)value.tv_nsec;
 }
+
 static uint64_t monotonic_ns(void) { return clock_ns(CLOCK_MONOTONIC); }
+
 static uint64_t realtime_ns(void) { return clock_ns(CLOCK_REALTIME); }
 
 static int hex_byte(const char *text) {

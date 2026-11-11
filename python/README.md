@@ -10,6 +10,30 @@ A uv-managed package providing application-owned OpenTelemetry operation names,
 OTLP traces/logs/metrics, and SQL inspection using gotel's shared C engine.
 Requires Python 3.11 or newer. The distribution is `gotel`; imports use `gotel`.
 
+## Features
+
+- Runtime lifecycle and resource setup for traces, metrics, logs, OTLP HTTP or
+  gRPC export, custom exporters/processors, sampling, batching, flush, shutdown,
+  and SDK-disabled deployments (`otelhost`).
+- Application-owned operation names and sync/async tracing scopes, decorators,
+  task-local query names, storage namespaces, sync/async call helpers, and
+  collision-safe query identity (`application`, `querynames`, `sqltrace`).
+- Safe SQL inspection, formatting, sanitization, structural summaries, operation
+  names, statement counts, ClickHouse syntax, bounded text, and privacy-preserving
+  metadata through the shared `sequel` engine.
+- HTTP server and client route naming for FastAPI and HTTPX, including normalized
+  routes, bounded path identifiers, request hooks, provider injection, and
+  idempotent removal (`httptrace`).
+- SQLAlchemy sync and async instrumentation plus psycopg, ClickHouse, Redis, and
+  Temporal integrations, with manual scopes and driver-specific lifecycle
+  handling (`dbtrace`, `psycopgtrace`, `clickhousetrace`, `redistrace`,
+  `temporaltrace`).
+- Structured database diagnostics attached to SQL spans, with safe lexical error
+  metadata and no raw SQL, bind values, or exception messages (`sqltrace`).
+- Explicit outcomes, critical/realtime sampling policies, trace-context logging,
+  and an in-memory capture/testing harness for spans and providers
+  (`outcomes`, `sampling`, `logging`, `testing`).
+
 ```sh
 cd python
 uv sync --all-extras
