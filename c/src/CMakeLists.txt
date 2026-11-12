@@ -16,6 +16,7 @@ set_target_properties(gotel PROPERTIES
 target_compile_definitions(gotel PRIVATE GOTEL_VERSION="${PROJECT_VERSION}")
 target_link_libraries(gotel PRIVATE ${GOTEL_UTF8PROC_TARGET} ${GOTEL_PCRE2_TARGET})
 target_include_directories(gotel PRIVATE
+  ${PROJECT_SOURCE_DIR}/src
   ${PROJECT_BINARY_DIR}/otlp-tls
   ${otlp_c_SOURCE_DIR}/src
 )
