@@ -116,6 +116,9 @@ otlp_status_t gotel_tick(gotel_host_t *host);
 /** Drain pending telemetry from the single tick owner before destruction. */
 otlp_status_t gotel_drain(gotel_host_t *host);
 
+/** Request cancellation of an in-progress exporter drain. */
+otlp_status_t gotel_shutdown(gotel_host_t *host);
+
 /** Set the diagnostic logging callback and its context. */
 void gotel_set_logger(gotel_host_t *host, otlp_log_fn logger, void *context);
 
@@ -184,6 +187,9 @@ void gotel_outcome(gotel_scope_t *scope, gotel_outcome_t outcome, const char *er
 
 /** Finish a scope and restore the previous thread-local scope. */
 void gotel_end(gotel_scope_t *scope);
+
+/** Cancel a scope without submitting its span to the exporter. */
+void gotel_cancel(gotel_scope_t *scope);
 
 /** Mark the current thread scope as failed. */
 void gotel_current_error(const char *type, const char *message);

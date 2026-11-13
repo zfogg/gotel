@@ -365,6 +365,15 @@ void gotel_end(gotel_scope_t *s) {
   s->span = NULL;
   s->active = false;
 }
+void gotel_cancel(gotel_scope_t *s) {
+  if (!s || !s->active)
+    return;
+  if (s->attached && current == s)
+    current = s->previous;
+  otlp_span_free(s->span);
+  s->span = NULL;
+  s->active = false;
+}
 void gotel_current_error(const char *type, const char *message) { gotel_error(current, type, message); }
 void gotel_error(gotel_scope_t *s, const char *type, const char *message) {
   if (!s || !s->active)
@@ -509,6 +518,11 @@ otlp_status_t gotel_drain(gotel_host_t *h) {
   otlp_status_t result = otlp_exporter_flush(h->exporter);
   gotel_tls_select(previous);
   return result;
+}
+otlp_status_t gotel_shutdown(gotel_host_t *h) {
+  if (!h || !h->exporter)
+    return OTLP_ERR_NULL;
+  return otlp_exporter_shutdown(h->exporter);
 }
 otlp_status_t gotel_stats(gotel_host_t *h, otlp_exporter_stats_t *out) {
   return h ? otlp_exporter_get_stats(h->exporter, out) : OTLP_ERR_NULL;
