@@ -2,7 +2,7 @@ option(GOTEL_WITH_GRPC "Enable native OTLP/gRPC (nghttp2)" ON)
 set(GOTEL_NGHTTP2_TARGET "" CACHE STRING "Existing nghttp2 CMake target")
 if(GOTEL_WITH_GRPC)
   if(NOT GOTEL_NGHTTP2_TARGET)
-    # gotel only links nghttp2's static library for OTLP/gRPC.  Do not
+    # Do not
     # configure nghttp2's optional applications, HPACK tools, examples, or
     # HTTP/3 support: those are the source of slow, irrelevant dependency
     # probes for ngtcp2/nghttp3, systemd, Jansson, libevent, libxml2, and
@@ -36,8 +36,12 @@ if(GOTEL_WITH_GRPC)
 
     function(_gotel_fetch_nghttp2)
       set(ENABLE_LIB_ONLY ON)
-      set(BUILD_STATIC_LIBS ON)
-      set(BUILD_SHARED_LIBS OFF)
+      if(_gotel_shared)
+        set(BUILD_STATIC_LIBS OFF)
+      else()
+        set(BUILD_STATIC_LIBS ON)
+      endif()
+      set(BUILD_SHARED_LIBS ${_gotel_shared})
       set(BUILD_TESTING OFF)
       FetchContent_Declare(gotel_nghttp2
         GIT_REPOSITORY https://github.com/nghttp2/nghttp2.git
@@ -54,8 +58,12 @@ if(GOTEL_WITH_GRPC)
     set(ENABLE_HPACK_TOOLS "${_gotel_nghttp2_saved_enable_hpack_tools}")
     set(ENABLE_EXAMPLES "${_gotel_nghttp2_saved_enable_examples}")
 
-    set_target_properties(nghttp2_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    set(GOTEL_NGHTTP2_TARGET nghttp2_static)
+    if(_gotel_shared)
+      set(GOTEL_NGHTTP2_TARGET nghttp2)
+    else()
+      set_target_properties(nghttp2_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
+      set(GOTEL_NGHTTP2_TARGET nghttp2_static)
+    endif()
   endif()
   if(NOT TARGET "${GOTEL_NGHTTP2_TARGET}")
     message(FATAL_ERROR "GOTEL_NGHTTP2_TARGET must name an existing CMake target")

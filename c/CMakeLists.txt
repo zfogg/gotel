@@ -51,10 +51,9 @@ if(NOT TARGET sequel::sequel)
   FetchContent_MakeAvailable(sequel)
 endif()
 
-# gotel uses otlp-c's internal attribute and TLS helpers. Keep otlp-c in
-# the same link image even when gotel itself is a shared library.
+# gotel uses otlp-c's internal attribute and TLS helpers. Keep otlp-c in the
+# same shared/static dependency mode as gotel.
 set(_gotel_shared ${BUILD_SHARED_LIBS})
-set(BUILD_SHARED_LIBS OFF)
 FetchContent_Declare(otlp_c
   GIT_REPOSITORY https://github.com/riboseinc/otlp-c.git
   GIT_TAG 0798449d66331c3953b8ba9354164cfbf2f3bdaf
