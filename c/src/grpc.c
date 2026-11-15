@@ -239,17 +239,6 @@ otlp_status_t otlp_http_request_start_with_socket(otlp_http_request_t **out, con
   if (!r)
     return OTLP_ERR_NOMEM;
   otlp_status_t status = OTLP_ERR_NOMEM;
-  if (!url->grpc) {
-    status = socket ? gotel_http1_request_start_with_socket(&r->http1, url, agent, headers, count, body, len,
-                                                            connect_ms, read_ms, socket)
-                    : gotel_http1_request_start(&r->http1, url, agent, headers, count, body, len, connect_ms, read_ms);
-    if (status != OTLP_OK) {
-      free(r);
-      return status;
-    }
-    *out = r;
-    return OTLP_OK;
-  }
   /* HTTP/2 sessions own their sockets; never donate an HTTP/1 connection. */
   otlp_socket_close(socket);
   if (len > UINT32_MAX || len > SIZE_MAX - 5 || count > 128) {

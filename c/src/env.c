@@ -141,7 +141,6 @@ otlp_status_t gotel_protocol_configure(gotel_host_t *h) {
       otlp_status_t status = otlp_http_parse_url(endpoint, &url);
       if (status != OTLP_OK || strcmp(url.path, "/"))
         return OTLP_ERR_INVALID_ARGUMENT;
-      url.grpc = 1;
       strcpy(url.path, paths[i]);
       h->exporter->sig[i].url = url;
     }
