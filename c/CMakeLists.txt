@@ -64,6 +64,12 @@ set(_gotel_disable_doxygen "${CMAKE_DISABLE_FIND_PACKAGE_Doxygen}")
 set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen TRUE)
 FetchContent_MakeAvailable(otlp_c)
 set_target_properties(otlp_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if(BUILD_SHARED_LIBS AND WIN32)
+  # gotel's shared target calls adapter helpers implemented in otlp-c's
+  # TLS/utility translation units. Export unannotated C symbols on Windows so
+  # the shared gotel DLL can resolve that boundary.
+  set_target_properties(otlp_c PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 set(BUILD_SHARED_LIBS ${_gotel_shared})
 set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen "${_gotel_disable_doxygen}")
 
