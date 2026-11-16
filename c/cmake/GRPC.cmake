@@ -73,7 +73,9 @@ if(GOTEL_WITH_GRPC)
   # TLS.cmake renames the staged HTTP/1 source before this adapter runs when
   # gRPC is enabled. Read that staged source rather than the intentionally
   # absent original filename.
-  file(READ "${_stage}/http1_client.c" _http1)
+  # TLS.cmake stages and rewrites http_client.c first; derive the HTTP/1
+  # adapter from that staged source before publishing its separate filename.
+  file(READ "${_stage}/http_client.c" _http1)
   string(REPLACE "otlp_http_request" "gotel_http1_request" _http1 "${_http1}")
   string(REPLACE "\"http_client.h\"" "\"http1_client.h\"" _http1 "${_http1}")
   _gotel_write_if_changed("${_stage}/http1_client.c" _http1)
