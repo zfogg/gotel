@@ -25,6 +25,13 @@ file(GLOB _headers "${otlp_c_SOURCE_DIR}/src/*.h")
 foreach(_header IN LISTS _headers)
   get_filename_component(_header_name "${_header}" NAME)
   file(READ "${_header}" _header_content)
+  if(_header_name STREQUAL "span_internal.h")
+    # The public declaration is exported when otlp-c is shared. Keep this
+    # internal redeclaration consistent so clang-cl does not diagnose the
+    # conflicting DLL import attributes.
+    string(REPLACE "bool\notlp_span_is_sampled" "OTLP_C_EXPORT\nbool\notlp_span_is_sampled"
+                   _header_content "${_header_content}")
+  endif()
   _gotel_write_if_changed("${_stage}/${_header_name}" _header_content)
 endforeach()
 file(READ "${_stage}/http_client.h" _header)
