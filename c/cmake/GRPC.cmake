@@ -36,6 +36,7 @@ if(GOTEL_WITH_GRPC)
 
     function(_gotel_fetch_nghttp2)
       set(ENABLE_LIB_ONLY ON)
+      set(ENABLE_DOC OFF)
       if(_gotel_shared)
         set(BUILD_STATIC_LIBS OFF)
       else()
