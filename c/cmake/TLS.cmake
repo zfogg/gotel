@@ -76,6 +76,11 @@ foreach(_source IN LISTS _sources)
     string(REPLACE "if (!r)\n\t\treturn 0;\n\tswitch" "if (!r)\n\t\treturn 0;\n if (r->tls && r->state != OTLP_HTTP_REQ_CONNECTING && r->state != OTLP_HTTP_REQ_DONE && r->state != OTLP_HTTP_REQ_FAILED) return gotel_tls_events(r->tls);\n\tswitch" _code "${_code}")
   endif()
   _gotel_write_if_changed("${_stage}/${_output_name}" _code)
+  if(_name STREQUAL "http_client.c" AND GOTEL_WITH_GRPC)
+    # GRPC.cmake consumes the pristine staged HTTP implementation before it
+    # replaces otlp-c's source with the HTTP/1 adapter.
+    _gotel_write_if_changed("${_stage}/http_client.c" _code)
+  endif()
   list(APPEND _patched_sources "${_stage}/${_output_name}")
 endforeach()
 set_property(TARGET otlp_c PROPERTY SOURCES "${_patched_sources}")
