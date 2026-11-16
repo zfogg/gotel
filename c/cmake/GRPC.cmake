@@ -70,7 +70,10 @@ if(GOTEL_WITH_GRPC)
   endif()
   # Keep the original HTTP implementation behind a common request adapter.
   # TLS.cmake has already staged and hash-checked the pinned source/header.
-  file(READ "${_stage}/http_client.c" _http1)
+  # TLS.cmake renames the staged HTTP/1 source before this adapter runs when
+  # gRPC is enabled. Read that staged source rather than the intentionally
+  # absent original filename.
+  file(READ "${_stage}/http1_client.c" _http1)
   string(REPLACE "otlp_http_request" "gotel_http1_request" _http1 "${_http1}")
   string(REPLACE "\"http_client.h\"" "\"http1_client.h\"" _http1 "${_http1}")
   _gotel_write_if_changed("${_stage}/http1_client.c" _http1)
