@@ -34,7 +34,9 @@ if(TARGET utf8proc::utf8proc)
 elseif(TARGET utf8proc)
   set(_gotel_utf8proc_target utf8proc)
 else()
+  if(NOT TARGET utf8proc AND NOT TARGET utf8proc::utf8proc)
   add_subdirectory(vendor/utf8proc EXCLUDE_FROM_ALL)
+endif()
   set(_gotel_utf8proc_target utf8proc)
 endif()
 if(TARGET utf8proc)
@@ -64,6 +66,12 @@ set(_gotel_disable_doxygen "${CMAKE_DISABLE_FIND_PACKAGE_Doxygen}")
 set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen TRUE)
 FetchContent_MakeAvailable(otlp_c)
 set_target_properties(otlp_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if(BUILD_SHARED_LIBS AND UNIX)
+  # gotel intentionally consumes several otlp-c internal helpers. They cross
+  # the shared-library boundary and therefore must be visible to the dynamic
+  # linker even though otlp-c defaults to hidden visibility for its public ABI.
+  set_target_properties(otlp_c PROPERTIES C_VISIBILITY_PRESET default)
+endif()
 if(BUILD_SHARED_LIBS AND WIN32)
   # gotel's shared target calls adapter helpers implemented in otlp-c's
   # TLS/utility translation units. Export unannotated C symbols on Windows so

@@ -13,6 +13,10 @@ set_target_properties(gotel PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION 0.8
 )
+if(BUILD_SHARED_LIBS AND UNIX)
+  # otlp-c invokes gotel's TLS adapter across the shared-library boundary.
+  set_target_properties(gotel PROPERTIES C_VISIBILITY_PRESET default)
+endif()
 target_compile_definitions(gotel PRIVATE GOTEL_VERSION="${PROJECT_VERSION}")
 target_link_libraries(gotel PRIVATE ${GOTEL_UTF8PROC_TARGET} ${GOTEL_PCRE2_TARGET})
 target_include_directories(gotel PRIVATE
