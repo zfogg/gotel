@@ -1,4 +1,5 @@
 #include <gotel/gotel.h>
+#include <gotel/sqlite.h>
 #include <string.h>
 /* Immutable named query registry. Caller-owned descriptors avoid allocation,
  * locks and pointer lifetimes tied to prepared-statement instances. */

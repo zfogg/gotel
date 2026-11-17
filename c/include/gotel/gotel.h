@@ -325,12 +325,7 @@ otlp_status_t gotel_http_name(char *output, size_t capacity, const char *prefix,
 void gotel_http_attributes(gotel_scope_t *scope, const char *method, int status);
 
 #ifdef GOTEL_WITH_SQLITE
-#include <gotel/sql.h>
-#include <sqlite3.h>
-typedef struct {
-  const char *name;
-  const char *sql;
-} gotel_query_t;
+#if 0 /* SQLite declarations moved to gotel/sqlite.h. */
 
 /** A view of a caller-owned catalog. get writes one descriptor at index and
  * returns true on success. The descriptor's strings and context must remain
@@ -402,6 +397,7 @@ int gotel_sqlite_prepare_db(sqlite3 *db, const char *sql, sqlite3_stmt **stateme
 /** Find the matching query in the caller-owned catalog, or return NULL. */
 const gotel_query_t *gotel_query_find(const gotel_query_t *queries, size_t count, const char *sql);
 
+#endif
 #endif
 #ifdef __cplusplus
 }

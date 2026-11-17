@@ -1,4 +1,5 @@
 #include "internal.h"
+#include <gotel/sqlite.h>
 #include <gotel/sql.h>
 #include <stdio.h>
 #include <stdlib.h>
