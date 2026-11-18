@@ -4,6 +4,10 @@ Choose the static or shared section to match the release ZIP you downloaded.
 Each ZIP is named for its operating system, CPU architecture, and linkage type.
 Both contain public headers, licenses, and this guide.
 
+Archives also include the C++ facade as `gotel_cxx` (`gotel_cxx.lib` or
+`libgotel_cxx.*`) and its headers. The extracted CMake package provides both
+`gotel::gotel` and `gotel::cxx`; pkg-config provides `gotel` and `gotel-cxx`.
+
 Native gRPC support is enabled by default and included in every release ZIP.
 Select it with `options.protocol = "grpc"`; HTTP/protobuf remains the default
 export protocol. Static ZIPs include nghttp2 for final linking; shared libraries
