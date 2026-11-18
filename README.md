@@ -1,5 +1,7 @@
 # gotel
 
+[Releases](https://github.com/zfogg/gotel/releases)
+
 [Rust API documentation](https://zfogg.github.io/gotel/rust/) · [Rust usage and installation](rust/README.md)
 
 Rust HTTP, SQL and Redis integrations: [Axum, reqwest, SQLx, rusqlite, DuckDB, ClickHouse and redis-rs](rust/ADAPTERS.md).
