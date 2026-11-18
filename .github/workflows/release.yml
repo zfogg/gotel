@@ -20,6 +20,10 @@ concurrency:
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -68,14 +72,18 @@ jobs:
         run: uv pip install --system -r c/tests/requirements-grpc.txt
       - name: Install Linux dependencies
         if: matrix.os == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build libsqlite3-dev libssl-dev python3
+        run: bash scripts/install-deps.sh linux
       - name: Install macOS dependencies
         if: matrix.os == 'macos'
-        run: brew install ninja openssl@3 sqlite
+        run: bash scripts/install-deps.sh macos
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows'
         with:
           arch: ${{ matrix.msvc_arch }}
+      - name: Validate Windows build tools
+        if: matrix.os == 'windows'
+        shell: pwsh
+        run: ./scripts/install-deps.ps1
       - name: Install Windows native dependencies
         if: matrix.os == 'windows'
         shell: pwsh
