@@ -35,7 +35,9 @@ jobs:
           fi
           [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release tag: $tag"; exit 1; }
           version="${tag#v}"
-          grep -Fq "project(gotel VERSION $version LANGUAGES C)" c/CMakeLists.txt
+          grep -Eq "project\(gotel VERSION [0-9]+\.[0-9]+\.[0-9]+([[:space:]]|\))" c/CMakeLists.txt
+          cmake_version="$(sed -nE 's/^[[:space:]]*project\(gotel VERSION ([0-9]+\.[0-9]+\.[0-9]+)([[:space:]]|\)).*$/\1/p' c/CMakeLists.txt | head -n1)"
+          [[ "$cmake_version" == "$version" ]] || { echo "CMake version $cmake_version does not match release version $version"; exit 1; }
           node -e 'if (require("./package.json").version !== process.argv[1]) process.exit(1)' "$version"
           python -c 'import sys,tomllib; assert tomllib.load(open("python/pyproject.toml", "rb"))["project"]["version"] == sys.argv[1]' "$version"
           python -c 'import sys,tomllib; assert tomllib.load(open("rust/Cargo.toml", "rb"))["package"]["version"] == sys.argv[1]' "$version"
