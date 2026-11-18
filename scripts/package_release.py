@@ -47,10 +47,13 @@ def add_release_metadata(
     """Write package metadata that resolves paths relative to the extracted ZIP."""
     if system == "Windows":
         library = "gotel.lib" if linkage == "static" else "gotel.dll"
+        cxx_library = "gotel_cxx.lib" if linkage == "static" else "gotel_cxx.dll"
     elif system == "Darwin":
         library = "libgotel.a" if linkage == "static" else "libgotel.dylib"
+        cxx_library = "libgotel_cxx.a" if linkage == "static" else "libgotel_cxx.dylib"
     else:
         library = "libgotel.a" if linkage == "static" else "libgotel.so"
+        cxx_library = "libgotel_cxx.a" if linkage == "static" else "libgotel_cxx.so"
     imported_kind = "STATIC" if linkage == "static" else "SHARED"
     cmake = f'''# Self-contained gotel release package.
 get_filename_component(_gotel_root "${{CMAKE_CURRENT_LIST_DIR}}/../.." ABSOLUTE)
@@ -61,6 +64,13 @@ if(NOT TARGET gotel::gotel)
     INTERFACE_INCLUDE_DIRECTORIES "${{_gotel_root}}/include")
 endif()
 set(gotel_FOUND TRUE)
+if(NOT TARGET gotel::cxx)
+  add_library(gotel::cxx {imported_kind} IMPORTED GLOBAL)
+  set_target_properties(gotel::cxx PROPERTIES
+    IMPORTED_LOCATION "${{_gotel_root}}/lib/{cxx_library}"
+    INTERFACE_INCLUDE_DIRECTORIES "${{_gotel_root}}/include")
+  target_link_libraries(gotel::cxx INTERFACE gotel::gotel)
+endif()
 '''
     version_match = re.search(
         r"project\(gotel VERSION ([0-9]+\.[0-9]+\.[0-9]+)",
@@ -81,6 +91,11 @@ Cflags: -I${{includedir}}
 '''
     archive.writestr(f"{name}/lib/cmake/gotel/gotelConfig.cmake", cmake)
     archive.writestr(f"{name}/lib/pkgconfig/gotel.pc", pc)
+    archive.writestr(
+        f"{name}/lib/pkgconfig/gotel-cxx.pc",
+        pc.replace("Name: gotel", "Name: gotel-cxx", 1)
+        .replace("-lgotel\n", f"-l{cxx_library}\n", 1),
+    )
 
 
 def package_c(
@@ -117,6 +132,9 @@ def package_c(
             build / "src" / ("gotel.lib" if system == "Windows" else "libgotel.a")
         ]
         gotel_libs.append(
+            build / "src" / ("gotel_cxx.lib" if system == "Windows" else "libgotel_cxx.a")
+        )
+        gotel_libs.append(
             build
             / "_deps"
             / "otlp_c-build"
@@ -138,7 +156,12 @@ def package_c(
             )
         )
     elif system == "Windows":
-        gotel_libs = [build / "src" / "gotel.dll", build / "src" / "gotel.lib"]
+        gotel_libs = [
+            build / "src" / "gotel.dll",
+            build / "src" / "gotel.lib",
+            build / "src" / "gotel_cxx.dll",
+            build / "src" / "gotel_cxx.lib",
+        ]
         gotel_libs.extend(sequel_build / name for name in ("sequel.dll", "sequel.lib"))
     else:
         extension = ".dylib" if system == "Darwin" else ".so"
@@ -151,6 +174,7 @@ def package_c(
         if not sequel_libs:
             raise FileNotFoundError(sequel_build / f"libsequel{extension}")
         gotel_libs.extend(sequel_libs)
+        gotel_libs.extend(sorted((build / "src").glob("libgotel_cxx*.dylib" if system == "Darwin" else "libgotel_cxx.so*")))
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
         for source, destination in (
             (ROOT / "LICENSE", "LICENSE"),
@@ -181,6 +205,7 @@ def package_c(
             add_file(archive, source, f"{name}/lib/{source.name}")
         for prefix, directory in (
             ("include/gotel", ROOT / "c" / "include" / "gotel"),
+            ("include/gotel", ROOT / "c" / "cxx" / "include" / "gotel"),
             ("include/otlp-c", otlp_source / "include" / "otlp-c"),
         ):
             headers = sorted(directory.rglob("*.h"))
