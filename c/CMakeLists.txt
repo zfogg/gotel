@@ -15,6 +15,8 @@ if(GOTEL_PREFER_CLANG AND NOT DEFINED CMAKE_C_COMPILER AND NOT CMAKE_GENERATOR M
   endif()
 endif()
 project(gotel VERSION 0.13.0 LANGUAGES C CXX)
+include(${CMAKE_CURRENT_SOURCE_DIR}/deps/cmake-utils/CacheLauncher.cmake)
+cmake_utils_configure_cache_launcher()
 option(GOTEL_BUILD_DOCS "Enable API documentation and publication targets" OFF)
 if(GOTEL_BUILD_DOCS)
   include(../docs/targets.cmake)
