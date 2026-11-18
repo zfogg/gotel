@@ -125,7 +125,7 @@ jobs:
             $shared = if ($linkage -eq 'shared') { 'ON' } else { 'OFF' }
             $build = "c/build-$linkage"
             cmake -S c -B $build -G Ninja `
-              -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release `
+              -DCMAKE_BUILD_TYPE=Release `
               -DPython3_EXECUTABLE="$((Get-Command python).Source)" `
               -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
               -DVCPKG_TARGET_TRIPLET="$env:VCPKG_TRIPLET" `
