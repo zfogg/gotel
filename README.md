@@ -431,7 +431,7 @@ guide; and SHA-256 checksums. Python wheels and an sdist are included as well.
 Each ZIP has a use-focused `README.md`; the GitHub Release notes summarize
 the C linking requirements and TypeScript installation steps.
 The C archives retain external dependencies such as OpenSSL, SQLite, PCRE2,
-and utf8proc. Read the [C linking guide](c/RELEASE.md) for static and
+and utf8proc. Read the [release linking guide](RELEASE.md) for static and
 shared libraries, including platform libraries and DLL, dylib, or `.so`
 placement required at run time.
 

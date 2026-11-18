@@ -126,7 +126,7 @@ def package_c(
     name = archive_name(tag, linkage, expected_arch)
     path = output / f"{name}.zip"
     system = platform.system()
-    readme = ROOT / "c" / "RELEASE.md"
+    readme = ROOT / "RELEASE.md"
     if linkage == "static":
         gotel_libs = [
             build / "src" / ("gotel.lib" if system == "Windows" else "libgotel.a")
