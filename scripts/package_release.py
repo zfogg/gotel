@@ -41,6 +41,48 @@ def add_file(archive: zipfile.ZipFile, source: Path, destination: str) -> None:
     archive.write(source, destination)
 
 
+def add_release_metadata(
+    archive: zipfile.ZipFile, name: str, linkage: str, system: str
+) -> None:
+    """Write package metadata that resolves paths relative to the extracted ZIP."""
+    if system == "Windows":
+        library = "gotel.lib" if linkage == "static" else "gotel.dll"
+    elif system == "Darwin":
+        library = "libgotel.a" if linkage == "static" else "libgotel.dylib"
+    else:
+        library = "libgotel.a" if linkage == "static" else "libgotel.so"
+    imported_kind = "STATIC" if linkage == "static" else "SHARED"
+    cmake = f'''# Self-contained gotel release package.
+get_filename_component(_gotel_root "${{CMAKE_CURRENT_LIST_DIR}}/../.." ABSOLUTE)
+if(NOT TARGET gotel::gotel)
+  add_library(gotel::gotel {imported_kind} IMPORTED GLOBAL)
+  set_target_properties(gotel::gotel PROPERTIES
+    IMPORTED_LOCATION "${{_gotel_root}}/lib/{library}"
+    INTERFACE_INCLUDE_DIRECTORIES "${{_gotel_root}}/include")
+endif()
+set(gotel_FOUND TRUE)
+'''
+    version_match = re.search(
+        r"project\(gotel VERSION ([0-9]+\.[0-9]+\.[0-9]+)",
+        (ROOT / "c" / "CMakeLists.txt").read_text(encoding="utf-8"),
+    )
+    if version_match is None:
+        raise ValueError("unable to determine gotel C version")
+    version = version_match.group(1)
+    pc = f'''prefix=${{pcfiledir}}/../..
+libdir=${{prefix}}/lib
+includedir=${{prefix}}/include
+
+Name: gotel
+Description: OpenTelemetry C library
+Version: {version}
+Libs: -L${{libdir}} -lgotel
+Cflags: -I${{includedir}}
+'''
+    archive.writestr(f"{name}/lib/cmake/gotel/gotelConfig.cmake", cmake)
+    archive.writestr(f"{name}/lib/pkgconfig/gotel.pc", pc)
+
+
 def package_c(
     tag: str,
     build: Path,
@@ -124,6 +166,7 @@ def package_c(
             (sequel_source / "include" / "sequel.h", "include/sequel.h"),
         ):
             add_file(archive, source, f"{name}/{destination}")
+        add_release_metadata(archive, name, linkage, system)
         for source in gotel_libs:
             if not source.is_file():
                 # Multi-configuration generators put artifacts below the configuration.
