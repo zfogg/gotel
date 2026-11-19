@@ -68,6 +68,13 @@ set(_gotel_disable_doxygen "${CMAKE_DISABLE_FIND_PACKAGE_Doxygen}")
 set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen TRUE)
 FetchContent_MakeAvailable(otlp_c)
 set_target_properties(otlp_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  # otlp-c is an external dependency. Its Windows compatibility sources use
+  # platform-defined integer types that intentionally trigger sign-conversion
+  # diagnostics under our warning flags; keep those warnings scoped away from
+  # Gotel sources.
+  target_compile_options(otlp_c PRIVATE -Wno-sign-conversion)
+endif()
 if(BUILD_SHARED_LIBS AND UNIX)
   # gotel intentionally consumes several otlp-c internal helpers. They cross
   # the shared-library boundary and therefore must be visible to the dynamic
