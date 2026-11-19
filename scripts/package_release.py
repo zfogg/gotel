@@ -111,17 +111,20 @@ def package_c(
         encoding="utf-8"
     ):
         raise ValueError("C release libraries must be built with GOTEL_WITH_GRPC=ON")
-    nghttp2_source = nghttp2_source or build / "_deps" / "gotel_nghttp2-src"
     cache = {}
     for line in (build / "CMakeCache.txt").read_text(encoding="utf-8").splitlines():
         if "=" in line and not line.startswith(("#", "//")):
             key, value = line.split("=", 1)
             cache[key.split(":", 1)[0]] = value
+    dependency_cache = Path(
+        cache.get("FETCHCONTENT_BASE_DIR", str(build / ".deps-cache"))
+    )
+    nghttp2_source = nghttp2_source or dependency_cache / "gotel_nghttp2-src"
     sequel_source = Path(
-        cache.get("sequel_SOURCE_DIR", str(build / "_deps" / "sequel-src"))
+        cache.get("sequel_SOURCE_DIR", str(dependency_cache / "sequel-src"))
     )
     sequel_build = Path(
-        cache.get("sequel_BINARY_DIR", str(build / "_deps" / "sequel-build"))
+        cache.get("sequel_BINARY_DIR", str(dependency_cache / "sequel-build"))
     )
     name = archive_name(tag, linkage, expected_arch)
     path = output / f"{name}.zip"
@@ -135,14 +138,12 @@ def package_c(
             build / "src" / ("gotel_cxx.lib" if system == "Windows" else "libgotel_cxx.a")
         )
         gotel_libs.append(
-            build
-            / "_deps"
+            dependency_cache
             / "otlp_c-build"
             / ("otlp_c.lib" if system == "Windows" else "libotlp_c.a")
         )
         gotel_libs.append(
-            build
-            / "_deps"
+            dependency_cache
             / "gotel_nghttp2-build"
             / "lib"
             / ("nghttp2.lib" if system == "Windows" else "libnghttp2.a")

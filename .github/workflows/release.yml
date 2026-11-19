@@ -112,8 +112,8 @@ jobs:
             python scripts/package_release.py c \
               --tag '${{ needs.validate.outputs.tag }}' \
               --build "c/build-$linkage" \
-              --otlp-source "c/build-$linkage/_deps/otlp_c-src" \
-              --nghttp2-source "c/build-$linkage/_deps/gotel_nghttp2-src" \
+              --otlp-source "c/build-$linkage/.deps-cache/otlp_c-src" \
+              --nghttp2-source "c/build-$linkage/.deps-cache/gotel_nghttp2-src" \
               --expected-arch '${{ matrix.arch }}' \
               --linkage "$linkage" --output release-assets
           done
@@ -140,8 +140,8 @@ jobs:
             python scripts/package_release.py c `
               --tag '${{ needs.validate.outputs.tag }}' `
               --build $build `
-              --otlp-source "$build/_deps/otlp_c-src" `
-              --nghttp2-source "$build/_deps/gotel_nghttp2-src" `
+              --otlp-source "$build/.deps-cache/otlp_c-src" `
+              --nghttp2-source "$build/.deps-cache/gotel_nghttp2-src" `
               --expected-arch '${{ matrix.arch }}' `
               --linkage $linkage --output release-assets
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
