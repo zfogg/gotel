@@ -1001,7 +1001,7 @@ dependencies = [
 
 [[package]]
 name = "gotel"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "axum",
  "clickhouse",
