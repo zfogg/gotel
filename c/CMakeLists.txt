@@ -22,13 +22,13 @@ if(GOTEL_BUILD_DOCS)
   include(../docs/targets.cmake)
 endif()
 
-include(FetchContent)
 set(GOTEL_DEPS_CACHE_ROOT "${CMAKE_BINARY_DIR}/.deps-cache" CACHE PATH
   "Dependency source and build cache used by standalone gotel builds")
 if(NOT DEFINED FETCHCONTENT_BASE_DIR)
   set(FETCHCONTENT_BASE_DIR "${GOTEL_DEPS_CACHE_ROOT}" CACHE PATH
     "FetchContent cache used by gotel dependencies")
 endif()
+include(FetchContent)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(GOTEL_BUILD_TESTS "Build gotel unit and wire tests" OFF)
 set(GOTEL_CXX_STANDARD 26 CACHE STRING "C++ standard for the facade; use 27 for the Clang draft mode")
