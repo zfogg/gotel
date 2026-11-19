@@ -14,7 +14,7 @@ if(GOTEL_PREFER_CLANG AND NOT DEFINED CMAKE_C_COMPILER AND NOT CMAKE_GENERATOR M
     set(CMAKE_CXX_COMPILER "${GOTEL_CLANGXX}" CACHE FILEPATH "C++ compiler")
   endif()
 endif()
-project(gotel VERSION 0.14.2 LANGUAGES C CXX)
+project(gotel VERSION 0.14.3 LANGUAGES C CXX)
 include(${CMAKE_CURRENT_SOURCE_DIR}/deps/cmake-utils/CacheLauncher.cmake)
 cmake_utils_configure_cache_launcher()
 option(GOTEL_BUILD_DOCS "Enable API documentation and publication targets" OFF)
@@ -86,6 +86,12 @@ if(BUILD_SHARED_LIBS AND WIN32)
   # TLS/utility translation units. Export unannotated C symbols on Windows so
   # the shared gotel DLL can resolve that boundary.
   set_target_properties(otlp_c PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    # MinGW does not generate an import library for these unannotated
+    # translation-unit symbols from WINDOWS_EXPORT_ALL_SYMBOLS alone. Keep
+    # the shared dependency boundary explicit for the GNU linker.
+    target_link_options(otlp_c PRIVATE -Wl,--export-all-symbols)
+  endif()
 endif()
 set(BUILD_SHARED_LIBS ${_gotel_shared})
 set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen "${_gotel_disable_doxygen}")
