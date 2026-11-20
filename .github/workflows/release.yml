@@ -14,12 +14,11 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: release-${{ github.repository }}
-  cancel-in-progress: true
-
 jobs:
   validate:
+    concurrency:
+      group: release-validation-${{ github.repository }}-${{ inputs.tag || github.ref_name || 'default' }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.version.outputs.tag }}
@@ -45,6 +44,9 @@ jobs:
 
   c-libraries:
     needs: validate
+    concurrency:
+      group: release-build-${{ github.repository }}-${{ needs.validate.outputs.tag }}
+      cancel-in-progress: false
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -154,6 +156,9 @@ jobs:
 
   typescript:
     needs: validate
+    concurrency:
+      group: release-build-${{ github.repository }}-${{ needs.validate.outputs.tag }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -182,6 +187,9 @@ jobs:
 
   go-source:
     needs: validate
+    concurrency:
+      group: release-build-${{ github.repository }}-${{ needs.validate.outputs.tag }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -194,6 +202,9 @@ jobs:
 
   python:
     needs: validate
+    concurrency:
+      group: release-build-${{ github.repository }}-${{ needs.validate.outputs.tag }}
+      cancel-in-progress: false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -228,6 +239,9 @@ jobs:
 
   rust:
     needs: validate
+    concurrency:
+      group: release-build-${{ github.repository }}-${{ needs.validate.outputs.tag }}
+      cancel-in-progress: false
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -255,6 +269,9 @@ jobs:
 
   publish:
     needs: [validate, c-libraries, typescript, go-source, python, rust]
+    concurrency:
+      group: release-publish-${{ github.repository }}-${{ needs.validate.outputs.tag }}
+      cancel-in-progress: false
     if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
